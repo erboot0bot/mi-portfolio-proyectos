@@ -35,9 +35,17 @@ export default function Home() {
 
   return (
     <div>
+      <section className="mb-16 pt-2">
+        <p className="text-zinc-500 text-sm font-mono mb-3">Hola, soy</p>
+        <h1 className="text-4xl sm:text-5xl font-bold tracking-tight text-white mb-4">H3nky</h1>
+        <p className="text-lg text-zinc-400 max-w-xl leading-relaxed">
+          Desarrollador apasionado por construir cosas útiles y bien hechas. Aquí documento los proyectos que me han enseñado algo.
+        </p>
+      </section>
+
       <header className="mb-10">
-        <h1 className="text-3xl font-bold tracking-tight text-white mb-2">Proyectos</h1>
-        <p className="text-zinc-400">Una colección de cosas que he construido.</p>
+        <h2 className="text-2xl font-bold tracking-tight text-white mb-2">Proyectos</h2>
+        <p className="text-zinc-500">Lo que he estado construyendo.</p>
       </header>
 
       {techs.length > 0 && (

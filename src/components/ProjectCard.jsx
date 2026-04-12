@@ -52,9 +52,14 @@ export default function ProjectCard({ project }) {
           <p className="text-sm text-zinc-400 mb-4 line-clamp-2">{project.description}</p>
 
           <div className="flex flex-wrap gap-1.5">
-            {project.technologies.map(tech => (
+            {project.technologies.slice(0, 3).map(tech => (
               <TechBadge key={tech} tech={tech} />
             ))}
+            {project.technologies.length > 3 && (
+              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full border border-zinc-700 text-zinc-500">
+                +{project.technologies.length - 3}
+              </span>
+            )}
           </div>
         </div>
       </Link>
