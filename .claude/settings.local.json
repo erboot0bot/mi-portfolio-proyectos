@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//home/user/.claude/skills/gstack/**)",
+      "Bash(~/.bun/bin/bun --version)",
+      "Bash(./setup)",
+      "Bash(export PATH=\"$HOME/.bun/bin:$PATH\")"
+    ]
+  }
+}
