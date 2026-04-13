@@ -30,7 +30,7 @@ export const projects = [
     technologies: ['React', 'Vite', 'Tailwind', 'Framer Motion', 'Vitest'],
     github: 'https://github.com/H3nky/mi-portfolio-proyectos',
     demo: null,
-    images: [],
+    images: ['/projects/portfolio-personal/cover.jpg'],
     date: '2026-04',
   },
 ]
