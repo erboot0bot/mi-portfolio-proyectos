@@ -1,24 +1,22 @@
 /*
  * FilterBar.jsx — filter projects by technology
  *
- * Props:
- *   techs      — string[] of unique technology names (sorted alphabetically)
- *   active     — currently selected tech or null (null = show all)
- *   onChange   — (tech | null) => void
+ * Light mode: zinc-100 pills, orange active.
+ * Dark mode:  zinc-800 pills, orange active.
  */
 
 export default function FilterBar({ techs, active, onChange }) {
   if (techs.length === 0) return null
 
+  const base = 'px-3 py-1 rounded-full text-xs font-medium border transition-colors'
+  const inactive = 'bg-transparent border-[var(--border)] text-[var(--text-muted)] hover:border-orange-300 hover:text-[var(--accent)] dark:hover:border-orange-500/40'
+  const activeClass = 'bg-[var(--accent)] text-white border-[var(--accent)]'
+
   return (
     <div className="flex flex-wrap gap-2" role="group" aria-label="Filtrar por tecnología">
       <button
         onClick={() => onChange(null)}
-        className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
-          active === null
-            ? 'bg-white text-zinc-900 border-white'
-            : 'bg-transparent text-zinc-400 border-zinc-700 hover:border-zinc-500 hover:text-zinc-200'
-        }`}
+        className={`${base} ${active === null ? activeClass : inactive}`}
       >
         Todos
       </button>
@@ -27,11 +25,7 @@ export default function FilterBar({ techs, active, onChange }) {
         <button
           key={tech}
           onClick={() => onChange(active === tech ? null : tech)}
-          className={`px-3 py-1 rounded-full text-xs font-medium border transition-colors ${
-            active === tech
-              ? 'bg-white text-zinc-900 border-white'
-              : 'bg-transparent text-zinc-400 border-zinc-700 hover:border-zinc-500 hover:text-zinc-200'
-          }`}
+          className={`${base} ${active === tech ? activeClass : inactive}`}
         >
           {tech}
         </button>

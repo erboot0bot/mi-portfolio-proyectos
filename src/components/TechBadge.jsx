@@ -1,6 +1,8 @@
 /*
  * TechBadge.jsx — small pill showing a technology name
- * Icons are inline SVGs. Falls back to text-only if no icon exists.
+ *
+ * Light mode: warm orange-tinted pill.
+ * Dark mode:  zinc-800 with subtle border.
  */
 
 const icons = {
@@ -20,7 +22,9 @@ export default function TechBadge({ tech }) {
   const icon = icons[tech] || null
 
   return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-zinc-800 text-zinc-300 border border-zinc-700">
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium
+      bg-orange-50 text-orange-700 border border-orange-100
+      dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700">
       {icon}
       {tech}
     </span>
