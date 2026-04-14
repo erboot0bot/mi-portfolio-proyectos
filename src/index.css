@@ -9,8 +9,8 @@
 
 html {
   /* Light mode tokens */
-  --bg: #ffffff;
-  --bg-subtle: #fafaf9;
+  --bg: #fffcf9;
+  --bg-subtle: #faf8f5;
   --bg-card: #ffffff;
   --border: #e4e4e7;
   --border-hover: #f97316;
@@ -22,7 +22,8 @@ html {
   --badge-bg: #fff7ed;
   --badge-text: #c2410c;
   --badge-border: #fed7aa;
-  --nav-bg: rgba(255,255,255,0.85);
+  --nav-bg: rgba(255,252,249,0.88);
+  --dot-color: rgba(249,115,22,0.09);
 }
 
 html.dark {
@@ -41,6 +42,7 @@ html.dark {
   --badge-text: #fb923c;
   --badge-border: rgba(249,115,22,0.2);
   --nav-bg: rgba(10,10,15,0.85);
+  --dot-color: rgba(255,255,255,0.028);
 }
 
 body {
@@ -52,6 +54,8 @@ body {
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
   transition: background-color 0.2s ease, color 0.2s ease;
+  background-image: radial-gradient(circle, var(--dot-color) 1px, transparent 1px);
+  background-size: 26px 26px;
 }
 
 #root {

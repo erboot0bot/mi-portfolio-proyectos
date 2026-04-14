@@ -52,11 +52,20 @@ export default function Home() {
         <div className="absolute bottom-0 left-0 right-0 h-16 hidden dark:block pointer-events-none"
           style={{background: 'linear-gradient(to bottom, transparent, #0a0a0f)'}} />
 
-        {/* Light mode: very subtle orange ambient top-left */}
-        <div className="absolute -top-20 -left-20 w-72 h-72 dark:hidden pointer-events-none rounded-full"
-          style={{background: 'radial-gradient(circle, rgba(249,115,22,0.05) 0%, transparent 70%)'}} />
+        {/* Light mode: warm gradient wash top-left → center */}
+        <div className="absolute inset-0 dark:hidden pointer-events-none"
+          style={{background: 'linear-gradient(135deg, rgba(253,186,116,0.22) 0%, rgba(249,115,22,0.08) 25%, transparent 60%)'}} />
+        {/* Light mode: large primary glow top-left */}
+        <div className="absolute -top-24 -left-24 w-[480px] h-[380px] dark:hidden pointer-events-none"
+          style={{background: 'radial-gradient(ellipse at top left, rgba(249,115,22,0.18) 0%, rgba(251,146,60,0.07) 45%, transparent 70%)'}} />
+        {/* Light mode: secondary cooler glow top-right (depth) */}
+        <div className="absolute -top-8 right-0 w-72 h-72 dark:hidden pointer-events-none"
+          style={{background: 'radial-gradient(ellipse at top right, rgba(234,179,8,0.07) 0%, transparent 65%)'}} />
+        {/* Light mode: bottom fade to page bg */}
+        <div className="absolute bottom-0 left-0 right-0 h-20 dark:hidden pointer-events-none"
+          style={{background: 'linear-gradient(to bottom, transparent, var(--bg))'}} />
 
-        <div className="relative z-10 pt-12 pb-14 dark:pb-20 dark:pt-16">
+        <div className="relative z-10 pt-14 pb-16 dark:pb-20 dark:pt-16">
           <p className="font-mono text-xs tracking-widest uppercase mb-4
             text-[var(--text-faint)] dark:text-orange-300/60">
             Hola, soy
