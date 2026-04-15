@@ -40,7 +40,7 @@ export default function Home() {
       {/* ── Hero ── */}
       {/* Light: clean left-aligned layout with orange accent line */}
       {/* Dark:  full-bleed cosmic mesh gradient (D style) */}
-      <section className="relative -mx-4 sm:-mx-6 px-4 sm:px-6 mb-16 overflow-hidden">
+      <section className="relative mb-16 overflow-hidden">
 
         {/* Dark mode: cosmic gradient background */}
         <div className="absolute inset-0 hidden dark:block pointer-events-none"
@@ -65,7 +65,7 @@ export default function Home() {
         <div className="absolute bottom-0 left-0 right-0 h-20 dark:hidden pointer-events-none"
           style={{background: 'linear-gradient(to bottom, transparent, var(--bg))'}} />
 
-        <div className="relative z-10 pt-14 pb-16 dark:pb-20 dark:pt-16">
+        <div className="relative z-10 pt-14 pb-16 dark:pb-20 dark:pt-16 px-6 sm:px-10 lg:px-16 max-w-[1440px] mx-auto">
           <p className="font-mono text-xs tracking-widest uppercase mb-4
             text-[var(--text-faint)] dark:text-orange-300/60">
             Hola, soy
@@ -86,28 +86,30 @@ export default function Home() {
       </section>
 
       {/* ── Projects section ── */}
-      <header className="mb-8">
-        <h2 className="text-xl font-bold tracking-tight mb-1 text-[var(--text)]">Proyectos</h2>
-        <p className="text-sm text-[var(--text-faint)]">Lo que he estado construyendo.</p>
-      </header>
+      <div className="px-6 sm:px-10 lg:px-16 max-w-[1440px] mx-auto">
+        <header className="mb-8">
+          <h2 className="text-xl font-bold tracking-tight mb-1 text-[var(--text)]">Proyectos</h2>
+          <p className="text-sm text-[var(--text-faint)]">Lo que he estado construyendo.</p>
+        </header>
 
-      {techs.length > 0 && (
-        <div className="mb-8">
-          <FilterBar techs={techs} active={activeTech} onChange={setActiveTech} />
-        </div>
-      )}
+        {techs.length > 0 && (
+          <div className="mb-8">
+            <FilterBar techs={techs} active={activeTech} onChange={setActiveTech} />
+          </div>
+        )}
 
-      {filtered.length === 0 ? (
-        <p className="text-sm text-[var(--text-faint)]">
-          No hay proyectos con &quot;{activeTech}&quot; todavía.
-        </p>
-      ) : (
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-5">
-          {filtered.map(project => (
-            <ProjectCard key={project.slug} project={project} />
-          ))}
-        </div>
-      )}
+        {filtered.length === 0 ? (
+          <p className="text-sm text-[var(--text-faint)]">
+            No hay proyectos con &quot;{activeTech}&quot; todavía.
+          </p>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+            {filtered.map(project => (
+              <ProjectCard key={project.slug} project={project} />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

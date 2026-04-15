@@ -54,7 +54,7 @@ export default function Layout({ children }) {
   return (
     <div className="min-h-screen flex flex-col bg-[var(--bg)] text-[var(--text)]">
       <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-[var(--nav-bg)] backdrop-blur-md">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+        <div className="max-w-[1440px] mx-auto px-6 sm:px-10 lg:px-16 h-16 flex items-center justify-between">
           <Link
             to="/"
             className="font-bold text-lg tracking-tight text-[var(--text)] hover:text-[var(--accent)] transition-colors"
@@ -138,7 +138,7 @@ export default function Layout({ children }) {
         )}
       </header>
 
-      <main className="flex-1 max-w-5xl mx-auto w-full px-4 sm:px-6 pt-10 pb-20">
+      <main className="flex-1 w-full pt-10 pb-20">
         {children}
       </main>
 
