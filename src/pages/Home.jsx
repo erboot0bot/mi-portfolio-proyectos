@@ -79,8 +79,7 @@ export default function Home() {
             style={{background: 'var(--accent)'}} />
           <p className="text-lg leading-relaxed font-light max-w-2xl
             text-[var(--text-muted)] dark:text-white/70">
-            Informático apasionado por la IA y las herramientas que multiplican lo que uno solo puede hacer.
-            Aquí documento lo que construyo y lo que aprendo.
+            Documentación viva de mis proyectos: lo que construyo, cómo lo construyo y lo que aprendo en el proceso con IA.
           </p>
         </div>
       </section>
