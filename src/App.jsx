@@ -6,11 +6,12 @@ import Home from './pages/Home'
 import ProjectDetail from './pages/ProjectDetail'
 import NotFound from './pages/NotFound'
 import Login from './pages/Login'
-import HogarLayout from './pages/hogar/HogarLayout'
-import HogarHome from './pages/hogar/HogarHome'
-import Calendario from './pages/hogar/Calendario'
-import ListaCompra from './pages/hogar/ListaCompra'
-import Recetas from './pages/hogar/Recetas'
+import AppProjects from './pages/app/Projects'
+import AppProjectDetail from './pages/app/ProjectDetail'
+import Calendar from './pages/app/modules/Calendar'
+import Shopping from './pages/app/modules/Shopping'
+import Recipes from './pages/app/modules/Recipes'
+import RecipeDetail from './pages/app/modules/RecipeDetail'
 
 const pageVariants = {
   initial: { opacity: 0, y: 10 },
@@ -23,10 +24,7 @@ export default function App() {
 
   return (
     <Layout>
-      <AnimatePresence
-        mode="wait"
-        onExitComplete={() => window.scrollTo(0, 0)}
-      >
+      <AnimatePresence mode="wait" onExitComplete={() => window.scrollTo(0, 0)}>
         <motion.div
           key={location.pathname}
           variants={pageVariants}
@@ -36,22 +34,26 @@ export default function App() {
           transition={{ duration: 0.2, ease: 'easeInOut' }}
         >
           <Routes location={location}>
+            {/* Public portfolio routes — unchanged */}
             <Route path="/" element={<Home />} />
             <Route path="/projects/:slug" element={<ProjectDetail />} />
             <Route path="/login" element={<Login />} />
+
+            {/* Protected app routes */}
             <Route
-              path="/hogar"
-              element={
-                <ProtectedRoute>
-                  <HogarLayout />
-                </ProtectedRoute>
-              }
+              path="/app/projects"
+              element={<ProtectedRoute><AppProjects /></ProtectedRoute>}
+            />
+            <Route
+              path="/app/projects/:slug"
+              element={<ProtectedRoute><AppProjectDetail /></ProtectedRoute>}
             >
-              <Route index element={<HogarHome />} />
-              <Route path="calendario" element={<Calendario />} />
-              <Route path="lista" element={<ListaCompra />} />
-              <Route path="recetas" element={<Recetas />} />
+              <Route path="calendar" element={<Calendar />} />
+              <Route path="shopping" element={<Shopping />} />
+              <Route path="recipes" element={<Recipes />} />
+              <Route path="recipes/:recipeId" element={<RecipeDetail />} />
             </Route>
+
             <Route path="/404" element={<NotFound />} />
             <Route path="*" element={<Navigate to="/404" replace />} />
           </Routes>
