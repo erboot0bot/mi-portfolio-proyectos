@@ -19,6 +19,19 @@
 
 export const projects = [
   {
+    slug: 'hogar',
+    title: 'Hogar — Apps del día a día',
+    description: 'Calendario, lista de la compra, menú semanal y recetas con IA. Autenticación con Google vía Supabase.',
+    longDescription: 'Aplicación personal compuesta por tres módulos integrados: Calendario (FullCalendar + Supabase, CRUD de eventos con selector de color), Lista de la Compra (items por categoría con estado check, limpieza de marcados) y Menú Semanal (grid editable de 7 días × 3 comidas). El módulo de Recetas conecta con Claude Haiku vía Supabase Edge Function (Deno): el usuario indica ingredientes, número de comensales, restricciones y tiempo máximo, y recibe una receta completa con ingredientes, preparación y consejos. Las recetas se pueden guardar en la colección personal. Todo persiste en Supabase Postgres con Row-Level Security — cada usuario solo ve sus propios datos. Autenticación con Google OAuth gestionada por Supabase Auth.',
+    status: 'wip',
+    featured: true,
+    technologies: ['React', 'Supabase', 'Claude AI', 'FullCalendar', 'Google OAuth'],
+    github: null,
+    demo: null,
+    images: ['/projects/hogar/cover.jpg'],
+    date: '2026-04',
+  },
+  {
     slug: 'portfolio-personal',
     title: 'Portfolio Personal',
     description:
