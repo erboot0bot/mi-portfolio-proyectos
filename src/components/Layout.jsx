@@ -1,12 +1,6 @@
-/*
- * Layout.jsx — shell wrapper for all pages
- *
- * Theme: class-based light/dark on <html>. Persists to localStorage.
- * Default: light mode. Toggle button in nav (sun/moon icon).
- */
-
 import { useState, useEffect } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
+import { useAuth } from '../contexts/AuthContext'
 
 function SunIcon() {
   return (
@@ -27,10 +21,49 @@ function MoonIcon() {
   )
 }
 
+function UserAvatar({ user, onSignOut }) {
+  const [open, setOpen] = useState(false)
+  const initials = user.email?.[0]?.toUpperCase() ?? '?'
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-8 h-8 rounded-full bg-[var(--accent)] text-white text-xs font-bold
+          flex items-center justify-center hover:opacity-80 transition-opacity overflow-hidden"
+        aria-label="Menú de usuario"
+      >
+        {user.user_metadata?.avatar_url
+          ? <img src={user.user_metadata.avatar_url} alt="" className="w-full h-full object-cover" />
+          : initials
+        }
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="absolute right-0 top-10 w-48 rounded-xl border border-[var(--border)]
+            bg-[var(--bg-card)] shadow-lg py-1 z-50">
+            <p className="px-4 py-2 text-xs text-[var(--text-faint)] truncate">{user.email}</p>
+            <hr className="border-[var(--border)] my-1" />
+            <button
+              onClick={() => { onSignOut(); setOpen(false) }}
+              className="w-full text-left px-4 py-2 text-sm text-[var(--text-muted)]
+                hover:text-[var(--text)] hover:bg-[var(--bg-subtle)] transition-colors"
+            >
+              Cerrar sesión
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
 export default function Layout({ children }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [dark, setDark] = useState(false)
   const location = useLocation()
+  const { user, signOut } = useAuth()
 
   useEffect(() => {
     const saved = localStorage.getItem('theme')
@@ -51,6 +84,11 @@ export default function Layout({ children }) {
     setMenuOpen(false)
   }, [location.pathname])
 
+  const navLinkClass = ({ isActive }) =>
+    isActive
+      ? 'text-[var(--accent)] font-semibold'
+      : 'text-[var(--text-muted)] hover:text-[var(--text)] transition-colors'
+
   return (
     <div className="min-h-screen flex flex-col bg-[var(--bg)] text-[var(--text)]">
       <header className="sticky top-0 z-40 border-b border-[var(--border)] bg-[var(--nav-bg)] backdrop-blur-md">
@@ -64,16 +102,8 @@ export default function Layout({ children }) {
 
           {/* Desktop nav */}
           <nav className="hidden sm:flex items-center gap-6 text-sm">
-            <NavLink
-              to="/"
-              className={({ isActive }) =>
-                isActive
-                  ? 'text-[var(--accent)] font-semibold'
-                  : 'text-[var(--text-muted)] hover:text-[var(--text)] transition-colors'
-              }
-            >
-              Proyectos
-            </NavLink>
+            <NavLink to="/" className={navLinkClass}>Proyectos</NavLink>
+            <NavLink to="/hogar" className={navLinkClass}>Hogar</NavLink>
             <a
               href="https://github.com/H3nky"
               target="_blank"
@@ -89,6 +119,18 @@ export default function Layout({ children }) {
             >
               {dark ? <SunIcon /> : <MoonIcon />}
             </button>
+            {user
+              ? <UserAvatar user={user} onSignOut={signOut} />
+              : (
+                <Link
+                  to="/login"
+                  className="px-3 py-1.5 rounded-lg bg-[var(--accent)] text-white text-sm
+                    font-medium hover:opacity-90 transition-opacity"
+                >
+                  Entrar
+                </Link>
+              )
+            }
           </nav>
 
           {/* Mobile: theme toggle + hamburger */}
@@ -116,16 +158,8 @@ export default function Layout({ children }) {
         {/* Mobile dropdown */}
         {menuOpen && (
           <div className="sm:hidden border-t border-[var(--border)] bg-[var(--bg)] px-4 py-4 flex flex-col gap-4 text-sm">
-            <NavLink
-              to="/"
-              className={({ isActive }) =>
-                isActive
-                  ? 'text-[var(--accent)] font-semibold'
-                  : 'text-[var(--text-muted)] hover:text-[var(--text)] transition-colors'
-              }
-            >
-              Proyectos
-            </NavLink>
+            <NavLink to="/" className={navLinkClass}>Proyectos</NavLink>
+            <NavLink to="/hogar" className={navLinkClass}>Hogar</NavLink>
             <a
               href="https://github.com/H3nky"
               target="_blank"
@@ -134,6 +168,17 @@ export default function Layout({ children }) {
             >
               GitHub
             </a>
+            {user
+              ? (
+                <button
+                  onClick={signOut}
+                  className="text-left text-[var(--text-muted)] hover:text-[var(--text)] transition-colors"
+                >
+                  Cerrar sesión ({user.email})
+                </button>
+              )
+              : <Link to="/login" className="text-[var(--accent)] font-semibold">Entrar</Link>
+            }
           </div>
         )}
       </header>

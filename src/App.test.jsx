@@ -1,7 +1,12 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import App from './App'
+
+vi.mock('./contexts/AuthContext', () => ({
+  AuthProvider: ({ children }) => children,
+  useAuth: () => ({ user: null, loading: false, signOut: vi.fn() }),
+}))
 
 function renderAt(path) {
   return render(
