@@ -361,3 +361,18 @@ VITE_ANTHROPIC_API_KEY=sk-ant-...   ← necesaria para Recetas con IA
 
 ### Arquitectura de datos
 Todos los datos (tareas, compras, menús, recetas) pertenecen a un **proyecto** vía `project_id`. Los proyectos pueden compartirse con otros usuarios via `project_members`. El primer acceso auto-crea un proyecto "Hogar 🏠".
+
+---
+
+## Fixes aplicados (2026-04-20)
+
+### FIX 1 — Eliminar proyectos
+- Botón papelera en hover de cada card (solo visible al owner: `owner_id === user.id`)
+- Modal de confirmación con aviso de borrado en cascada
+- DELETE en tabla `projects` → CASCADE elimina automáticamente calendar_tasks, shopping_items, menu_items, recipes
+
+### FIX 2 — Editar y eliminar recetas
+- Menú ⋯ en cada card del grid (visible en hover): opciones "Editar" y "Eliminar"
+- Editar: abre `ManualModal` pre-rellenado con datos existentes → UPDATE en tabla `recipes`
+- Eliminar: modal de confirmación → DELETE en tabla `recipes`
+- Botón "Eliminar" también disponible en la vista de detalle de receta (`/recipes/:id`)
