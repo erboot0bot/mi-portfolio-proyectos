@@ -12,6 +12,7 @@ import Calendar from './pages/app/modules/Calendar'
 import Shopping from './pages/app/modules/Shopping'
 import Recipes from './pages/app/modules/Recipes'
 import RecipeDetail from './pages/app/modules/RecipeDetail'
+import Welcome from './pages/app/modules/Welcome'
 
 const pageVariants = {
   initial: { opacity: 0, y: 10 },
@@ -48,6 +49,7 @@ export default function App() {
               path="/app/projects/:slug"
               element={<ProtectedRoute><AppProjectDetail /></ProtectedRoute>}
             >
+              <Route index element={<Welcome />} />
               <Route path="calendar" element={<Calendar />} />
               <Route path="shopping" element={<Shopping />} />
               <Route path="recipes" element={<Recipes />} />

@@ -100,28 +100,49 @@ export default function AppProjects() {
   }, [])
 
   async function loadProjects() {
-    const { data } = await supabase
+    // Own projects
+    const { data: ownProjects } = await supabase
       .from('projects')
       .select('*')
       .eq('owner_id', user.id)
       .order('created_at', { ascending: false })
 
-    if (data !== null) {
-      setProjects(data)
+    // Shared projects via project_members
+    const { data: memberships } = await supabase
+      .from('project_members')
+      .select('project_id')
+      .eq('user_id', user.id)
+      .eq('accepted', true)
+
+    let sharedProjects = []
+    if (memberships?.length) {
+      const sharedIds = memberships.map(m => m.project_id)
+      const { data: shared } = await supabase
+        .from('projects')
+        .select('*')
+        .in('id', sharedIds)
+        .not('owner_id', 'eq', user.id)
+      sharedProjects = shared ?? []
+    }
+
+    const all = [...(ownProjects ?? []), ...sharedProjects]
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+
+    if (all.length === 0) {
       // Onboarding: auto-create "Hogar" if no projects
-      if (data.length === 0) {
-        const slug = 'hogar-' + Date.now().toString(36)
-        const { data: created } = await supabase
-          .from('projects')
-          .insert({ name: 'Hogar', slug, icon: '🏠', owner_id: user.id })
-          .select()
-          .single()
-        if (created) {
-          navigate(`/app/projects/${created.slug}`)
-          return
-        }
+      const slug = 'hogar-' + Date.now().toString(36)
+      const { data: created } = await supabase
+        .from('projects')
+        .insert({ name: 'Hogar', slug, icon: '🏠', owner_id: user.id })
+        .select()
+        .single()
+      if (created) {
+        navigate(`/app/projects/${created.slug}`)
+        return
       }
     }
+
+    setProjects(all)
     setLoading(false)
   }
 
@@ -172,6 +193,11 @@ export default function AppProjects() {
               <p className="text-xs text-[var(--text-faint)]">
                 {new Date(p.created_at).toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })}
               </p>
+              {p.owner_id !== user.id && (
+                <span className="text-xs px-2 py-0.5 rounded-full border border-[var(--border)] text-[var(--text-faint)] mt-1 self-start">
+                  Compartido
+                </span>
+              )}
             </button>
           </motion.div>
         ))}
