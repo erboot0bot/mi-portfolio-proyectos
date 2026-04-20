@@ -126,6 +126,13 @@ function MenuSemanal({ projectId }) {
   )
   const [editing, setEditing] = useState(null)
   const [editValue, setEditValue] = useState('')
+  const [recipes, setRecipes] = useState([])
+  const [addMsg, setAddMsg] = useState(null)
+
+  useEffect(() => {
+    supabase.from('recipes').select('id, title').eq('project_id', projectId)
+      .then(({ data }) => { if (data) setRecipes(data) })
+  }, [projectId])
 
   useEffect(() => {
     supabase.from('menu_items').select('*')
@@ -146,15 +153,15 @@ function MenuSemanal({ projectId }) {
     setMenu({})
   }
 
-  async function saveCell(dayIndex, mealKey, value) {
+  async function saveCell(dayIndex, mealKey, value, recipeId = null) {
     const key = `${dayIndex}-${mealKey}`
     const existing = menu[key]
     if (existing) {
-      await supabase.from('menu_items').update({ custom_name: value }).eq('id', existing.id)
-      setMenu(p => ({ ...p, [key]: { ...existing, custom_name: value } }))
+      await supabase.from('menu_items').update({ custom_name: value, recipe_id: recipeId }).eq('id', existing.id)
+      setMenu(p => ({ ...p, [key]: { ...existing, custom_name: value, recipe_id: recipeId } }))
     } else {
       const { data } = await supabase.from('menu_items')
-        .insert({ project_id: projectId, week_start: weekStart, day_of_week: dayIndex, meal_type: mealKey, custom_name: value })
+        .insert({ project_id: projectId, week_start: weekStart, day_of_week: dayIndex, meal_type: mealKey, custom_name: value, recipe_id: recipeId })
         .select().single()
       if (data) setMenu(p => ({ ...p, [key]: data }))
     }
@@ -167,6 +174,42 @@ function MenuSemanal({ projectId }) {
     if (existing) {
       await supabase.from('menu_items').delete().eq('id', existing.id)
       setMenu(p => { const n = { ...p }; delete n[key]; return n })
+    }
+  }
+
+  async function addMenuIngredientsToList() {
+    const recipeIds = Object.values(menu)
+      .filter(e => e.recipe_id)
+      .map(e => e.recipe_id)
+
+    if (!recipeIds.length) {
+      setAddMsg('No hay recetas en el menú esta semana')
+      setTimeout(() => setAddMsg(null), 3000)
+      return
+    }
+
+    const unique = [...new Set(recipeIds)]
+    const { data: recipeData } = await supabase
+      .from('recipes')
+      .select('ingredients')
+      .in('id', unique)
+
+    if (!recipeData) return
+
+    const items = recipeData.flatMap(r =>
+      Array.isArray(r.ingredients) ? r.ingredients : []
+    ).map(ing => ({
+      project_id: projectId,
+      name: typeof ing === 'string' ? ing : (ing.name ?? ''),
+      quantity: typeof ing === 'object' ? (ing.quantity ?? null) : null,
+      unit: typeof ing === 'object' ? (ing.unit ?? null) : null,
+      category: 'General',
+    })).filter(i => i.name)
+
+    if (items.length) {
+      await supabase.from('shopping_items').insert(items)
+      setAddMsg(`${items.length} ingredientes añadidos a la lista`)
+      setTimeout(() => setAddMsg(null), 3000)
     }
   }
 
@@ -212,17 +255,29 @@ function MenuSemanal({ projectId }) {
                   const entry = menu[key]
                   const isEditing = editing === key
                   return (
-                    <td key={dayIndex} className="py-0.5 px-0.5">
+                    <td key={dayIndex} className="py-0.5 px-0.5 relative">
                       {isEditing
-                        ? <input autoFocus value={editValue}
-                            onChange={e => setEditValue(e.target.value)}
-                            onBlur={() => editValue.trim() ? saveCell(dayIndex, mealKey, editValue.trim()) : setEditing(null)}
-                            onKeyDown={e => {
-                              if (e.key === 'Enter') editValue.trim() ? saveCell(dayIndex, mealKey, editValue.trim()) : setEditing(null)
-                              if (e.key === 'Escape') setEditing(null)
-                            }}
-                            className="w-full px-1.5 py-1 rounded border border-[var(--accent)] bg-[var(--bg)]
-                            text-[var(--text)] text-xs outline-none" />
+                        ? (
+                          <div className="relative">
+                            <div className="absolute z-10 left-0 top-0 w-48 bg-[var(--bg-card)] border border-[var(--border)] rounded-lg shadow-lg p-1">
+                              {recipes.map(r => (
+                                <button key={r.id} onClick={() => saveCell(dayIndex, mealKey, r.title, r.id)}
+                                  className="w-full text-left px-2 py-1 text-xs rounded hover:bg-[var(--accent)] hover:text-white transition-colors text-[var(--text)]">
+                                  {r.title}
+                                </button>
+                              ))}
+                              {recipes.length > 0 && <div className="border-t border-[var(--border)] my-1" />}
+                              <input autoFocus value={editValue}
+                                onChange={e => setEditValue(e.target.value)}
+                                onKeyDown={e => {
+                                  if (e.key === 'Enter') editValue.trim() ? saveCell(dayIndex, mealKey, editValue.trim(), null) : setEditing(null)
+                                  if (e.key === 'Escape') setEditing(null)
+                                }}
+                                placeholder="Nombre libre..."
+                                className="w-full px-2 py-1 text-xs rounded border border-[var(--border)] bg-[var(--bg)] text-[var(--text)] outline-none focus:border-[var(--accent)]" />
+                            </div>
+                          </div>
+                        )
                         : <div onClick={() => { setEditing(key); setEditValue(entry?.custom_name ?? '') }}
                             className={`min-h-[28px] px-1.5 py-1 rounded border cursor-pointer transition-colors relative group ${
                               entry
@@ -245,19 +300,43 @@ function MenuSemanal({ projectId }) {
           </tbody>
         </table>
       </div>
+      <div className="mt-3 flex items-center gap-3">
+        <button onClick={addMenuIngredientsToList}
+          className="text-xs px-3 py-1.5 rounded-lg border border-[var(--border)] text-[var(--text-muted)]
+          hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors">
+          🛒 Añadir ingredientes al carrito
+        </button>
+        {addMsg && <span className="text-xs text-green-600 dark:text-green-400">{addMsg}</span>}
+      </div>
     </div>
   )
 }
 
 export default function Shopping() {
   const { project } = useOutletContext()
+  const [tab, setTab] = useState('shopping')
 
   return (
     <div>
       <h1 className="text-2xl font-extrabold text-[var(--text)] mb-6">Lista & Menú</h1>
+      {/* Mobile tabs */}
+      <div className="flex lg:hidden gap-1 mb-4 p-1 rounded-xl bg-[var(--bg-card)] border border-[var(--border)]">
+        {[['shopping','🛒 Lista'],['menu','📋 Menú']].map(([key,label]) => (
+          <button key={key} onClick={() => setTab(key)}
+            className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors ${
+              tab === key ? 'bg-[var(--accent)] text-white' : 'text-[var(--text-muted)]'
+            }`}>
+            {label}
+          </button>
+        ))}
+      </div>
       <div className="grid lg:grid-cols-2 gap-8">
-        <ShoppingList projectId={project.id} />
-        <MenuSemanal projectId={project.id} />
+        <div className={tab === 'shopping' ? '' : 'hidden lg:block'}>
+          <ShoppingList projectId={project.id} />
+        </div>
+        <div className={tab === 'menu' ? '' : 'hidden lg:block'}>
+          <MenuSemanal projectId={project.id} />
+        </div>
       </div>
     </div>
   )
