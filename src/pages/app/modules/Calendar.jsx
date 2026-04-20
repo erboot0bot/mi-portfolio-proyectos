@@ -1,97 +1,227 @@
-import { useState, useEffect } from 'react'
+/**
+ * Calendar.jsx — Calendario custom con recurrencias
+ *
+ * Vistas: semana (grid horario) + agenda (lista 14 días)
+ * Recurrencia: none | daily | weekdays | weekly | monthly
+ * Drag-to-select: clic en franja horaria pre-rellena la hora en el modal
+ *
+ * Supabase: tabla calendar_tasks con columna recurrence (TEXT, default 'none')
+ * Ejecuta supabase/migrations/20260420_calendar_recurrence.sql antes de desplegar.
+ */
+
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useOutletContext } from 'react-router-dom'
-import FullCalendar from '@fullcalendar/react'
-import dayGridPlugin from '@fullcalendar/daygrid'
-import timeGridPlugin from '@fullcalendar/timegrid'
-import interactionPlugin from '@fullcalendar/interaction'
-import listPlugin from '@fullcalendar/list'
-import esLocale from '@fullcalendar/core/locales/es'
 import { supabase } from '../../../lib/supabase'
+import './Calendar.css'
 
-const COLORS = ['#f97316', '#3b82f6', '#10b981', '#8b5cf6', '#ef4444']
+// ── Constantes ────────────────────────────────────────────────────
+const HOUR_HEIGHT = 48
+const START_HOUR = 7
+const END_HOUR = 23
+const HOURS = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => START_HOUR + i)
+const DAYS_ES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb']
+const DAYS_ES_LONG = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado']
+const MONTHS_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio',
+                   'Agosto','Septiembre','Octubre','Noviembre','Diciembre']
 
-function TaskModal({ task, slot, onSave, onDelete, onClose }) {
-  const isNew = !task?.id
-  const [title, setTitle] = useState(task?.title ?? '')
-  const [description, setDescription] = useState(task?.extendedProps?.description ?? '')
-  const [color, setColor] = useState(task?.backgroundColor ?? COLORS[0])
-  const [allDay, setAllDay] = useState(task?.allDay ?? slot?.allDay ?? false)
-  const [startStr, setStartStr] = useState(
-    task?.startStr ?? slot?.startStr?.slice(0, 16) ?? ''
-  )
-  const [endStr, setEndStr] = useState(
-    task?.endStr ?? slot?.endStr?.slice(0, 16) ?? ''
-  )
+const COLORS = [
+  { hex: '#f97316' }, { hex: '#3b82f6' }, { hex: '#10b981' },
+  { hex: '#8b5cf6' }, { hex: '#ef4444' }, { hex: '#ec4899' }, { hex: '#f59e0b' },
+]
+
+const RECURRENCE_OPTIONS = [
+  { value: 'none',     label: 'Sin repetir' },
+  { value: 'daily',    label: 'Diario' },
+  { value: 'weekdays', label: 'L–V' },
+  { value: 'weekly',   label: 'Semanal' },
+  { value: 'monthly',  label: 'Mensual' },
+]
+
+const RECURRENCE_LABELS = {
+  none: '', daily: '↻ Diario', weekdays: '↻ L–V',
+  weekly: '↻ Semanal', monthly: '↻ Mensual',
+}
+
+// ── Helpers ───────────────────────────────────────────────────────
+function ymd(d) { return d.toISOString().slice(0, 10) }
+
+function sameDay(a, b) {
+  return a.getFullYear() === b.getFullYear()
+    && a.getMonth() === b.getMonth()
+    && a.getDate() === b.getDate()
+}
+
+function getWeekDays(anchor) {
+  const d = new Date(anchor)
+  const monday = new Date(d)
+  monday.setDate(d.getDate() - ((d.getDay() + 6) % 7))
+  return Array.from({ length: 7 }, (_, i) => {
+    const dd = new Date(monday); dd.setDate(monday.getDate() + i); return dd
+  })
+}
+
+function minutesFromMidnight(dateStr) {
+  const d = new Date(dateStr)
+  return d.getHours() * 60 + d.getMinutes()
+}
+
+function fmt(dateStr) {
+  const d = new Date(dateStr)
+  return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`
+}
+
+function eventOccursOnDay(ev, day) {
+  if (ev.allDay) return sameDay(new Date(ev.start), day)
+  const evDate = new Date(ev.start)
+  const wd = day.getDay()
+  if (ev.recurrence === 'daily')    return true
+  if (ev.recurrence === 'weekdays') return wd >= 1 && wd <= 5
+  if (ev.recurrence === 'weekly')   return evDate.getDay() === wd
+  if (ev.recurrence === 'monthly')  return evDate.getDate() === day.getDate()
+  return sameDay(evDate, day)
+}
+
+function getEventTop(ev) {
+  const mins = minutesFromMidnight(ev.start) - START_HOUR * 60
+  return Math.max(0, (mins / 60) * HOUR_HEIGHT)
+}
+
+function getEventHeight(ev) {
+  const startMins = minutesFromMidnight(ev.start)
+  const endMins   = ev.end ? minutesFromMidnight(ev.end) : startMins + 60
+  return (Math.max(30, endMins - startMins) / 60) * HOUR_HEIGHT
+}
+
+function nowTop() {
+  const now = new Date()
+  return ((now.getHours() * 60 + now.getMinutes() - START_HOUR * 60) / 60) * HOUR_HEIGHT
+}
+
+function dbToEvent(t) {
+  return {
+    id:          t.id,
+    title:       t.title,
+    description: t.description ?? '',
+    start:       t.start_time,
+    end:         t.end_time,
+    allDay:      t.all_day,
+    color:       t.color ?? '#f97316',
+    recurrence:  t.recurrence ?? 'none',
+  }
+}
+
+// ── EventModal ────────────────────────────────────────────────────
+function EventModal({ ev, slot, onSave, onDelete, onClose }) {
+  const isNew = !ev?.id
+  const [title, setTitle]       = useState(ev?.title ?? '')
+  const [desc, setDesc]         = useState(ev?.description ?? '')
+  const [color, setColor]       = useState(ev?.color ?? '#f97316')
+  const [allDay, setAllDay]     = useState(ev?.allDay ?? slot?.allDay ?? false)
+  const [recurrence, setRecur]  = useState(ev?.recurrence ?? 'none')
+  const [startStr, setStart]    = useState(() => {
+    if (ev?.start)   return ev.start.slice(0, 16)
+    if (slot?.start) return new Date(slot.start).toISOString().slice(0, 16)
+    return new Date().toISOString().slice(0, 16)
+  })
+  const [endStr, setEnd]        = useState(() => {
+    if (ev?.end)   return ev.end.slice(0, 16)
+    if (slot?.end) return new Date(slot.end).toISOString().slice(0, 16)
+    const d = new Date(); d.setHours(d.getHours() + 1)
+    return d.toISOString().slice(0, 16)
+  })
+
+  function save() {
+    if (!title.trim()) return
+    onSave({ title: title.trim(), description: desc, color, allDay, recurrence, startStr, endStr })
+  }
 
   return (
-    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl p-6 w-full max-w-md shadow-xl">
-        <h2 className="font-bold text-lg text-[var(--text)] mb-4">
-          {isNew ? 'Nueva tarea' : 'Editar tarea'}
-        </h2>
+    <div className="cal-modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="cal-modal">
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
+          <h2 style={{ fontWeight:700, fontSize:16, color:'var(--text)' }}>
+            {isNew ? 'Nueva tarea' : 'Editar tarea'}
+          </h2>
+          <button onClick={onClose} style={{ background:'none', border:'none', color:'var(--text-faint)', cursor:'pointer', fontSize:18 }}>×</button>
+        </div>
+
         <div className="flex flex-col gap-3">
-          <input
-            autoFocus
-            value={title}
-            onChange={e => setTitle(e.target.value)}
+          <input autoFocus value={title} onChange={e => setTitle(e.target.value)}
             placeholder="Título *"
+            onKeyDown={e => e.key === 'Enter' && save()}
             className="w-full px-4 py-2 rounded-lg border border-[var(--border)] bg-[var(--bg)]
               text-[var(--text)] placeholder:text-[var(--text-faint)] outline-none
-              focus:border-[var(--accent)] transition-colors"
-          />
-          <input
-            value={description}
-            onChange={e => setDescription(e.target.value)}
-            placeholder="Descripción (opcional)"
+              focus:border-[var(--accent)] transition-colors" />
+
+          <input value={desc} onChange={e => setDesc(e.target.value)}
+            placeholder="Nota (opcional)"
             className="w-full px-4 py-2 rounded-lg border border-[var(--border)] bg-[var(--bg)]
               text-[var(--text)] placeholder:text-[var(--text-faint)] outline-none
-              focus:border-[var(--accent)] transition-colors"
-          />
+              focus:border-[var(--accent)] transition-colors" />
+
           <label className="flex items-center gap-2 text-sm text-[var(--text-muted)] cursor-pointer">
-            <input
-              type="checkbox"
-              checked={allDay}
-              onChange={e => setAllDay(e.target.checked)}
-              className="accent-[var(--accent)]"
-            />
+            <input type="checkbox" checked={allDay} onChange={e => setAllDay(e.target.checked)}
+              className="accent-[var(--accent)]" />
             Todo el día
           </label>
+
           {!allDay && (
             <div className="flex gap-2">
               <div className="flex-1">
                 <label className="block text-xs text-[var(--text-faint)] mb-1">Inicio</label>
-                <input type="datetime-local" value={startStr}
-                  onChange={e => setStartStr(e.target.value)}
+                <input type="datetime-local" value={startStr} onChange={e => setStart(e.target.value)}
                   className="w-full px-3 py-1.5 text-sm rounded-lg border border-[var(--border)]
                     bg-[var(--bg)] text-[var(--text)] outline-none focus:border-[var(--accent)]" />
               </div>
               <div className="flex-1">
                 <label className="block text-xs text-[var(--text-faint)] mb-1">Fin</label>
-                <input type="datetime-local" value={endStr}
-                  onChange={e => setEndStr(e.target.value)}
+                <input type="datetime-local" value={endStr} onChange={e => setEnd(e.target.value)}
                   className="w-full px-3 py-1.5 text-sm rounded-lg border border-[var(--border)]
                     bg-[var(--bg)] text-[var(--text)] outline-none focus:border-[var(--accent)]" />
               </div>
             </div>
           )}
-          <div className="flex gap-2">
-            {COLORS.map(c => (
-              <button key={c} type="button" onClick={() => setColor(c)}
-                className="w-7 h-7 rounded-full transition-transform"
-                style={{
-                  backgroundColor: c,
-                  transform: color === c ? 'scale(1.3)' : 'scale(1)',
-                  outline: color === c ? `2px solid ${c}` : 'none',
-                  outlineOffset: '2px',
-                }}
-              />
-            ))}
+
+          {allDay && (
+            <div>
+              <label className="block text-xs text-[var(--text-faint)] mb-1">Fecha</label>
+              <input type="date" value={startStr.slice(0, 10)}
+                onChange={e => { setStart(e.target.value); setEnd(e.target.value) }}
+                className="w-full px-3 py-1.5 text-sm rounded-lg border border-[var(--border)]
+                  bg-[var(--bg)] text-[var(--text)] outline-none focus:border-[var(--accent)]" />
+            </div>
+          )}
+
+          <div>
+            <label className="block text-xs text-[var(--text-faint)] mb-1 uppercase tracking-wider font-semibold">Repetir</label>
+            <div className="recur-pills">
+              {RECURRENCE_OPTIONS.map(o => (
+                <button key={o.value}
+                  className={`recur-pill ${recurrence === o.value ? 'active' : ''}`}
+                  onClick={() => setRecur(o.value)}>
+                  {o.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs text-[var(--text-faint)] mb-1 uppercase tracking-wider font-semibold">Color</label>
+            <div className="color-picker">
+              {COLORS.map(c => (
+                <div key={c.hex}
+                  className={`color-dot ${color === c.hex ? 'selected' : ''}`}
+                  style={{ background: c.hex, outlineColor: c.hex, color: c.hex }}
+                  onClick={() => setColor(c.hex)} />
+              ))}
+            </div>
           </div>
         </div>
-        <div className="flex gap-3 justify-end mt-4">
+
+        <div className="flex gap-3 justify-end mt-5 pt-4 border-t border-[var(--border)]">
           {!isNew && (
-            <button onClick={() => onDelete(task.id)}
-              className="px-4 py-2 rounded-lg text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-950 transition-colors">
+            <button onClick={() => onDelete(ev.id)}
+              className="px-4 py-2 rounded-lg text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors">
               Eliminar
             </button>
           )}
@@ -99,12 +229,11 @@ function TaskModal({ task, slot, onSave, onDelete, onClose }) {
             className="px-4 py-2 rounded-lg text-sm text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] transition-colors">
             Cancelar
           </button>
-          <button
-            onClick={() => title.trim() && onSave({ title: title.trim(), description, color, allDay, startStr, endStr })}
-            disabled={!title.trim()}
-            className="px-4 py-2 rounded-lg text-sm bg-[var(--accent)] text-white font-medium
-              hover:opacity-90 disabled:opacity-40 transition-opacity">
-            {isNew ? 'Crear' : 'Guardar'}
+          <button onClick={save} disabled={!title.trim()}
+            className="px-4 py-2 rounded-lg text-sm bg-[var(--accent)] text-white font-semibold
+              hover:opacity-90 disabled:opacity-40 transition-opacity
+              shadow-[0_2px_8px_rgba(249,115,22,0.3)]">
+            {isNew ? 'Crear tarea' : 'Guardar'}
           </button>
         </div>
       </div>
@@ -112,57 +241,200 @@ function TaskModal({ task, slot, onSave, onDelete, onClose }) {
   )
 }
 
+// ── WeekView ──────────────────────────────────────────────────────
+function WeekView({ days, events, onSlotClick, onEventClick, showWeekends }) {
+  const visibleDays = showWeekends ? days : days.slice(0, 5)
+  const cols = visibleDays.length
+  const gridTemplate = `56px repeat(${cols}, 1fr)`
+  const today = new Date()
+  const todayColIdx = visibleDays.findIndex(d => sameDay(d, today))
+  const scrollRef = useRef(null)
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = Math.max(0, (8 - START_HOUR) * HOUR_HEIGHT - 60)
+    }
+  }, [])
+
+  const allDayEvents = events.filter(e => e.allDay)
+
+  return (
+    <div className="week-container">
+      <div className="day-header-row" style={{ gridTemplateColumns: gridTemplate }}>
+        <div style={{ width: 56, borderRight: '1px solid var(--border)' }} />
+        {visibleDays.map((d, i) => (
+          <div key={i} className={`day-header ${sameDay(d, today) ? 'today' : ''}`}>
+            <div className="day-header-name">{DAYS_ES[d.getDay()]}</div>
+            <div className="day-header-num">{d.getDate()}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="allday-row" style={{ gridTemplateColumns: gridTemplate }}>
+        <div className="allday-gutter">todo<br/>el día</div>
+        {visibleDays.map((d, i) => {
+          const dayEvs = allDayEvents.filter(e => eventOccursOnDay(e, d))
+          return (
+            <div key={i} className="allday-cell"
+              onClick={() => onSlotClick({ start: ymd(d), allDay: true })}>
+              {dayEvs.map(e => (
+                <div key={e.id} className="allday-event" style={{ background: e.color }}
+                  onClick={ev => { ev.stopPropagation(); onEventClick(e) }}>
+                  {e.title}
+                </div>
+              ))}
+            </div>
+          )
+        })}
+      </div>
+
+      <div className="time-grid-scroll" ref={scrollRef}>
+        <div style={{ position: 'relative' }}>
+          {todayColIdx >= 0 && nowTop() > 0 && (
+            <div className="now-line" style={{ top: nowTop() }}>
+              <div className="now-dot" />
+            </div>
+          )}
+
+          {HOURS.map(h => (
+            <div key={h} className="time-row" style={{ display: 'grid', gridTemplateColumns: gridTemplate }}>
+              <div className="time-label">{String(h).padStart(2, '0')}:00</div>
+              {visibleDays.map((d, ci) => (
+                <div key={ci} className={`time-cell ${sameDay(d, today) ? 'today-col' : ''}`}
+                  onClick={() => {
+                    const start = new Date(d); start.setHours(h, 0, 0, 0)
+                    const end   = new Date(d); end.setHours(h + 1, 0, 0, 0)
+                    onSlotClick({ start: start.toISOString(), end: end.toISOString(), allDay: false })
+                  }}
+                />
+              ))}
+            </div>
+          ))}
+
+          {visibleDays.map((d, ci) => {
+            const dayEvs = events.filter(e => !e.allDay && eventOccursOnDay(e, d))
+            return dayEvs.map(e => {
+              const top    = getEventTop(e)
+              const height = Math.max(getEventHeight(e), 22)
+              return (
+                <div key={`${e.id}-${ci}`} className="event-block"
+                  style={{
+                    top, height,
+                    left:  `calc(56px + ${ci} * (100% - 56px) / ${cols} + 3px)`,
+                    width: `calc((100% - 56px) / ${cols} - 6px)`,
+                    background: e.color,
+                  }}
+                  onClick={ev => { ev.stopPropagation(); onEventClick(e) }}>
+                  <div className="event-title">{e.title}</div>
+                  {height > 28 && (
+                    <div className="event-time">{fmt(e.start)}{e.end ? ` – ${fmt(e.end)}` : ''}</div>
+                  )}
+                  {height > 44 && e.recurrence !== 'none' && (
+                    <div className="event-recur">{RECURRENCE_LABELS[e.recurrence]}</div>
+                  )}
+                </div>
+              )
+            })
+          })}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── AgendaView ────────────────────────────────────────────────────
+function AgendaView({ days, events, onEventClick }) {
+  const startDay = days[0]
+  const agendaDays = Array.from({ length: 14 }, (_, i) => {
+    const d = new Date(startDay); d.setDate(startDay.getDate() + i); return d
+  })
+  const today = new Date()
+
+  return (
+    <div className="agenda">
+      {agendaDays.map((d, i) => {
+        const evs = events
+          .filter(e => eventOccursOnDay(e, d))
+          .sort((a, b) => {
+            if (a.allDay && !b.allDay) return -1
+            if (!a.allDay && b.allDay) return 1
+            return new Date(a.start) - new Date(b.start)
+          })
+        if (!evs.length) return null
+        return (
+          <div key={i} className="agenda-date-group">
+            <div className="agenda-date-header">
+              <div className={`agenda-date-dot ${sameDay(d, today) ? 'today' : ''}`} />
+              <div className="agenda-date-label">
+                {sameDay(d, today)
+                  ? 'Hoy'
+                  : `${DAYS_ES_LONG[d.getDay()].charAt(0).toUpperCase()}${DAYS_ES_LONG[d.getDay()].slice(1)}, ${d.getDate()} de ${MONTHS_ES[d.getMonth()].toLowerCase()}`
+                }
+              </div>
+            </div>
+            {evs.map(e => (
+              <div key={e.id} className="agenda-event" onClick={() => onEventClick(e)}>
+                <div className="agenda-color-bar" style={{ background: e.color }} />
+                <div style={{ flex: 1 }}>
+                  <div className="agenda-event-title">{e.title}</div>
+                  <div className="agenda-event-time">
+                    {e.allDay ? 'Todo el día' : `${fmt(e.start)}${e.end ? ` – ${fmt(e.end)}` : ''}`}
+                  </div>
+                  {e.recurrence !== 'none' && (
+                    <div className="agenda-event-recur">{RECURRENCE_LABELS[e.recurrence]}</div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+// ── Calendar (main export) ────────────────────────────────────────
 export default function Calendar() {
   const { project } = useOutletContext()
-  const [events, setEvents] = useState([])
-  const [modal, setModal] = useState(null)
+  const [events, setEvents]         = useState([])
+  const [anchor, setAnchor]         = useState(new Date())
+  const [view, setView]             = useState('week')
+  const [showWeekends, setWeekends] = useState(true)
+  const [modal, setModal]           = useState(null)
 
   useEffect(() => {
     supabase
       .from('calendar_tasks')
       .select('*')
       .eq('project_id', project.id)
-      .then(({ data }) => {
-        if (data) setEvents(data.map(dbToEvent))
-      })
+      .then(({ data }) => { if (data) setEvents(data.map(dbToEvent)) })
   }, [project.id])
 
-  function dbToEvent(t) {
-    return {
-      id: t.id,
-      title: t.title,
-      start: t.start_time,
-      end: t.end_time,
-      allDay: t.all_day,
-      backgroundColor: t.color,
-      borderColor: t.color,
-      extendedProps: { description: t.description },
-    }
-  }
-
-  async function handleSave({ title, description, color, allDay, startStr, endStr }) {
+  async function handleSave({ title, description, color, allDay, recurrence, startStr, endStr }) {
     const payload = {
-      project_id: project.id,
+      project_id:  project.id,
       title,
       description,
       color,
-      all_day: allDay,
-      start_time: startStr || new Date().toISOString(),
-      end_time: endStr || null,
+      all_day:     allDay,
+      recurrence,
+      start_time:  startStr || new Date().toISOString(),
+      end_time:    endStr   || null,
     }
-    if (modal?.task?.id) {
-      const { error } = await supabase.from('calendar_tasks').update(payload).eq('id', modal.task.id)
+    if (modal?.ev?.id) {
+      const { error } = await supabase
+        .from('calendar_tasks').update(payload).eq('id', modal.ev.id)
       if (!error) {
         setEvents(prev => prev.map(e =>
-          e.id === modal.task.id
-            ? { ...e, title, allDay, start: payload.start_time, end: payload.end_time,
-                backgroundColor: color, borderColor: color,
-                extendedProps: { description } }
+          e.id === modal.ev.id
+            ? { ...e, title, description, color, allDay, recurrence,
+                start: payload.start_time, end: payload.end_time }
             : e
         ))
       }
     } else {
-      const { data, error } = await supabase.from('calendar_tasks').insert(payload).select().single()
+      const { data, error } = await supabase
+        .from('calendar_tasks').insert(payload).select().single()
       if (!error && data) setEvents(prev => [...prev, dbToEvent(data)])
     }
     setModal(null)
@@ -174,48 +446,58 @@ export default function Calendar() {
     setModal(null)
   }
 
-  async function handleEventDrop({ event }) {
-    await supabase.from('calendar_tasks').update({
-      start_time: event.startStr,
-      end_time: event.endStr || null,
-      all_day: event.allDay,
-    }).eq('id', event.id)
-    setEvents(prev => prev.map(e =>
-      e.id === event.id ? { ...e, start: event.startStr, end: event.endStr, allDay: event.allDay } : e
-    ))
-  }
+  const weekDays = useMemo(() => getWeekDays(anchor), [anchor])
+
+  function prevWeek() { const d = new Date(anchor); d.setDate(d.getDate() - 7); setAnchor(d) }
+  function nextWeek() { const d = new Date(anchor); d.setDate(d.getDate() + 7); setAnchor(d) }
+  function goToday()  { setAnchor(new Date()) }
+
+  const d0 = weekDays[0], d1 = weekDays[6]
+  const titleStr = d0.getMonth() === d1.getMonth()
+    ? `${d0.getDate()}–${d1.getDate()} ${MONTHS_ES[d0.getMonth()]} ${d0.getFullYear()}`
+    : `${d0.getDate()} ${MONTHS_ES[d0.getMonth()].slice(0,3)} – ${d1.getDate()} ${MONTHS_ES[d1.getMonth()].slice(0,3)}`
 
   return (
-    <div>
-      <h1 className="text-2xl font-extrabold text-[var(--text)] mb-6">Calendario</h1>
-      <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-4
-        [&_.fc-button]:bg-[var(--accent)] [&_.fc-button]:border-[var(--accent)] [&_.fc-button]:text-white
-        [&_.fc-button-active]:opacity-70 [&_.fc-day-today]:bg-orange-50
-        dark:[&_.fc-day-today]:bg-orange-950/20 [&_.fc-toolbar-title]:text-[var(--text)]
-        [&_.fc-col-header-cell]:text-[var(--text-muted)] [&_.fc-timegrid-slot-label]:text-[var(--text-faint)]">
-        <FullCalendar
-          plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
-          initialView="timeGridWeek"
-          locale={esLocale}
-          headerToolbar={{
-            left: 'prev,next today',
-            center: 'title',
-            right: 'timeGridDay,timeGridWeek,dayGridMonth,listWeek',
-          }}
-          buttonText={{ day: 'Día', week: 'Semana', month: 'Mes', list: 'Agenda' }}
-          events={events}
-          selectable
-          editable
-          select={info => setModal({ task: null, slot: info })}
-          eventClick={info => setModal({ task: info.event, slot: null })}
-          eventDrop={handleEventDrop}
-          eventResize={handleEventDrop}
-          height="auto"
-        />
+    <div className="cal-root">
+      <div className="cal-header">
+        <button className="cal-nav-btn" onClick={prevWeek}>‹</button>
+        <button className="cal-nav-btn" onClick={nextWeek}>›</button>
+        <button className="cal-today-btn" onClick={goToday}>Hoy</button>
+        <span className="cal-title">{titleStr}</span>
+
+        <div className="cal-view-tabs">
+          <button className={`cal-view-tab ${view === 'week' ? 'active' : ''}`} onClick={() => setView('week')}>Semana</button>
+          <button className={`cal-view-tab ${showWeekends ? '' : 'active'}`} onClick={() => setWeekends(v => !v)}>
+            {showWeekends ? 'L–D' : 'L–V'}
+          </button>
+          <button className={`cal-view-tab ${view === 'agenda' ? 'active' : ''}`} onClick={() => setView('agenda')}>Agenda</button>
+        </div>
+
+        <button className="cal-add-btn" onClick={() => setModal({ ev: null, slot: null })}>
+          + Nueva tarea
+        </button>
       </div>
+
+      {view === 'week' && (
+        <WeekView
+          days={weekDays}
+          events={events}
+          onSlotClick={slot => setModal({ ev: null, slot })}
+          onEventClick={ev  => setModal({ ev, slot: null })}
+          showWeekends={showWeekends}
+        />
+      )}
+      {view === 'agenda' && (
+        <AgendaView
+          days={weekDays}
+          events={events}
+          onEventClick={ev => setModal({ ev, slot: null })}
+        />
+      )}
+
       {modal && (
-        <TaskModal
-          task={modal.task}
+        <EventModal
+          ev={modal.ev}
           slot={modal.slot}
           onSave={handleSave}
           onDelete={handleDelete}
