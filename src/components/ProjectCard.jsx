@@ -1,10 +1,3 @@
-/*
- * ProjectCard.jsx — project card for the Home grid
- *
- * Light mode: white card, subtle border, orange hover tint.
- * Dark mode:  zinc-900 card, faint border, orange glow on hover.
- */
-
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import TechBadge from './TechBadge'
@@ -16,9 +9,56 @@ const statusColor = {
   archived:  'bg-zinc-100 text-zinc-500 border-zinc-200 dark:bg-zinc-700/40 dark:text-zinc-500 dark:border-zinc-600/30',
 }
 
-export default function ProjectCard({ project }) {
-  const cover = project.images?.[0]
+function CardCover({ project }) {
+  const { gradientFrom, gradientVia, gradientTo, shortTitle, title, technologies } = project
 
+  if (gradientFrom) {
+    return (
+      <div
+        className="w-full h-44 relative overflow-hidden flex items-end"
+        style={{ background: `linear-gradient(135deg, ${gradientFrom} 0%, ${gradientVia} 50%, ${gradientTo} 100%)` }}
+      >
+        <div
+          className="absolute top-3 right-3 z-10 font-mono text-[10px] tracking-wide"
+          style={{ color: 'rgba(255,255,255,0.35)' }}
+        >
+          {technologies.slice(0, 2).join(' · ')}
+        </div>
+        <div
+          className="absolute bottom-0 left-0 right-0 h-2/3"
+          style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 100%)' }}
+        />
+        <div
+          className="relative z-10 px-5 pb-4 text-xl font-extrabold tracking-tight leading-tight text-white"
+          style={{ textShadow: '0 1px 3px rgba(0,0,0,0.3)' }}
+        >
+          {shortTitle || title}
+        </div>
+      </div>
+    )
+  }
+
+  const cover = project.images?.[0]
+  if (cover) {
+    return (
+      <img
+        src={cover}
+        alt={`Captura de ${title}`}
+        className="w-full h-44 object-cover"
+        loading="lazy"
+      />
+    )
+  }
+
+  return (
+    <div className="w-full h-44 flex items-center justify-center text-xs
+      bg-zinc-50 text-zinc-400 dark:bg-zinc-800/50 dark:text-zinc-600">
+      Sin captura
+    </div>
+  )
+}
+
+export default function ProjectCard({ project }) {
   return (
     <motion.div
       whileHover={{ y: -3 }}
@@ -32,20 +72,7 @@ export default function ProjectCard({ project }) {
           dark:hover:border-orange-500/30
           dark:hover:shadow-[0_0_32px_rgba(249,115,22,0.10),0_8px_28px_rgba(0,0,0,0.4)]"
       >
-        {cover ? (
-          <img
-            src={cover}
-            alt={`Captura de ${project.title}`}
-            className="w-full h-44 object-cover"
-            loading="lazy"
-          />
-        ) : (
-          <div className="w-full h-44 flex items-center justify-center text-xs
-            bg-zinc-50 text-zinc-400
-            dark:bg-zinc-800/50 dark:text-zinc-600">
-            Sin captura
-          </div>
-        )}
+        <CardCover project={project} />
 
         <div className="p-5">
           <div className="flex items-start justify-between gap-2 mb-2">

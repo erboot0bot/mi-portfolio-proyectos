@@ -20,6 +20,8 @@
 export const projects = [
   {
     slug: 'hogar',
+    shortTitle: 'Hogar',
+    gradientFrom: '#ea580c', gradientVia: '#9a3412', gradientTo: '#7c2d12',
     title: 'Hogar — Apps del día a día',
     description: 'Calendario, lista de la compra, menú semanal y recetas con IA. Autenticación con Google vía Supabase.',
     longDescription: 'Aplicación personal compuesta por tres módulos integrados: Calendario (FullCalendar + Supabase, CRUD de eventos con selector de color), Lista de la Compra (items por categoría con estado check, limpieza de marcados) y Menú Semanal (grid editable de 7 días × 3 comidas). El módulo de Recetas conecta con Claude Haiku vía Supabase Edge Function (Deno): el usuario indica ingredientes, número de comensales, restricciones y tiempo máximo, y recibe una receta completa con ingredientes, preparación y consejos. Las recetas se pueden guardar en la colección personal. Todo persiste en Supabase Postgres con Row-Level Security — cada usuario solo ve sus propios datos. Autenticación con Google OAuth gestionada por Supabase Auth.',
@@ -33,6 +35,8 @@ export const projects = [
   },
   {
     slug: 'portfolio-personal',
+    shortTitle: 'Portfolio',
+    gradientFrom: '#f97316', gradientVia: '#f59e0b', gradientTo: '#d97706',
     title: 'Portfolio Personal',
     description:
       'Esta misma web — documentación de proyectos con React, Vite, Tailwind y Framer Motion.',
@@ -48,6 +52,8 @@ export const projects = [
   },
   {
     slug: 'ai-dev-setup',
+    shortTitle: 'AI Setup',
+    gradientFrom: '#7c3aed', gradientVia: '#5b21b6', gradientTo: '#4c1d95',
     title: 'Setup de Desarrollo con IA',
     description: 'Configuración completa de Claude Code + gstack para desarrollar como un equipo de 20.',
     longDescription: 'Workflow completo para desarrollar como un equipo de 20 siendo uno solo. Claude Code actúa como motor de ejecución — lee el codebase, edita archivos, ejecuta comandos, corre tests. gstack añade roles especializados como slash commands: /review (staff engineer que encuentra bugs de producción), /design-shotgun (genera variantes visuales para elegir), /qa (abre browser real y testea la app), /ship (sincroniza, corre tests, abre PR). El sistema de contexto entre sesiones se basa en dos archivos: ESTADO-PROYECTO.md documenta el stack, decisiones de diseño, deuda técnica y próximos pasos — se pasa al inicio de cada sesión para que Claude retome exactamente donde lo dejó. TODOS.md funciona como backlog vivo. Comparativa real tras usarlo: Claude Code genera código funcional y lo integra directamente en el proyecto. Cursor es un editor con IA dentro. Copilot es autocompletado avanzado. La diferencia es que Claude Code actúa, no sugiere. Sin escribir apenas código a mano: prompts precisos + contexto = producto real.',
@@ -61,6 +67,8 @@ export const projects = [
   },
   {
     slug: 'portfolio-config',
+    shortTitle: 'Config',
+    gradientFrom: '#0ea5e9', gradientVia: '#0284c7', gradientTo: '#0369a1',
     title: 'Portfolio con React + Vite + Tailwind v4',
     description: 'Arquitectura y decisiones técnicas detrás de este mismo portfolio.',
     longDescription: 'Documentación técnica de cada decisión de arquitectura. Tailwind v4 elimina tailwind.config.js — la configuración vive en CSS: @import "tailwindcss"; @custom-variant dark (&:where(.dark, .dark *)); :root { --bg: #fffcf9; --accent: #f97316; --text: #09090b; } html.dark { --bg: #0a0a0f; --text: #f4f4f5; }. Los tokens se usan en JSX con className="bg-[var(--bg)] text-[var(--text)]". React Router DOM 7 maneja la navegación con lazy loading por ruta. Framer Motion gestiona AnimatePresence para transiciones suaves entre páginas. El script generate-image.js construye un prompt automático con título, descripción y stack del proyecto, llama a Pollinations.ai y guarda la imagen en public/projects/{slug}/cover.jpg sin necesitar ninguna API key ni variable de entorno. Tests con Vitest siguen el patrón waitFor para elementos que aparecen tras animaciones. Estructura de carpetas: components/ para piezas reutilizables, pages/ para rutas, data/projects.js como única fuente de verdad.',
@@ -74,6 +82,8 @@ export const projects = [
   },
   {
     slug: 'vercel-deploy',
+    shortTitle: 'CI/CD',
+    gradientFrom: '#18181b', gradientVia: '#27272a', gradientTo: '#3f3f46',
     title: 'Deploy y CI/CD con Vercel',
     description: 'De localhost a producción: sincronización con GitHub y deploy automático.',
     longDescription: 'Pipeline completo de zero a producción. Vercel detecta automáticamente que es un proyecto Vite y configura el build sin tocar nada: comando de build npm run build, directorio de salida dist/. Cada push a main dispara un deploy automático — en menos de 2 minutos el cambio está en producción. Cada Pull Request genera un Preview Deployment con URL única (proyecto-git-nombre-rama.vercel.app) para revisar cambios antes de mergear. Sin variables de entorno porque Pollinations.ai no necesita API key — el proyecto es completamente estático. Configuración de dominio propio en Vercel > Settings > Domains: apunta el DNS a los nameservers de Vercel y el SSL se genera automáticamente. El repositorio en GitHub actúa como fuente de verdad — Vercel escucha los eventos de push via webhook. Resultado: workflow donde escribir código y verlo en producción son casi el mismo acto.',
