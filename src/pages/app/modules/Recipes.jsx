@@ -131,11 +131,24 @@ function AIModal({ projectId, onSaved, onClose }) {
   )
 }
 
-function ManualModal({ projectId, onSaved, onClose }) {
+function ManualModal({ projectId, recipe: existingRecipe, onSaved, onClose }) {
   const [form, setForm] = useState({
-    title: '', instructions: '', prep_time: '', cook_time: '', servings: 4, tags: ''
+    title: existingRecipe?.title ?? '',
+    instructions: existingRecipe?.instructions ?? '',
+    prep_time: existingRecipe?.prep_time ?? '',
+    cook_time: existingRecipe?.cook_time ?? '',
+    servings: existingRecipe?.servings ?? 4,
+    tags: existingRecipe?.tags?.join(', ') ?? '',
   })
-  const [ingredients, setIngredients] = useState([{ name: '', quantity: '', unit: '' }])
+  const [ingredients, setIngredients] = useState(
+    existingRecipe?.ingredients?.length
+      ? existingRecipe.ingredients.map(ing =>
+          typeof ing === 'string'
+            ? { name: ing, quantity: '', unit: '' }
+            : { name: ing.name ?? '', quantity: ing.quantity ?? '', unit: ing.unit ?? '' }
+        )
+      : [{ name: '', quantity: '', unit: '' }]
+  )
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
 
@@ -162,7 +175,7 @@ function ManualModal({ projectId, onSaved, onClose }) {
       unit: i.unit.trim() || null,
     }))
     const tags = form.tags.split(',').map(t => t.trim()).filter(Boolean)
-    const { data, error: err } = await supabase.from('recipes').insert({
+    const payload = {
       project_id: projectId,
       title: form.title.trim(),
       ingredients: ings,
@@ -171,8 +184,23 @@ function ManualModal({ projectId, onSaved, onClose }) {
       cook_time: form.cook_time ? Number(form.cook_time) : null,
       servings: form.servings,
       tags,
-      ai_generated: false,
-    }).select().single()
+    }
+
+    let data, err
+    if (existingRecipe) {
+      // UPDATE
+      ;({ data, error: err } = await supabase.from('recipes')
+        .update(payload)
+        .eq('id', existingRecipe.id)
+        .select().single())
+    } else {
+      // INSERT
+      payload.ai_generated = false
+      ;({ data, error: err } = await supabase.from('recipes')
+        .insert(payload)
+        .select().single())
+    }
+
     if (err) { setError(err.message); setSaving(false); return }
     onSaved(data)
   }
@@ -182,7 +210,9 @@ function ManualModal({ projectId, onSaved, onClose }) {
       <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl p-6 w-full max-w-xl
         shadow-xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="font-bold text-lg text-[var(--text)]">Nueva receta</h2>
+          <h2 className="font-bold text-lg text-[var(--text)]">
+            {existingRecipe ? 'Editar receta' : 'Nueva receta'}
+          </h2>
           <button onClick={onClose} className="text-[var(--text-faint)] hover:text-[var(--text)] text-xl">×</button>
         </div>
         <form onSubmit={handleSave} className="flex flex-col gap-3">
@@ -260,7 +290,7 @@ function ManualModal({ projectId, onSaved, onClose }) {
             <button type="submit" disabled={!form.title.trim() || saving}
               className="px-4 py-2 rounded-lg text-sm bg-[var(--accent)] text-white font-medium
                 hover:opacity-90 disabled:opacity-40 transition-opacity">
-              {saving ? 'Guardando...' : 'Guardar receta'}
+              {saving ? 'Guardando...' : existingRecipe ? 'Guardar cambios' : 'Guardar receta'}
             </button>
           </div>
         </form>
@@ -275,6 +305,10 @@ export default function Recipes() {
   const [recipes, setRecipes] = useState([])
   const [showAI, setShowAI] = useState(false)
   const [showManual, setShowManual] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(null) // recipe id
+  const [editRecipe, setEditRecipe] = useState(null) // recipe to edit
+  const [deleteRecipe, setDeleteRecipe] = useState(null) // recipe to confirm delete
+  const [deleteConfirming, setDeleteConfirming] = useState(false)
 
   useEffect(() => {
     supabase.from('recipes').select('*').eq('project_id', project.id)
@@ -282,8 +316,28 @@ export default function Recipes() {
       .then(({ data }) => { if (data) setRecipes(data) })
   }, [project.id])
 
+  useEffect(() => {
+    if (!menuOpen) return
+    const close = () => setMenuOpen(null)
+    window.addEventListener('click', close)
+    return () => window.removeEventListener('click', close)
+  }, [menuOpen])
+
   function handleSaved(recipe) {
     setRecipes(p => [recipe, ...p])
+  }
+
+  async function handleDelete(recipe) {
+    setDeleteConfirming(true)
+    await supabase.from('recipes').delete().eq('id', recipe.id)
+    setRecipes(prev => prev.filter(r => r.id !== recipe.id))
+    setDeleteRecipe(null)
+    setDeleteConfirming(false)
+  }
+
+  function handleEdited(updated) {
+    setRecipes(prev => prev.map(r => r.id === updated.id ? updated : r))
+    setEditRecipe(null)
   }
 
   return (
@@ -315,7 +369,34 @@ export default function Recipes() {
             <motion.div key={r.id}
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}>
+              transition={{ delay: i * 0.05 }}
+              className="relative group">
+              {/* Three-dot menu */}
+              <div className="absolute top-3 right-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button
+                  onClick={e => { e.stopPropagation(); setMenuOpen(menuOpen === r.id ? null : r.id) }}
+                  className="w-7 h-7 rounded-lg flex items-center justify-center
+                    bg-[var(--bg)] border border-[var(--border)] text-[var(--text-muted)]
+                    hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors text-base"
+                >
+                  ⋯
+                </button>
+                {menuOpen === r.id && (
+                  <div className="absolute right-0 top-full mt-1 w-32 bg-[var(--bg-card)] border border-[var(--border)]
+                    rounded-xl shadow-lg overflow-hidden z-20">
+                    <button
+                      onClick={e => { e.stopPropagation(); setEditRecipe(r); setMenuOpen(null) }}
+                      className="w-full text-left px-4 py-2 text-sm text-[var(--text)] hover:bg-[var(--accent)] hover:text-white transition-colors">
+                      ✏️ Editar
+                    </button>
+                    <button
+                      onClick={e => { e.stopPropagation(); setDeleteRecipe(r); setMenuOpen(null) }}
+                      className="w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors">
+                      🗑 Eliminar
+                    </button>
+                  </div>
+                )}
+              </div>
               <button onClick={() => navigate(`${r.id}`)}
                 className="w-full text-left p-5 rounded-xl border border-[var(--border)] bg-[var(--bg-card)]
                   hover:border-[var(--accent)] hover:shadow-md transition-all">
@@ -355,6 +436,38 @@ export default function Recipes() {
           projectId={project.id}
           onSaved={r => { handleSaved(r); setShowManual(false) }}
           onClose={() => setShowManual(false)}
+        />
+      )}
+
+      {/* Delete confirmation */}
+      {deleteRecipe && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl p-6 w-full max-w-sm shadow-xl">
+            <h2 className="font-bold text-lg text-[var(--text)] mb-2">¿Eliminar receta?</h2>
+            <p className="text-sm text-[var(--text-muted)] mb-6">
+              ¿Eliminar <span className="font-semibold text-[var(--text)]">{deleteRecipe.title}</span>? Esta acción no se puede deshacer.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button onClick={() => setDeleteRecipe(null)} disabled={deleteConfirming}
+                className="px-4 py-2 rounded-lg text-sm text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] transition-colors disabled:opacity-40">
+                Cancelar
+              </button>
+              <button onClick={() => handleDelete(deleteRecipe)} disabled={deleteConfirming}
+                className="px-4 py-2 rounded-lg text-sm bg-red-500 text-white font-medium hover:bg-red-600 disabled:opacity-40 transition-colors">
+                {deleteConfirming ? 'Eliminando...' : 'Eliminar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit modal */}
+      {editRecipe && (
+        <ManualModal
+          projectId={project.id}
+          recipe={editRecipe}
+          onSaved={handleEdited}
+          onClose={() => setEditRecipe(null)}
         />
       )}
     </div>

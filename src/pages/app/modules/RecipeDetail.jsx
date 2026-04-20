@@ -72,6 +72,8 @@ export default function RecipeDetail() {
   const [loading, setLoading] = useState(true)
   const [addedMsg, setAddedMsg] = useState(null)
   const [showMenuPicker, setShowMenuPicker] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleteConfirming, setDeleteConfirming] = useState(false)
 
   useEffect(() => {
     supabase.from('recipes').select('*').eq('id', recipeId).single()
@@ -90,6 +92,12 @@ export default function RecipeDetail() {
 
   const ingredients = Array.isArray(recipe.ingredients) ? recipe.ingredients : []
 
+  async function handleDelete() {
+    setDeleteConfirming(true)
+    await supabase.from('recipes').delete().eq('id', recipeId)
+    navigate('..')
+  }
+
   async function addToShoppingList() {
     const items = ingredients.map(ing => ({
       project_id: project.id,
@@ -107,10 +115,25 @@ export default function RecipeDetail() {
 
   return (
     <div className="max-w-2xl">
-      <button onClick={() => navigate('..')}
-        className="text-sm text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors mb-4 flex items-center gap-1">
-        ← Volver a recetas
-      </button>
+      <div className="flex items-center justify-between mb-4">
+        <button onClick={() => navigate('..')}
+          className="text-sm text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors flex items-center gap-1">
+          ← Volver a recetas
+        </button>
+        <button
+          onClick={() => setShowDeleteConfirm(true)}
+          className="text-sm text-[var(--text-faint)] hover:text-red-500 transition-colors flex items-center gap-1"
+          title="Eliminar receta"
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="3 6 5 6 21 6"/>
+            <path d="M19 6l-1 14H6L5 6"/>
+            <path d="M10 11v6M14 11v6"/>
+            <path d="M9 6V4h6v2"/>
+          </svg>
+          Eliminar
+        </button>
+      </div>
 
       <div className="flex items-start justify-between gap-4 mb-6">
         <div>
@@ -185,6 +208,27 @@ export default function RecipeDetail() {
       )}
 
       {showMenuPicker && <AddToMenuModal recipe={recipe} project={project} onClose={() => setShowMenuPicker(false)} />}
+
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl p-6 w-full max-w-sm shadow-xl">
+            <h2 className="font-bold text-lg text-[var(--text)] mb-2">¿Eliminar receta?</h2>
+            <p className="text-sm text-[var(--text-muted)] mb-6">
+              ¿Eliminar <span className="font-semibold text-[var(--text)]">{recipe.title}</span>? Esta acción no se puede deshacer.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button onClick={() => setShowDeleteConfirm(false)} disabled={deleteConfirming}
+                className="px-4 py-2 rounded-lg text-sm text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] transition-colors disabled:opacity-40">
+                Cancelar
+              </button>
+              <button onClick={handleDelete} disabled={deleteConfirming}
+                className="px-4 py-2 rounded-lg text-sm bg-red-500 text-white font-medium hover:bg-red-600 disabled:opacity-40 transition-colors">
+                {deleteConfirming ? 'Eliminando...' : 'Eliminar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
