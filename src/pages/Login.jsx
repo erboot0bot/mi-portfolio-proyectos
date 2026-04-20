@@ -19,7 +19,7 @@ export default function Login() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    if (user) navigate('/hogar', { replace: true })
+    if (user) navigate('/app/projects', { replace: true })
   }, [user, navigate])
 
   return (

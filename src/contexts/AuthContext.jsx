@@ -22,7 +22,7 @@ export function AuthProvider({ children }) {
   async function signInWithGoogle() {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/hogar` },
+      options: { redirectTo: `${window.location.origin}/app/projects` },
     })
     if (error) throw error
   }
