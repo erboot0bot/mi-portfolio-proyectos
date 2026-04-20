@@ -131,11 +131,150 @@ function AIModal({ projectId, onSaved, onClose }) {
   )
 }
 
+function ManualModal({ projectId, onSaved, onClose }) {
+  const [form, setForm] = useState({
+    title: '', instructions: '', prep_time: '', cook_time: '', servings: 4, tags: ''
+  })
+  const [ingredients, setIngredients] = useState([{ name: '', quantity: '', unit: '' }])
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState(null)
+
+  function updateIngredient(i, field, value) {
+    setIngredients(prev => prev.map((ing, idx) => idx === i ? { ...ing, [field]: value } : ing))
+  }
+
+  function addIngredientRow() {
+    setIngredients(prev => [...prev, { name: '', quantity: '', unit: '' }])
+  }
+
+  function removeIngredient(i) {
+    setIngredients(prev => prev.filter((_, idx) => idx !== i))
+  }
+
+  async function handleSave(e) {
+    e.preventDefault()
+    if (!form.title.trim()) return
+    setSaving(true)
+    setError(null)
+    const ings = ingredients.filter(i => i.name.trim()).map(i => ({
+      name: i.name.trim(),
+      quantity: i.quantity ? Number(i.quantity) : null,
+      unit: i.unit.trim() || null,
+    }))
+    const tags = form.tags.split(',').map(t => t.trim()).filter(Boolean)
+    const { data, error: err } = await supabase.from('recipes').insert({
+      project_id: projectId,
+      title: form.title.trim(),
+      ingredients: ings,
+      instructions: form.instructions.trim(),
+      prep_time: form.prep_time ? Number(form.prep_time) : null,
+      cook_time: form.cook_time ? Number(form.cook_time) : null,
+      servings: form.servings,
+      tags,
+      ai_generated: false,
+    }).select().single()
+    if (err) { setError(err.message); setSaving(false); return }
+    onSaved(data)
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl p-6 w-full max-w-xl
+        shadow-xl max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-bold text-lg text-[var(--text)]">Nueva receta</h2>
+          <button onClick={onClose} className="text-[var(--text-faint)] hover:text-[var(--text)] text-xl">×</button>
+        </div>
+        <form onSubmit={handleSave} className="flex flex-col gap-3">
+          <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+            placeholder="Título de la receta *" autoFocus
+            className="w-full px-4 py-2 rounded-lg border border-[var(--border)] bg-[var(--bg)]
+              text-[var(--text)] placeholder:text-[var(--text-faint)] outline-none focus:border-[var(--accent)] transition-colors" />
+
+          <div>
+            <p className="text-xs text-[var(--text-faint)] mb-2">Ingredientes</p>
+            {ingredients.map((ing, i) => (
+              <div key={i} className="flex gap-2 mb-1">
+                <input value={ing.name} onChange={e => updateIngredient(i, 'name', e.target.value)}
+                  placeholder="Nombre" className="flex-1 px-3 py-1.5 text-sm rounded-lg border border-[var(--border)]
+                  bg-[var(--bg)] text-[var(--text)] outline-none focus:border-[var(--accent)]" />
+                <input value={ing.quantity} onChange={e => updateIngredient(i, 'quantity', e.target.value)}
+                  placeholder="Cant." type="number" min="0" step="any"
+                  className="w-16 px-3 py-1.5 text-sm rounded-lg border border-[var(--border)]
+                  bg-[var(--bg)] text-[var(--text)] outline-none focus:border-[var(--accent)]" />
+                <input value={ing.unit} onChange={e => updateIngredient(i, 'unit', e.target.value)}
+                  placeholder="Ud."
+                  className="w-14 px-3 py-1.5 text-sm rounded-lg border border-[var(--border)]
+                  bg-[var(--bg)] text-[var(--text)] outline-none focus:border-[var(--accent)]" />
+                {ingredients.length > 1 && (
+                  <button type="button" onClick={() => removeIngredient(i)}
+                    className="text-[var(--text-faint)] hover:text-red-500 text-lg leading-none">×</button>
+                )}
+              </div>
+            ))}
+            <button type="button" onClick={addIngredientRow}
+              className="text-xs text-[var(--accent)] hover:opacity-80 transition-opacity">+ Añadir ingrediente</button>
+          </div>
+
+          <textarea value={form.instructions} onChange={e => setForm(f => ({ ...f, instructions: e.target.value }))}
+            placeholder="Instrucciones de preparación..." rows={4}
+            className="w-full px-4 py-2 rounded-lg border border-[var(--border)] bg-[var(--bg)]
+              text-[var(--text)] placeholder:text-[var(--text-faint)] outline-none focus:border-[var(--accent)]
+              resize-none transition-colors" />
+
+          <div className="flex gap-3">
+            <div className="flex-1">
+              <label className="block text-xs text-[var(--text-faint)] mb-1">Prep (min)</label>
+              <input type="number" min="0" value={form.prep_time}
+                onChange={e => setForm(f => ({ ...f, prep_time: e.target.value }))}
+                className="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--bg)]
+                  text-[var(--text)] outline-none focus:border-[var(--accent)]" />
+            </div>
+            <div className="flex-1">
+              <label className="block text-xs text-[var(--text-faint)] mb-1">Cocción (min)</label>
+              <input type="number" min="0" value={form.cook_time}
+                onChange={e => setForm(f => ({ ...f, cook_time: e.target.value }))}
+                className="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--bg)]
+                  text-[var(--text)] outline-none focus:border-[var(--accent)]" />
+            </div>
+            <div className="flex-1">
+              <label className="block text-xs text-[var(--text-faint)] mb-1">Personas</label>
+              <input type="number" min="1" max="20" value={form.servings}
+                onChange={e => setForm(f => ({ ...f, servings: Number(e.target.value) }))}
+                className="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--bg)]
+                  text-[var(--text)] outline-none focus:border-[var(--accent)]" />
+            </div>
+          </div>
+
+          <input value={form.tags} onChange={e => setForm(f => ({ ...f, tags: e.target.value }))}
+            placeholder="Tags separados por coma (vegetariano, rápido...)"
+            className="w-full px-4 py-2 rounded-lg border border-[var(--border)] bg-[var(--bg)]
+              text-[var(--text)] placeholder:text-[var(--text-faint)] outline-none focus:border-[var(--accent)] transition-colors" />
+
+          {error && <p className="text-sm text-red-500">{error}</p>}
+          <div className="flex gap-3 justify-end">
+            <button type="button" onClick={onClose}
+              className="px-4 py-2 rounded-lg text-sm text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] transition-colors">
+              Cancelar
+            </button>
+            <button type="submit" disabled={!form.title.trim() || saving}
+              className="px-4 py-2 rounded-lg text-sm bg-[var(--accent)] text-white font-medium
+                hover:opacity-90 disabled:opacity-40 transition-opacity">
+              {saving ? 'Guardando...' : 'Guardar receta'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
 export default function Recipes() {
   const { project } = useOutletContext()
   const navigate = useNavigate()
   const [recipes, setRecipes] = useState([])
   const [showAI, setShowAI] = useState(false)
+  const [showManual, setShowManual] = useState(false)
 
   useEffect(() => {
     supabase.from('recipes').select('*').eq('project_id', project.id)
@@ -151,11 +290,18 @@ export default function Recipes() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-extrabold text-[var(--text)]">Recetas</h1>
-        <button onClick={() => setShowAI(true)}
-          className="px-4 py-2 rounded-xl bg-[var(--accent)] text-white text-sm font-medium
-            hover:opacity-90 transition-opacity">
-          ✨ Sugerir con IA
-        </button>
+        <div className="flex items-center gap-2">
+          <button onClick={() => setShowManual(true)}
+            className="px-4 py-2 rounded-xl border border-[var(--border)] text-[var(--text-muted)] text-sm font-medium
+              hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors">
+            + Nueva receta
+          </button>
+          <button onClick={() => setShowAI(true)}
+            className="px-4 py-2 rounded-xl bg-[var(--accent)] text-white text-sm font-medium
+              hover:opacity-90 transition-opacity">
+            ✨ Sugerir con IA
+          </button>
+        </div>
       </div>
 
       {recipes.length === 0 ? (
@@ -202,6 +348,13 @@ export default function Recipes() {
           projectId={project.id}
           onSaved={handleSaved}
           onClose={() => setShowAI(false)}
+        />
+      )}
+      {showManual && (
+        <ManualModal
+          projectId={project.id}
+          onSaved={r => { handleSaved(r); setShowManual(false) }}
+          onClose={() => setShowManual(false)}
         />
       )}
     </div>

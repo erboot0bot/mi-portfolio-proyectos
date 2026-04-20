@@ -1,6 +1,68 @@
 import { useState, useEffect } from 'react'
 import { useParams, useOutletContext, useNavigate } from 'react-router-dom'
+import { format, startOfWeek } from 'date-fns'
 import { supabase } from '../../../lib/supabase'
+
+const DAYS = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo']
+const MEAL_TYPES = [
+  { key: 'breakfast', label: 'Desayuno' },
+  { key: 'lunch', label: 'Comida' },
+  { key: 'dinner', label: 'Cena' },
+  { key: 'snack', label: 'Merienda' },
+]
+
+function AddToMenuModal({ recipe, project, onClose }) {
+  const [day, setDay] = useState(0)
+  const [meal, setMeal] = useState('lunch')
+  const [saving, setSaving] = useState(false)
+  const [done, setDone] = useState(false)
+
+  async function handleAdd() {
+    setSaving(true)
+    const weekStart = format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd')
+    await supabase.from('menu_items').upsert({
+      project_id: project.id,
+      week_start: weekStart,
+      day_of_week: day,
+      meal_type: meal,
+      recipe_id: recipe.id,
+      custom_name: recipe.title,
+    }, { onConflict: 'project_id,week_start,day_of_week,meal_type' })
+    setDone(true)
+    setTimeout(onClose, 1000)
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl p-6 w-full max-w-sm shadow-xl">
+        <h3 className="font-bold text-[var(--text)] mb-4">Añadir al menú de esta semana</h3>
+        <div className="flex flex-col gap-3">
+          <div>
+            <label className="block text-xs text-[var(--text-faint)] mb-1">Día</label>
+            <select value={day} onChange={e => setDay(Number(e.target.value))}
+              className="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--bg)] text-[var(--text)] outline-none focus:border-[var(--accent)]">
+              {DAYS.map((d, i) => <option key={i} value={i}>{d}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs text-[var(--text-faint)] mb-1">Comida</label>
+            <select value={meal} onChange={e => setMeal(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--bg)] text-[var(--text)] outline-none focus:border-[var(--accent)]">
+              {MEAL_TYPES.map(m => <option key={m.key} value={m.key}>{m.label}</option>)}
+            </select>
+          </div>
+        </div>
+        <div className="flex gap-3 justify-end mt-4">
+          <button onClick={onClose} className="px-4 py-2 rounded-lg text-sm text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] transition-colors">Cancelar</button>
+          <button onClick={handleAdd} disabled={saving}
+            className="px-4 py-2 rounded-lg text-sm bg-[var(--accent)] text-white font-medium hover:opacity-90 disabled:opacity-40 transition-opacity">
+            {done ? '✓ Añadido' : saving ? '...' : 'Añadir'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export default function RecipeDetail() {
   const { recipeId } = useParams()
@@ -8,6 +70,8 @@ export default function RecipeDetail() {
   const navigate = useNavigate()
   const [recipe, setRecipe] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [addedMsg, setAddedMsg] = useState(null)
+  const [showMenuPicker, setShowMenuPicker] = useState(false)
 
   useEffect(() => {
     supabase.from('recipes').select('*').eq('id', recipeId).single()
@@ -26,6 +90,21 @@ export default function RecipeDetail() {
 
   const ingredients = Array.isArray(recipe.ingredients) ? recipe.ingredients : []
 
+  async function addToShoppingList() {
+    const items = ingredients.map(ing => ({
+      project_id: project.id,
+      name: typeof ing === 'string' ? ing : (ing.name ?? ''),
+      quantity: typeof ing === 'object' ? (ing.quantity ?? null) : null,
+      unit: typeof ing === 'object' ? (ing.unit ?? null) : null,
+      category: 'General',
+    })).filter(i => i.name)
+
+    if (!items.length) return
+    await supabase.from('shopping_items').insert(items)
+    setAddedMsg(`${items.length} ingredientes añadidos`)
+    setTimeout(() => setAddedMsg(null), 3000)
+  }
+
   return (
     <div className="max-w-2xl">
       <button onClick={() => navigate('..')}
@@ -41,6 +120,10 @@ export default function RecipeDetail() {
             {recipe.ai_generated && <span className="ml-2 text-[var(--accent)]">✨ Generada con IA</span>}
           </p>
         </div>
+        <button onClick={() => setShowMenuPicker(true)}
+          className="px-4 py-2 rounded-xl bg-[var(--accent)] text-white text-sm font-medium hover:opacity-90 transition-opacity">
+          📋 Añadir al menú
+        </button>
       </div>
 
       {recipe.tags?.length > 0 && (
@@ -70,6 +153,14 @@ export default function RecipeDetail() {
               </li>
             ))}
           </ul>
+          <div className="mt-3 flex items-center gap-3">
+            <button onClick={addToShoppingList}
+              className="text-sm px-4 py-2 rounded-lg border border-[var(--border)] text-[var(--text-muted)]
+              hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors">
+              🛒 Añadir ingredientes al carrito
+            </button>
+            {addedMsg && <span className="text-xs text-green-600 dark:text-green-400">{addedMsg}</span>}
+          </div>
         </div>
         <div className="text-sm text-[var(--text-muted)]">
           {recipe.prep_time && <p>⏱ Prep: {recipe.prep_time} min</p>}
@@ -79,14 +170,21 @@ export default function RecipeDetail() {
 
       {recipe.instructions && (
         <div>
-          <h2 className="text-xs font-semibold tracking-widest uppercase text-[var(--text-faint)] mb-3">
-            Preparación
-          </h2>
-          <p className="text-sm text-[var(--text)] leading-relaxed whitespace-pre-line">
-            {recipe.instructions}
-          </p>
+          <h2 className="text-xs font-semibold tracking-widest uppercase text-[var(--text-faint)] mb-3">Preparación</h2>
+          <ol className="flex flex-col gap-3">
+            {recipe.instructions.split('\n').filter(s => s.trim()).map((step, i) => (
+              <li key={i} className="flex gap-3 text-sm text-[var(--text)]">
+                <span className="shrink-0 w-6 h-6 rounded-full bg-[var(--accent)] text-white flex items-center justify-center text-xs font-bold">
+                  {i + 1}
+                </span>
+                <span className="leading-relaxed">{step.replace(/^\d+\.?\s*/, '')}</span>
+              </li>
+            ))}
+          </ol>
         </div>
       )}
+
+      {showMenuPicker && <AddToMenuModal recipe={recipe} project={project} onClose={() => setShowMenuPicker(false)} />}
     </div>
   )
 }
