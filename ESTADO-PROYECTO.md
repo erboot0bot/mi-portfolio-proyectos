@@ -330,3 +330,34 @@ ef32c40 feat: hero section, subtítulo personal, badges limitados a 3, spacing f
 3. **Deploy en Vercel** — conectar repo de GitHub, auto-deploy al hacer push a main
 4. **Dominio propio** — configurar en Vercel > Settings > Domains
 5. **Añadir más proyectos** al portfolio con `projects.js` + `generate-image.js`
+
+---
+
+## Arquitectura basada en proyectos (migración 2026-04-20)
+
+### Nuevas rutas `/app/*`
+- `/app/projects` — Lista de proyectos del usuario (protegida con Google Auth)
+- `/app/projects/:slug` — Shell lateral con módulos (sidebar con nav)
+- `/app/projects/:slug/calendar` — Calendario FullCalendar con drag/drop
+- `/app/projects/:slug/shopping` — Lista de la compra + Menú semanal (2 columnas)
+- `/app/projects/:slug/recipes` — Recetas con sugerencias IA
+- `/app/projects/:slug/recipes/:recipeId` — Detalle de receta
+
+### Tablas Supabase (6 tablas, todas con RLS)
+- `projects` — Proyectos del usuario (id, name, slug, icon, owner_id)
+- `project_members` — Miembros invitados (project_id, user_id, role, invited_email, accepted)
+- `calendar_tasks` — Tareas del calendario (project_id, title, start_time, end_time, all_day, color)
+- `shopping_items` — Lista de la compra (project_id, name, quantity NUMERIC, unit, category, checked)
+- `menu_items` — Menú semanal (project_id, week_start DATE, day_of_week 0-6, meal_type enum, custom_name)
+- `recipes` — Recetas (project_id, title, ingredients JSONB, instructions, tags TEXT[], prep_time, cook_time, servings, ai_generated)
+
+### Variables de entorno necesarias
+```
+VITE_SUPABASE_URL=...
+VITE_SUPABASE_ANON_KEY=...
+VITE_SUPABASE_FUNCTIONS_URL=...
+VITE_ANTHROPIC_API_KEY=sk-ant-...   ← necesaria para Recetas con IA
+```
+
+### Arquitectura de datos
+Todos los datos (tareas, compras, menús, recetas) pertenecen a un **proyecto** vía `project_id`. Los proyectos pueden compartirse con otros usuarios via `project_members`. El primer acceso auto-crea un proyecto "Hogar 🏠".
