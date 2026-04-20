@@ -16,24 +16,37 @@ function CardCover({ project }) {
     return (
       <div
         className="w-full h-44 relative overflow-hidden flex items-end"
-        style={{ background: `linear-gradient(135deg, ${gradientFrom} 0%, ${gradientVia} 50%, ${gradientTo} 100%)` }}
+        style={{
+          background: `linear-gradient(135deg, ${gradientFrom}20, ${gradientTo}40)`,
+          borderBottom: `1px solid ${gradientFrom}30`,
+        }}
       >
+        {/* Glow central */}
+        <div className="absolute inset-0 flex items-center justify-center" aria-hidden>
+          <div style={{
+            width: 96, height: 96, borderRadius: '50%', opacity: 0.18,
+            background: `radial-gradient(circle, ${gradientFrom}, transparent)`,
+          }} />
+        </div>
+        {/* Fade inferior */}
         <div
-          className="absolute top-3 right-3 z-10 font-mono text-[10px] tracking-wide"
+          className="absolute bottom-0 left-0 right-0 h-2/3 pointer-events-none"
+          style={{ background: `linear-gradient(to top, ${gradientTo}cc, transparent)` }}
+        />
+        {/* Stack esquina */}
+        <span
+          className="absolute top-3 right-3 z-10 font-mono text-[10px] tracking-wider"
           style={{ color: 'rgba(255,255,255,0.35)' }}
         >
           {technologies.slice(0, 2).join(' · ')}
-        </div>
-        <div
-          className="absolute bottom-0 left-0 right-0 h-2/3"
-          style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 100%)' }}
-        />
-        <div
-          className="relative z-10 px-5 pb-4 text-xl font-extrabold tracking-tight leading-tight text-white"
-          style={{ textShadow: '0 1px 3px rgba(0,0,0,0.3)' }}
+        </span>
+        {/* Título */}
+        <span
+          className="relative z-10 px-5 pb-4 text-2xl font-black text-white tracking-tight leading-none"
+          style={{ textShadow: '0 1px 4px rgba(0,0,0,0.35)' }}
         >
           {shortTitle || title}
-        </div>
+        </span>
       </div>
     )
   }
