@@ -88,12 +88,38 @@ function NewProjectModal({ onClose, onCreated }) {
   )
 }
 
+function DeleteConfirmModal({ project, onConfirm, onClose, deleting }) {
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-[var(--bg-card)] border border-[var(--border)] rounded-2xl p-6 w-full max-w-sm shadow-xl">
+        <h2 className="font-bold text-lg text-[var(--text)] mb-2">¿Eliminar proyecto?</h2>
+        <p className="text-sm text-[var(--text-muted)] mb-6">
+          ¿Eliminar proyecto <span className="font-semibold text-[var(--text)]">{project.icon} {project.name}</span>?
+          Esta acción no se puede deshacer. Se eliminarán todas las tareas, recetas, lista de la compra y menú.
+        </p>
+        <div className="flex gap-3 justify-end">
+          <button onClick={onClose} disabled={deleting}
+            className="px-4 py-2 rounded-lg text-sm text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] transition-colors disabled:opacity-40">
+            Cancelar
+          </button>
+          <button onClick={onConfirm} disabled={deleting}
+            className="px-4 py-2 rounded-lg text-sm bg-red-500 text-white font-medium hover:bg-red-600 disabled:opacity-40 transition-colors">
+            {deleting ? 'Eliminando...' : 'Eliminar'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function AppProjects() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const [projects, setProjects] = useState([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState(null)
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     loadProjects()
@@ -146,6 +172,15 @@ export default function AppProjects() {
     setLoading(false)
   }
 
+  async function handleDelete() {
+    if (!deleteTarget) return
+    setDeleting(true)
+    await supabase.from('projects').delete().eq('id', deleteTarget.id)
+    setProjects(prev => prev.filter(p => p.id !== deleteTarget.id))
+    setDeleteTarget(null)
+    setDeleting(false)
+  }
+
   function handleCreated(project) {
     setShowModal(false)
     navigate(`/app/projects/${project.slug}`)
@@ -182,7 +217,26 @@ export default function AppProjects() {
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: i * 0.06 }}
+            className="relative group"
           >
+            {/* Trash button — owner only, visible on hover */}
+            {p.owner_id === user.id && (
+              <button
+                onClick={e => { e.stopPropagation(); setDeleteTarget(p) }}
+                className="absolute top-3 right-3 z-10 opacity-0 group-hover:opacity-100
+                  w-7 h-7 rounded-lg flex items-center justify-center
+                  bg-[var(--bg)] border border-[var(--border)] text-[var(--text-faint)]
+                  hover:border-red-400 hover:text-red-500 transition-all"
+                title="Eliminar proyecto"
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="3 6 5 6 21 6"/>
+                  <path d="M19 6l-1 14H6L5 6"/>
+                  <path d="M10 11v6M14 11v6"/>
+                  <path d="M9 6V4h6v2"/>
+                </svg>
+              </button>
+            )}
             <button
               onClick={() => navigate(`/app/projects/${p.slug}`)}
               className="w-full text-left p-6 rounded-xl border border-[var(--border)] bg-[var(--bg-card)]
@@ -205,6 +259,15 @@ export default function AppProjects() {
 
       {showModal && (
         <NewProjectModal onClose={() => setShowModal(false)} onCreated={handleCreated} />
+      )}
+
+      {deleteTarget && (
+        <DeleteConfirmModal
+          project={deleteTarget}
+          onConfirm={handleDelete}
+          onClose={() => setDeleteTarget(null)}
+          deleting={deleting}
+        />
       )}
     </div>
   )
