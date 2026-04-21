@@ -1,14 +1,3 @@
-/**
- * Calendar.jsx — Calendario custom con recurrencias
- *
- * Vistas: semana (grid horario) + agenda (lista 14 días)
- * Recurrencia: none | daily | weekdays | weekly | monthly
- * Drag-to-select: clic en franja horaria pre-rellena la hora en el modal
- *
- * Supabase: tabla calendar_tasks con columna recurrence (TEXT, default 'none')
- * Ejecuta supabase/migrations/20260420_calendar_recurrence.sql antes de desplegar.
- */
-
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import { supabase } from '../../../lib/supabase'
@@ -110,6 +99,78 @@ function dbToEvent(t) {
   }
 }
 
+function getMiniCalDays(year, month) {
+  const first = new Date(year, month, 1)
+  const last  = new Date(year, month + 1, 0)
+  const startDow = (first.getDay() + 6) % 7 // Mon=0
+  const days = []
+  for (let i = 0; i < startDow; i++) {
+    days.push({ date: new Date(year, month, 1 - startDow + i), other: true })
+  }
+  for (let i = 1; i <= last.getDate(); i++) {
+    days.push({ date: new Date(year, month, i), other: false })
+  }
+  const remaining = (7 - days.length % 7) % 7
+  for (let i = 1; i <= remaining; i++) {
+    days.push({ date: new Date(year, month + 1, i), other: true })
+  }
+  return days
+}
+
+// ── MiniCalendar ──────────────────────────────────────────────────
+function MiniCalendar({ anchor, onSelectDay, events }) {
+  const [miniDate, setMiniDate] = useState(new Date(anchor))
+  const year  = miniDate.getFullYear()
+  const month = miniDate.getMonth()
+  const days  = getMiniCalDays(year, month)
+  const today = new Date()
+
+  useEffect(() => {
+    // Keep mini calendar in sync when anchor changes month
+    const a = new Date(anchor)
+    if (a.getFullYear() !== year || a.getMonth() !== month) {
+      setMiniDate(new Date(a.getFullYear(), a.getMonth(), 1))
+    }
+  }, [anchor]) // eslint-disable-line
+
+  return (
+    <div className="mini-cal">
+      <div className="mini-cal-header">
+        <span>{MONTHS_ES[month].slice(0, 3)} {year}</span>
+        <div style={{ display: 'flex', gap: 2 }}>
+          <button className="mini-cal-nav" onClick={() => setMiniDate(new Date(year, month - 1, 1))}>‹</button>
+          <button className="mini-cal-nav" onClick={() => setMiniDate(new Date(year, month + 1, 1))}>›</button>
+        </div>
+      </div>
+      <div className="mini-cal-grid">
+        {['L','M','X','J','V','S','D'].map(d => (
+          <div key={d} className="mini-cal-dow">{d}</div>
+        ))}
+        {days.map(({ date, other }, i) => {
+          const isToday    = sameDay(date, today)
+          const isSelected = !isToday && sameDay(date, new Date(anchor))
+          const hasEv      = events.some(e => eventOccursOnDay(e, date))
+          return (
+            <div
+              key={i}
+              className={[
+                'mini-cal-day',
+                isToday    ? 'today'       : '',
+                isSelected ? 'selected'    : '',
+                other      ? 'other-month' : '',
+                hasEv && !isToday ? 'has-event' : '',
+              ].filter(Boolean).join(' ')}
+              onClick={() => onSelectDay(date)}
+            >
+              {date.getDate()}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 // ── EventModal ────────────────────────────────────────────────────
 function EventModal({ ev, slot, onSave, onDelete, onClose }) {
   const isNew = !ev?.id
@@ -138,62 +199,60 @@ function EventModal({ ev, slot, onSave, onDelete, onClose }) {
   return (
     <div className="cal-modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="cal-modal">
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
-          <h2 style={{ fontWeight:700, fontSize:16, color:'var(--text)' }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20 }}>
+          <h2 style={{ fontWeight:700, fontSize:17, color:'var(--text)' }}>
             {isNew ? 'Nueva tarea' : 'Editar tarea'}
           </h2>
-          <button onClick={onClose} style={{ background:'none', border:'none', color:'var(--text-faint)', cursor:'pointer', fontSize:18 }}>×</button>
+          <button onClick={onClose}
+            style={{ background:'none', border:'none', color:'var(--text-faint)', cursor:'pointer', fontSize:18, lineHeight:1 }}>
+            ×
+          </button>
         </div>
 
         <div className="flex flex-col gap-3">
-          <input autoFocus value={title} onChange={e => setTitle(e.target.value)}
-            placeholder="Título *"
-            onKeyDown={e => e.key === 'Enter' && save()}
-            className="w-full px-4 py-2 rounded-lg border border-[var(--border)] bg-[var(--bg)]
-              text-[var(--text)] placeholder:text-[var(--text-faint)] outline-none
-              focus:border-[var(--accent)] transition-colors" />
+          <div className="cal-field">
+            <label>Título</label>
+            <input autoFocus value={title} onChange={e => setTitle(e.target.value)}
+              placeholder="¿Qué tienes que hacer?"
+              onKeyDown={e => e.key === 'Enter' && save()} />
+          </div>
 
-          <input value={desc} onChange={e => setDesc(e.target.value)}
-            placeholder="Nota (opcional)"
-            className="w-full px-4 py-2 rounded-lg border border-[var(--border)] bg-[var(--bg)]
-              text-[var(--text)] placeholder:text-[var(--text-faint)] outline-none
-              focus:border-[var(--accent)] transition-colors" />
+          <div className="cal-field">
+            <label>Nota (opcional)</label>
+            <input value={desc} onChange={e => setDesc(e.target.value)}
+              placeholder="Descripción o notas..." />
+          </div>
 
-          <label className="flex items-center gap-2 text-sm text-[var(--text-muted)] cursor-pointer">
-            <input type="checkbox" checked={allDay} onChange={e => setAllDay(e.target.checked)}
-              className="accent-[var(--accent)]" />
-            Todo el día
-          </label>
+          <div className="cal-allday-toggle" onClick={() => setAllDay(v => !v)}>
+            <div className="cal-toggle-track" style={{ background: allDay ? 'var(--accent)' : 'var(--border)' }}>
+              <div className="cal-toggle-thumb" style={{ transform: allDay ? 'translateX(16px)' : 'none' }} />
+            </div>
+            <span className="cal-toggle-label">Todo el día</span>
+          </div>
 
           {!allDay && (
-            <div className="flex gap-2">
-              <div className="flex-1">
-                <label className="block text-xs text-[var(--text-faint)] mb-1">Inicio</label>
-                <input type="datetime-local" value={startStr} onChange={e => setStart(e.target.value)}
-                  className="w-full px-3 py-1.5 text-sm rounded-lg border border-[var(--border)]
-                    bg-[var(--bg)] text-[var(--text)] outline-none focus:border-[var(--accent)]" />
+            <div style={{ display:'flex', gap:10 }}>
+              <div className="cal-field" style={{ flex:1 }}>
+                <label>Inicio</label>
+                <input type="datetime-local" value={startStr} onChange={e => setStart(e.target.value)} />
               </div>
-              <div className="flex-1">
-                <label className="block text-xs text-[var(--text-faint)] mb-1">Fin</label>
-                <input type="datetime-local" value={endStr} onChange={e => setEnd(e.target.value)}
-                  className="w-full px-3 py-1.5 text-sm rounded-lg border border-[var(--border)]
-                    bg-[var(--bg)] text-[var(--text)] outline-none focus:border-[var(--accent)]" />
+              <div className="cal-field" style={{ flex:1 }}>
+                <label>Fin</label>
+                <input type="datetime-local" value={endStr} onChange={e => setEnd(e.target.value)} />
               </div>
             </div>
           )}
 
           {allDay && (
-            <div>
-              <label className="block text-xs text-[var(--text-faint)] mb-1">Fecha</label>
+            <div className="cal-field">
+              <label>Fecha</label>
               <input type="date" value={startStr.slice(0, 10)}
-                onChange={e => { setStart(e.target.value); setEnd(e.target.value) }}
-                className="w-full px-3 py-1.5 text-sm rounded-lg border border-[var(--border)]
-                  bg-[var(--bg)] text-[var(--text)] outline-none focus:border-[var(--accent)]" />
+                onChange={e => { setStart(e.target.value); setEnd(e.target.value) }} />
             </div>
           )}
 
-          <div>
-            <label className="block text-xs text-[var(--text-faint)] mb-1 uppercase tracking-wider font-semibold">Repetir</label>
+          <div className="cal-field">
+            <label>Repetir</label>
             <div className="recur-pills">
               {RECURRENCE_OPTIONS.map(o => (
                 <button key={o.value}
@@ -205,8 +264,8 @@ function EventModal({ ev, slot, onSave, onDelete, onClose }) {
             </div>
           </div>
 
-          <div>
-            <label className="block text-xs text-[var(--text-faint)] mb-1 uppercase tracking-wider font-semibold">Color</label>
+          <div className="cal-field">
+            <label>Color</label>
             <div className="color-picker">
               {COLORS.map(c => (
                 <div key={c.hex}
@@ -218,21 +277,14 @@ function EventModal({ ev, slot, onSave, onDelete, onClose }) {
           </div>
         </div>
 
-        <div className="flex gap-3 justify-end mt-5 pt-4 border-t border-[var(--border)]">
+        <div style={{ display:'flex', gap:8, justifyContent:'flex-end', marginTop:20, paddingTop:16, borderTop:'1px solid var(--border)' }}>
           {!isNew && (
-            <button onClick={() => onDelete(ev.id)}
-              className="px-4 py-2 rounded-lg text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors">
+            <button className="cal-btn cal-btn-danger" onClick={() => onDelete(ev.id)}>
               Eliminar
             </button>
           )}
-          <button onClick={onClose}
-            className="px-4 py-2 rounded-lg text-sm text-[var(--text-muted)] hover:bg-[var(--bg-subtle)] transition-colors">
-            Cancelar
-          </button>
-          <button onClick={save} disabled={!title.trim()}
-            className="px-4 py-2 rounded-lg text-sm bg-[var(--accent)] text-white font-semibold
-              hover:opacity-90 disabled:opacity-40 transition-opacity
-              shadow-[0_2px_8px_rgba(249,115,22,0.3)]">
+          <button className="cal-btn cal-btn-ghost" onClick={onClose}>Cancelar</button>
+          <button className="cal-btn cal-btn-primary" onClick={save} disabled={!title.trim()}>
             {isNew ? 'Crear tarea' : 'Guardar'}
           </button>
         </div>
@@ -459,41 +511,62 @@ export default function Calendar() {
 
   return (
     <div className="cal-root">
-      <div className="cal-header">
-        <button className="cal-nav-btn" onClick={prevWeek}>‹</button>
-        <button className="cal-nav-btn" onClick={nextWeek}>›</button>
-        <button className="cal-today-btn" onClick={goToday}>Hoy</button>
-        <span className="cal-title">{titleStr}</span>
-
-        <div className="cal-view-tabs">
-          <button className={`cal-view-tab ${view === 'week' ? 'active' : ''}`} onClick={() => setView('week')}>Semana</button>
-          <button className={`cal-view-tab ${showWeekends ? '' : 'active'}`} onClick={() => setWeekends(v => !v)}>
-            {showWeekends ? 'L–D' : 'L–V'}
+      {/* Mini calendar sidebar */}
+      <div className="cal-sidebar">
+        <div className="cal-sidebar-section-title">Navegación</div>
+        <MiniCalendar
+          anchor={anchor}
+          events={events}
+          onSelectDay={d => setAnchor(d)}
+        />
+        <div className="cal-sidebar-section-title" style={{ marginTop: 8 }}>Vista</div>
+        <div className="cal-sidebar-toggle-row">
+          <span className="cal-sidebar-toggle-label">Fines de semana</span>
+          <button
+            className={`cal-weekends-toggle ${showWeekends ? 'on' : ''}`}
+            onClick={() => setWeekends(v => !v)}
+            aria-label="Mostrar u ocultar fines de semana"
+          >
+            <span className="cal-weekends-thumb" />
           </button>
-          <button className={`cal-view-tab ${view === 'agenda' ? 'active' : ''}`} onClick={() => setView('agenda')}>Agenda</button>
         </div>
-
-        <button className="cal-add-btn" onClick={() => setModal({ ev: null, slot: null })}>
-          + Nueva tarea
-        </button>
       </div>
 
-      {view === 'week' && (
-        <WeekView
-          days={weekDays}
-          events={events}
-          onSlotClick={slot => setModal({ ev: null, slot })}
-          onEventClick={ev  => setModal({ ev, slot: null })}
-          showWeekends={showWeekends}
-        />
-      )}
-      {view === 'agenda' && (
-        <AgendaView
-          days={weekDays}
-          events={events}
-          onEventClick={ev => setModal({ ev, slot: null })}
-        />
-      )}
+      {/* Main calendar area */}
+      <div className="cal-main-area">
+        <div className="cal-header">
+          <button className="cal-nav-btn" onClick={prevWeek}>‹</button>
+          <button className="cal-nav-btn" onClick={nextWeek}>›</button>
+          <button className="cal-today-btn" onClick={goToday}>Hoy</button>
+          <span className="cal-title">{titleStr}</span>
+
+          <div className="cal-view-tabs">
+            <button className={`cal-view-tab ${view === 'week' ? 'active' : ''}`} onClick={() => setView('week')}>Semana</button>
+            <button className={`cal-view-tab ${view === 'agenda' ? 'active' : ''}`} onClick={() => setView('agenda')}>Agenda</button>
+          </div>
+
+          <button className="cal-add-btn" onClick={() => setModal({ ev: null, slot: null })}>
+            + Nueva tarea
+          </button>
+        </div>
+
+        {view === 'week' && (
+          <WeekView
+            days={weekDays}
+            events={events}
+            onSlotClick={slot => setModal({ ev: null, slot })}
+            onEventClick={ev  => setModal({ ev, slot: null })}
+            showWeekends={showWeekends}
+          />
+        )}
+        {view === 'agenda' && (
+          <AgendaView
+            days={weekDays}
+            events={events}
+            onEventClick={ev => setModal({ ev, slot: null })}
+          />
+        )}
+      </div>
 
       {modal && (
         <EventModal
