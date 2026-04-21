@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
-import { useOutletContext, NavLink, useParams } from 'react-router-dom'
+import { useOutletContext } from 'react-router-dom'
 import { supabase } from '../../../lib/supabase'
+import ModuleShell from './ModuleShell'
 import './Calendar.css'
 
 // ── Constantes ────────────────────────────────────────────────────
@@ -99,6 +100,12 @@ function dbToEvent(t) {
   }
 }
 
+function toLocalInputStr(isoOrDate) {
+  const d = isoOrDate instanceof Date ? isoOrDate : new Date(isoOrDate)
+  const pad = n => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
 function getMiniCalDays(year, month) {
   const first = new Date(year, month, 1)
   const last  = new Date(year, month + 1, 0)
@@ -180,15 +187,15 @@ function EventModal({ ev, slot, onSave, onDelete, onClose }) {
   const [allDay, setAllDay]     = useState(ev?.allDay ?? slot?.allDay ?? false)
   const [recurrence, setRecur]  = useState(ev?.recurrence ?? 'none')
   const [startStr, setStart]    = useState(() => {
-    if (ev?.start)   return ev.start.slice(0, 16)
-    if (slot?.start) return new Date(slot.start).toISOString().slice(0, 16)
-    return new Date().toISOString().slice(0, 16)
+    if (ev?.start)   return toLocalInputStr(ev.start)
+    if (slot?.start) return toLocalInputStr(slot.start)
+    return toLocalInputStr(new Date())
   })
   const [endStr, setEnd]        = useState(() => {
-    if (ev?.end)   return ev.end.slice(0, 16)
-    if (slot?.end) return new Date(slot.end).toISOString().slice(0, 16)
+    if (ev?.end)   return toLocalInputStr(ev.end)
+    if (slot?.end) return toLocalInputStr(slot.end)
     const d = new Date(); d.setHours(d.getHours() + 1)
-    return d.toISOString().slice(0, 16)
+    return toLocalInputStr(d)
   })
 
   function save() {
@@ -448,7 +455,6 @@ function AgendaView({ days, events, onEventClick }) {
 // ── Calendar (main export) ────────────────────────────────────────
 export default function Calendar() {
   const { project, modules } = useOutletContext()
-  const { slug } = useParams()
   const [events, setEvents]         = useState([])
   const [anchor, setAnchor]         = useState(new Date())
   const [view, setView]             = useState('week')
@@ -471,8 +477,8 @@ export default function Calendar() {
       color,
       all_day:     allDay,
       recurrence,
-      start_time:  startStr || new Date().toISOString(),
-      end_time:    endStr   || null,
+      start_time:  startStr ? new Date(startStr).toISOString() : new Date().toISOString(),
+      end_time:    endStr   ? new Date(endStr).toISOString()   : null,
     }
     if (modal?.ev?.id) {
       const { error } = await supabase
@@ -511,51 +517,27 @@ export default function Calendar() {
     : `${d0.getDate()} ${MONTHS_ES[d0.getMonth()].slice(0,3)} – ${d1.getDate()} ${MONTHS_ES[d1.getMonth()].slice(0,3)}`
 
   return (
-    <div className="cal-root">
-      {/* Unified sidebar: project nav + mini calendar */}
-      <div className="cal-sidebar">
-        {/* Project logo */}
-        <div className="cal-sidebar-logo">
-          <span>{project.icon}</span>
-          <span className="cal-sidebar-logo-name">{project.name}</span>
-        </div>
-
-        {/* Module nav */}
-        {(modules ?? []).map(m => (
-          <NavLink
-            key={m.path}
-            to={`/app/projects/${slug}/${m.path}`}
-            className={({ isActive }) =>
-              `cal-nav-item${isActive ? ' active' : ''}`
-            }
-          >
-            <span className="cal-nav-icon">{m.icon}</span>
-            {m.label}
-          </NavLink>
-        ))}
-
-        <div style={{ flex: 1 }} />
-
-        {/* Mini calendar */}
-        <div className="cal-sidebar-section-title">Navegación</div>
-        <MiniCalendar
-          anchor={anchor}
-          events={events}
-          onSelectDay={d => setAnchor(d)}
-        />
-        <div className="cal-sidebar-section-title" style={{ marginTop: 8 }}>Vista</div>
-        <div className="cal-sidebar-toggle-row">
-          <span className="cal-sidebar-toggle-label">Fines de semana</span>
-          <button
-            className={`cal-weekends-toggle ${showWeekends ? 'on' : ''}`}
-            onClick={() => setWeekends(v => !v)}
-            aria-label="Mostrar u ocultar fines de semana"
-          >
-            <span className="cal-weekends-thumb" />
-          </button>
-        </div>
-      </div>
-
+    <ModuleShell
+      project={project}
+      modules={modules}
+      sidebarExtra={
+        <>
+          <div className="cal-sidebar-section-title">Navegación</div>
+          <MiniCalendar anchor={anchor} events={events} onSelectDay={d => setAnchor(d)} />
+          <div className="cal-sidebar-section-title" style={{ marginTop: 8 }}>Vista</div>
+          <div className="cal-sidebar-toggle-row">
+            <span className="cal-sidebar-toggle-label">Fines de semana</span>
+            <button
+              className={`cal-weekends-toggle ${showWeekends ? 'on' : ''}`}
+              onClick={() => setWeekends(v => !v)}
+              aria-label="Mostrar u ocultar fines de semana"
+            >
+              <span className="cal-weekends-thumb" />
+            </button>
+          </div>
+        </>
+      }
+    >
       {/* Main calendar area */}
       <div className="cal-main-area">
         <div className="cal-header">
@@ -601,6 +583,6 @@ export default function Calendar() {
           onClose={() => setModal(null)}
         />
       )}
-    </div>
+    </ModuleShell>
   )
 }
