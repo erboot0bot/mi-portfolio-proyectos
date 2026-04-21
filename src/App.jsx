@@ -9,7 +9,8 @@ import Login from './pages/Login'
 import AppProjects from './pages/app/Projects'
 import AppProjectDetail from './pages/app/ProjectDetail'
 import Calendar from './pages/app/modules/Calendar'
-import Shopping from './pages/app/modules/Shopping'
+import ShoppingList from './pages/app/modules/ShoppingList'
+import Menu from './pages/app/modules/Menu'
 import Recipes from './pages/app/modules/Recipes'
 import RecipeDetail from './pages/app/modules/RecipeDetail'
 import Welcome from './pages/app/modules/Welcome'
@@ -51,7 +52,8 @@ export default function App() {
             >
               <Route index element={<Welcome />} />
               <Route path="calendar" element={<Calendar />} />
-              <Route path="shopping" element={<Shopping />} />
+              <Route path="shopping" element={<ShoppingList />} />
+              <Route path="menu" element={<Menu />} />
               <Route path="recipes" element={<Recipes />} />
               <Route path="recipes/:recipeId" element={<RecipeDetail />} />
             </Route>

@@ -7,8 +7,9 @@ import { ProjectProvider } from '../../contexts/ProjectContext'
 
 const MODULES = [
   { path: 'calendar', label: 'Calendario', icon: '📅' },
-  { path: 'shopping', label: 'Lista & Menú', icon: '🛒' },
-  { path: 'recipes', label: 'Recetas', icon: '👨‍🍳' },
+  { path: 'shopping', label: 'Lista',       icon: '🛒' },
+  { path: 'menu',     label: 'Menú',        icon: '🍽️' },
+  { path: 'recipes',  label: 'Recetas',     icon: '👨‍🍳' },
 ]
 
 function MembersSection({ project }) {

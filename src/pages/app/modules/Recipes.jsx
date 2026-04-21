@@ -302,13 +302,27 @@ function ManualModal({ projectId, recipe: existingRecipe, onSaved, onClose }) {
 export default function Recipes() {
   const { project } = useOutletContext()
   const navigate = useNavigate()
-  const [recipes, setRecipes] = useState([])
-  const [showAI, setShowAI] = useState(false)
-  const [showManual, setShowManual] = useState(false)
-  const [menuOpen, setMenuOpen] = useState(null) // recipe id
-  const [editRecipe, setEditRecipe] = useState(null) // recipe to edit
-  const [deleteRecipe, setDeleteRecipe] = useState(null) // recipe to confirm delete
+  const [recipes, setRecipes]           = useState([])
+  const [showAI, setShowAI]             = useState(false)
+  const [showManual, setShowManual]     = useState(false)
+  const [menuOpen, setMenuOpen]         = useState(null)
+  const [editRecipe, setEditRecipe]     = useState(null)
+  const [deleteRecipe, setDeleteRecipe] = useState(null)
   const [deleteConfirming, setDeleteConfirming] = useState(false)
+  // New: tabs + filters + AI panel
+  const [tab, setTab]               = useState('all') // 'all'|'fav'|'ai'|'quick'
+  const [timeFilter, setTimeFilter] = useState(null)  // null|15|30|60
+  const [favIds, setFavIds]         = useState(new Set())
+  const [searchQuery, setSearchQuery] = useState('')
+  const [ingredients, setIngredients] = useState('')
+
+  function toggleFav(id) {
+    setFavIds(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
 
   useEffect(() => {
     supabase.from('recipes').select('*').eq('project_id', project.id)
@@ -340,89 +354,174 @@ export default function Recipes() {
     setEditRecipe(null)
   }
 
+  // Filter logic
+  let visibleRecipes = recipes.filter(r =>
+    !searchQuery || r.title.toLowerCase().includes(searchQuery.toLowerCase())
+  )
+  if (tab === 'fav')   visibleRecipes = visibleRecipes.filter(r => favIds.has(r.id))
+  if (tab === 'ai')    visibleRecipes = visibleRecipes.filter(r => r.ai_generated)
+  if (tab === 'quick') visibleRecipes = visibleRecipes.filter(r => (r.prep_time ?? 0) + (r.cook_time ?? 0) <= 20)
+  if (timeFilter)      visibleRecipes = visibleRecipes.filter(r => (r.prep_time ?? 0) + (r.cook_time ?? 0) <= timeFilter)
+
   return (
-    <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-extrabold text-[var(--text)]">Recetas</h1>
-        <div className="flex items-center gap-2">
-          <button onClick={() => setShowManual(true)}
-            className="px-4 py-2 rounded-xl border border-[var(--border)] text-[var(--text-muted)] text-sm font-medium
-              hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors">
+    <div style={{ display:'flex', flexDirection:'column', height:'100%', overflow:'hidden' }}>
+      {/* Tabs */}
+      <div style={{ display:'flex', gap:2, padding:'12px 20px', borderBottom:'1px solid var(--border)', flexShrink:0, overflowX:'auto' }}>
+        {[['all','Todas'],['fav',"⭐ Favoritas"],['ai',"✨ Con IA"],['quick',"⚡ Rápidas (<20')"]].map(([v,l]) => (
+          <button key={v} onClick={() => setTab(v)} style={{
+            padding:'6px 14px', borderRadius:8, fontSize:13, fontWeight:500, border:'none',
+            cursor:'pointer', whiteSpace:'nowrap', transition:'all .15s',
+            background: tab === v ? 'var(--accent)' : 'none',
+            color: tab === v ? '#fff' : 'var(--text-muted)',
+          }}>{l}</button>
+        ))}
+        <div style={{ marginLeft:'auto', display:'flex', gap:6 }}>
+          <button onClick={() => setShowManual(true)} style={{
+            padding:'6px 14px', borderRadius:8, fontSize:13, fontWeight:500,
+            border:'1px solid var(--border)', background:'none', color:'var(--text-muted)',
+            cursor:'pointer', transition:'all .15s', whiteSpace:'nowrap',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.color = 'var(--accent)' }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-muted)' }}>
             + Nueva receta
-          </button>
-          <button onClick={() => setShowAI(true)}
-            className="px-4 py-2 rounded-xl bg-[var(--accent)] text-white text-sm font-medium
-              hover:opacity-90 transition-opacity">
-            ✨ Sugerir con IA
           </button>
         </div>
       </div>
 
-      {recipes.length === 0 ? (
-        <div className="text-center py-20 text-[var(--text-faint)]">
-          <p className="text-4xl mb-3">👨‍🍳</p>
-          <p className="text-sm">Sin recetas aún — usa la IA para generar las primeras</p>
-        </div>
-      ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {recipes.map((r, i) => (
-            <motion.div key={r.id}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05 }}
-              className="relative group">
-              {/* Three-dot menu */}
-              <div className="absolute top-3 right-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button
-                  onClick={e => { e.stopPropagation(); setMenuOpen(menuOpen === r.id ? null : r.id) }}
-                  className="w-7 h-7 rounded-lg flex items-center justify-center
-                    bg-[var(--bg)] border border-[var(--border)] text-[var(--text-muted)]
-                    hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors text-base"
-                >
-                  ⋯
-                </button>
-                {menuOpen === r.id && (
-                  <div className="absolute right-0 top-full mt-1 w-32 bg-[var(--bg-card)] border border-[var(--border)]
-                    rounded-xl shadow-lg overflow-hidden z-20">
-                    <button
-                      onClick={e => { e.stopPropagation(); setEditRecipe(r); setMenuOpen(null) }}
-                      className="w-full text-left px-4 py-2 text-sm text-[var(--text)] hover:bg-[var(--accent)] hover:text-white transition-colors">
-                      ✏️ Editar
-                    </button>
-                    <button
-                      onClick={e => { e.stopPropagation(); setDeleteRecipe(r); setMenuOpen(null) }}
-                      className="w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors">
-                      🗑 Eliminar
-                    </button>
-                  </div>
-                )}
-              </div>
-              <button onClick={() => navigate(`${r.id}`)}
-                className="w-full text-left p-5 rounded-xl border border-[var(--border)] bg-[var(--bg-card)]
-                  hover:border-[var(--accent)] hover:shadow-md transition-all">
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <h3 className="font-semibold text-[var(--text)] leading-snug">{r.title}</h3>
-                  {r.ai_generated && (
-                    <span className="shrink-0 text-xs px-1.5 py-0.5 rounded-full bg-orange-100 dark:bg-orange-900/30
-                      text-[var(--accent)] font-medium">IA</span>
-                  )}
-                </div>
-                <p className="text-xs text-[var(--text-muted)]">
-                  {r.servings} personas · {(r.prep_time ?? 0) + (r.cook_time ?? 0)} min
-                </p>
-                {r.tags?.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {r.tags.slice(0, 3).map(tag => (
-                      <span key={tag} className="text-xs px-2 py-0.5 rounded-full border border-[var(--border)]
-                        text-[var(--text-faint)]">{tag}</span>
-                    ))}
-                  </div>
-                )}
-              </button>
-            </motion.div>
+      {/* Toolbar */}
+      <div style={{ display:'flex', alignItems:'center', gap:8, padding:'10px 20px', borderBottom:'1px solid var(--border)', flexShrink:0 }}>
+        <input
+          value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
+          placeholder="Buscar recetas..."
+          style={{ flex:1, padding:'8px 12px', borderRadius:9, border:'1px solid var(--border)', background:'var(--bg)', color:'var(--text)', fontSize:13, outline:'none', transition:'border-color .15s' }}
+          onFocus={e => e.target.style.borderColor = 'var(--accent)'}
+          onBlur={e => e.target.style.borderColor = 'var(--border)'}
+        />
+        <div style={{ display:'flex', gap:4 }}>
+          {[null, 15, 30, 60].map(t => (
+            <button key={t ?? 'all'} onClick={() => setTimeFilter(t)} style={{
+              padding:'5px 10px', borderRadius:999, fontSize:11, fontWeight:500,
+              border:`1px solid ${timeFilter === t ? 'var(--accent)' : 'var(--border)'}`,
+              background: timeFilter === t ? 'var(--accent)' : 'transparent',
+              color: timeFilter === t ? '#fff' : 'var(--text-muted)',
+              cursor:'pointer', transition:'all .15s',
+            }}>{t ? `≤${t}'` : 'Todos'}</button>
           ))}
         </div>
-      )}
+      </div>
+
+      {/* Grid + AI panel */}
+      <div style={{ flex:1, display:'flex', overflow:'hidden' }}>
+        {/* Recipe grid */}
+        <div style={{ flex:1, overflowY:'auto', padding:'16px 20px' }}>
+          {visibleRecipes.length === 0 ? (
+            <div className="text-center py-20 text-[var(--text-faint)]">
+              <p className="text-4xl mb-3">👨‍🍳</p>
+              <p className="text-sm">{tab === 'fav' ? 'Sin recetas favoritas — haz clic en ⭐ para marcarlas' : 'Sin recetas aún — usa la IA para generar las primeras'}</p>
+            </div>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {visibleRecipes.map((r, i) => (
+                <motion.div key={r.id}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.05 }}
+                  className="relative group">
+                  {/* Three-dot menu */}
+                  <div className="absolute top-3 right-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={e => { e.stopPropagation(); setMenuOpen(menuOpen === r.id ? null : r.id) }}
+                      className="w-7 h-7 rounded-lg flex items-center justify-center
+                        bg-[var(--bg)] border border-[var(--border)] text-[var(--text-muted)]
+                        hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors text-base">
+                      ⋯
+                    </button>
+                    {menuOpen === r.id && (
+                      <div className="absolute right-0 top-full mt-1 w-32 bg-[var(--bg-card)] border border-[var(--border)]
+                        rounded-xl shadow-lg overflow-hidden z-20">
+                        <button
+                          onClick={e => { e.stopPropagation(); setEditRecipe(r); setMenuOpen(null) }}
+                          className="w-full text-left px-4 py-2 text-sm text-[var(--text)] hover:bg-[var(--accent)] hover:text-white transition-colors">
+                          ✏️ Editar
+                        </button>
+                        <button
+                          onClick={e => { e.stopPropagation(); setDeleteRecipe(r); setMenuOpen(null) }}
+                          className="w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors">
+                          🗑 Eliminar
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  {/* Fav button */}
+                  <button
+                    onClick={e => { e.stopPropagation(); toggleFav(r.id) }}
+                    className="absolute top-3 left-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity
+                      w-7 h-7 rounded-lg flex items-center justify-center
+                      bg-[var(--bg)] border border-[var(--border)] text-base"
+                    style={{ color: favIds.has(r.id) ? '#f59e0b' : 'var(--text-faint)' }}>
+                    {favIds.has(r.id) ? '⭐' : '☆'}
+                  </button>
+                  <button onClick={() => navigate(`${r.id}`)}
+                    className="w-full text-left p-5 rounded-xl border border-[var(--border)] bg-[var(--bg-card)]
+                      hover:border-[var(--accent)] hover:shadow-md transition-all">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <h3 className="font-semibold text-[var(--text)] leading-snug">{r.title}</h3>
+                      {r.ai_generated && (
+                        <span className="shrink-0 text-xs px-1.5 py-0.5 rounded-full bg-orange-100 dark:bg-orange-900/30
+                          text-[var(--accent)] font-medium">IA</span>
+                      )}
+                    </div>
+                    <p className="text-xs text-[var(--text-muted)]">
+                      {r.servings} personas · {(r.prep_time ?? 0) + (r.cook_time ?? 0)} min
+                    </p>
+                    {r.tags?.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {r.tags.slice(0, 3).map(tag => (
+                          <span key={tag} className="text-xs px-2 py-0.5 rounded-full border border-[var(--border)]
+                            text-[var(--text-faint)]">{tag}</span>
+                        ))}
+                      </div>
+                    )}
+                  </button>
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* AI panel sidebar */}
+        <div style={{ width:260, borderLeft:'1px solid var(--border)', padding:16, overflowY:'auto', flexShrink:0, display:'flex', flexDirection:'column', gap:10 }}>
+          <div style={{ fontWeight:700, fontSize:13, color:'var(--text)', display:'flex', alignItems:'center', gap:6 }}>
+            ✨ ¿Qué tenemos en casa?
+          </div>
+          <p style={{ fontSize:11, color:'var(--text-faint)', lineHeight:1.6, margin:0 }}>
+            Dime qué ingredientes tienes y la IA sugiere recetas posibles.
+          </p>
+          <textarea
+            value={ingredients}
+            onChange={e => setIngredients(e.target.value)}
+            placeholder="pollo, arroz, tomate, espinacas..."
+            rows={3}
+            style={{ width:'100%', padding:'8px 10px', borderRadius:9, border:'1px solid var(--border)', background:'var(--bg)', color:'var(--text)', fontSize:12, outline:'none', resize:'none', transition:'border-color .15s' }}
+            onFocus={e => e.target.style.borderColor = 'var(--accent)'}
+            onBlur={e => e.target.style.borderColor = 'var(--border)'}
+          />
+          <button
+            onClick={() => setShowAI(true)}
+            disabled={!ingredients.trim()}
+            style={{ width:'100%', padding:10, borderRadius:10, background:'linear-gradient(135deg, var(--accent), #e05c00)', color:'#fff', border:'none', fontSize:12, fontWeight:700, cursor:'pointer', opacity: ingredients.trim() ? 1 : .4, display:'flex', alignItems:'center', justifyContent:'center', gap:6 }}>
+            ✨ Sugerir recetas
+          </button>
+          <div style={{ borderTop:'1px solid var(--border)', paddingTop:10 }}>
+            <div style={{ fontSize:11, fontWeight:600, color:'var(--text-faint)', marginBottom:8, textTransform:'uppercase', letterSpacing:'.08em' }}>O crea manualmente</div>
+            <button onClick={() => setShowManual(true)} style={{ width:'100%', padding:'8px 10px', borderRadius:9, border:'1px solid var(--border)', background:'none', color:'var(--text-muted)', fontSize:12, fontWeight:500, cursor:'pointer', transition:'all .15s' }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.color = 'var(--accent)' }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-muted)' }}>
+              + Nueva receta
+            </button>
+          </div>
+        </div>
+      </div>
 
       {showAI && (
         <AIModal
