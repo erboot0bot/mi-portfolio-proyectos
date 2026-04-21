@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
-import { useOutletContext } from 'react-router-dom'
+import { useOutletContext, NavLink, useParams } from 'react-router-dom'
 import { supabase } from '../../../lib/supabase'
 import './Calendar.css'
 
@@ -447,7 +447,8 @@ function AgendaView({ days, events, onEventClick }) {
 
 // ── Calendar (main export) ────────────────────────────────────────
 export default function Calendar() {
-  const { project } = useOutletContext()
+  const { project, modules } = useOutletContext()
+  const { slug } = useParams()
   const [events, setEvents]         = useState([])
   const [anchor, setAnchor]         = useState(new Date())
   const [view, setView]             = useState('week')
@@ -511,8 +512,31 @@ export default function Calendar() {
 
   return (
     <div className="cal-root">
-      {/* Mini calendar sidebar */}
+      {/* Unified sidebar: project nav + mini calendar */}
       <div className="cal-sidebar">
+        {/* Project logo */}
+        <div className="cal-sidebar-logo">
+          <span>{project.icon}</span>
+          <span className="cal-sidebar-logo-name">{project.name}</span>
+        </div>
+
+        {/* Module nav */}
+        {(modules ?? []).map(m => (
+          <NavLink
+            key={m.path}
+            to={`/app/projects/${slug}/${m.path}`}
+            className={({ isActive }) =>
+              `cal-nav-item${isActive ? ' active' : ''}`
+            }
+          >
+            <span className="cal-nav-icon">{m.icon}</span>
+            {m.label}
+          </NavLink>
+        ))}
+
+        <div style={{ flex: 1 }} />
+
+        {/* Mini calendar */}
         <div className="cal-sidebar-section-title">Navegación</div>
         <MiniCalendar
           anchor={anchor}

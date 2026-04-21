@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { NavLink, Outlet, useParams, useNavigate } from 'react-router-dom'
+import { NavLink, Outlet, useParams, useNavigate, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
@@ -82,12 +82,18 @@ function MembersSection({ project }) {
   )
 }
 
+const FULL_LAYOUT_MODULES = ['calendar', 'shopping', 'menu', 'recipes']
+
 export default function AppProjectDetail() {
   const { slug } = useParams()
   const { user } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const [project, setProject] = useState(null)
   const [loading, setLoading] = useState(true)
+
+  const currentModule = location.pathname.split('/').pop()
+  const isFullLayout = FULL_LAYOUT_MODULES.includes(currentModule)
 
   useEffect(() => {
     supabase
@@ -107,6 +113,15 @@ export default function AppProjectDetail() {
       <div className="flex items-center justify-center min-h-[50vh]">
         <div className="w-6 h-6 border-2 border-[var(--accent)] border-t-transparent rounded-full animate-spin" />
       </div>
+    )
+  }
+
+  // Full-screen modules manage their own sidebar layout
+  if (isFullLayout) {
+    return (
+      <ProjectProvider project={project}>
+        <Outlet context={{ project, modules: MODULES }} />
+      </ProjectProvider>
     )
   }
 
