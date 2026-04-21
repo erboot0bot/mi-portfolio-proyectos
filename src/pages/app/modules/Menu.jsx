@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useOutletContext } from 'react-router-dom'
+import ModuleShell from './ModuleShell'
 import { format, startOfWeek, addDays } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { supabase } from '../../../lib/supabase'
@@ -13,7 +14,7 @@ const MEALS = [
 const DAYS_SHORT = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
 
 export default function Menu() {
-  const { project } = useOutletContext()
+  const { project, modules } = useOutletContext()
   const [menu, setMenu]             = useState({})
   const [weekStart, setWeekStart]   = useState(() =>
     format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd')
@@ -130,6 +131,7 @@ export default function Menu() {
   const weekLabel = `${format(weekDates[0], "d MMM", { locale: es })} – ${format(weekDates[6], "d MMM", { locale: es })}`
 
   return (
+    <ModuleShell project={project} modules={modules}>
     <div style={{ display:'flex', flexDirection:'column', height:'100%', overflow:'hidden' }}>
       {/* Header */}
       <div style={{ display:'flex', alignItems:'center', gap:10, padding:'12px 20px', borderBottom:'1px solid var(--border)', flexShrink:0, flexWrap:'wrap' }}>
@@ -296,5 +298,6 @@ export default function Menu() {
         </div>
       )}
     </div>
+    </ModuleShell>
   )
 }

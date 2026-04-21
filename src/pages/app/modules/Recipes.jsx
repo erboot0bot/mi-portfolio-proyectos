@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useOutletContext, useNavigate } from 'react-router-dom'
+import ModuleShell from './ModuleShell'
 import { motion } from 'framer-motion'
 import { supabase } from '../../../lib/supabase'
 import { suggestRecipes } from '../../../lib/anthropic'
@@ -300,7 +301,7 @@ function ManualModal({ projectId, recipe: existingRecipe, onSaved, onClose }) {
 }
 
 export default function Recipes() {
-  const { project } = useOutletContext()
+  const { project, modules } = useOutletContext()
   const navigate = useNavigate()
   const [recipes, setRecipes]           = useState([])
   const [showAI, setShowAI]             = useState(false)
@@ -364,6 +365,7 @@ export default function Recipes() {
   if (timeFilter)      visibleRecipes = visibleRecipes.filter(r => (r.prep_time ?? 0) + (r.cook_time ?? 0) <= timeFilter)
 
   return (
+    <ModuleShell project={project} modules={modules}>
     <div style={{ display:'flex', flexDirection:'column', height:'100%', overflow:'hidden' }}>
       {/* Tabs */}
       <div style={{ display:'flex', gap:2, padding:'12px 20px', borderBottom:'1px solid var(--border)', flexShrink:0, overflowX:'auto' }}>
@@ -570,5 +572,6 @@ export default function Recipes() {
         />
       )}
     </div>
+    </ModuleShell>
   )
 }

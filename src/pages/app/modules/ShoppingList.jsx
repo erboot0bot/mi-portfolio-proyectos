@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import { supabase } from '../../../lib/supabase'
+import ModuleShell from './ModuleShell'
 
 const CATEGORIES = [
   { id: 'frutas',   label: 'Frutas & Verduras', icon: '🥦' },
@@ -122,7 +123,7 @@ function SwipeItem({ item, onToggle, onDelete }) {
 
 // ── Main component ────────────────────────────────────────────────
 export default function ShoppingList() {
-  const { project } = useOutletContext()
+  const { project, modules } = useOutletContext()
   const [items, setItems]           = useState([])
   const [isMobile, setIsMobile]     = useState(window.innerWidth < 640)
   const [activeCat, setActiveCat]   = useState(null)
@@ -192,7 +193,7 @@ export default function ShoppingList() {
   const checked = items.filter(i => i.checked).length
   const pct = items.length ? Math.round(checked / items.length * 100) : 0
 
-  // ── Mobile view ────────────────────────────────────────────────
+  // ── Mobile view (no shell — full screen) ──────────────────────
   if (isMobile) {
     const storeItems = items.filter(i => i.store === activeStore || activeStore === 'General')
     const byCat = CATEGORIES.reduce((acc, c) => {
@@ -272,6 +273,7 @@ export default function ShoppingList() {
   }, {})
 
   return (
+    <ModuleShell project={project} modules={modules}>
     <div style={{ display:'flex', height:'100%', overflow:'hidden' }}>
       {/* Category sidebar */}
       <div style={{ width:200, flexShrink:0, borderRight:'1px solid var(--border)', overflow:'auto', padding:'16px 12px', background:'var(--bg-card)' }}>
@@ -358,5 +360,6 @@ export default function ShoppingList() {
         </div>
       )}
     </div>
+    </ModuleShell>
   )
 }
