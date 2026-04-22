@@ -1,9 +1,7 @@
-import { NavLink, useParams } from 'react-router-dom'
+import { NavLink } from 'react-router-dom'
 import './ModuleShell.css'
 
 export default function ModuleShell({ project, modules, sidebarExtra, children }) {
-  const { slug } = useParams()
-
   return (
     <div className="module-shell">
       <aside className="module-shell-sidebar">
@@ -16,7 +14,7 @@ export default function ModuleShell({ project, modules, sidebarExtra, children }
           {(modules ?? []).map(m => (
             <NavLink
               key={m.path}
-              to={`/app/projects/${slug}/${m.path}`}
+              to={`/app/projects/hogar/${m.path}`}
               className={({ isActive }) =>
                 `module-shell-nav-item${isActive ? ' active' : ''}`
               }
