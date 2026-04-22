@@ -103,17 +103,11 @@ export default function Layout({ children }) {
 
           {/* Desktop nav */}
           <nav className="hidden sm:flex items-center gap-6 text-sm">
-            <NavLink to="/" className={navLinkClass}>Proyectos</NavLink>
-            <NavLink to="/app/projects" className={navLinkClass}>
-              <span className="inline-flex items-center gap-1.5">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                  strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.5 }}>
-                  <rect x="3" y="11" width="18" height="11" rx="2"/>
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                </svg>
-                Hogar App
-              </span>
-            </NavLink>
+            <NavLink to="/" className={navLinkClass}>Inicio</NavLink>
+            <NavLink to="/projects" className={navLinkClass}>Proyectos</NavLink>
+            <NavLink to="/apps" className={navLinkClass}>Apps</NavLink>
+            <NavLink to="/courses" className={navLinkClass}>Cursos</NavLink>
+            <NavLink to="/store" className={navLinkClass}>Tienda</NavLink>
             <a
               href="https://github.com/H3nky"
               target="_blank"
@@ -169,17 +163,11 @@ export default function Layout({ children }) {
         {/* Mobile dropdown */}
         {menuOpen && (
           <div className="sm:hidden border-t border-[var(--border)] bg-[var(--bg)] px-4 py-4 flex flex-col gap-4 text-sm">
-            <NavLink to="/" className={navLinkClass}>Proyectos</NavLink>
-            <NavLink to="/app/projects" className={navLinkClass}>
-              <span className="inline-flex items-center gap-1.5">
-                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                  strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.5 }}>
-                  <rect x="3" y="11" width="18" height="11" rx="2"/>
-                  <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
-                </svg>
-                Hogar App
-              </span>
-            </NavLink>
+            <NavLink to="/" className={navLinkClass}>Inicio</NavLink>
+            <NavLink to="/projects" className={navLinkClass}>Proyectos</NavLink>
+            <NavLink to="/apps" className={navLinkClass}>Apps</NavLink>
+            <NavLink to="/courses" className={navLinkClass}>Cursos</NavLink>
+            <NavLink to="/store" className={navLinkClass}>Tienda</NavLink>
             <a
               href="https://github.com/H3nky"
               target="_blank"
