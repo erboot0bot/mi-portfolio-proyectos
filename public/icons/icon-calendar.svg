@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background circle -->
+  <circle cx="256" cy="256" r="256" fill="#4A90D9"/>
+  <!-- Calendar body -->
+  <rect x="120" y="160" width="272" height="232" rx="18" fill="none" stroke="white" stroke-width="24"/>
+  <!-- Header bar -->
+  <rect x="120" y="160" width="272" height="72" rx="18" fill="white" opacity="0.2"/>
+  <!-- Top hooks -->
+  <line x1="190" y1="130" x2="190" y2="196" stroke="white" stroke-width="24" stroke-linecap="round"/>
+  <line x1="322" y1="130" x2="322" y2="196" stroke="white" stroke-width="24" stroke-linecap="round"/>
+  <!-- Header line separator -->
+  <line x1="120" y1="232" x2="392" y2="232" stroke="white" stroke-width="24"/>
+  <!-- Number 7 -->
+  <text x="256" y="330" font-family="Arial, sans-serif" font-weight="700" font-size="100" fill="white" text-anchor="middle" dominant-baseline="middle">7</text>
+</svg>

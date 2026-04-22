@@ -52,3 +52,8 @@
   flex-direction: column;
   min-width: 0;
 }
+
+@media (max-width: 767px) {
+  .module-shell { height: 100dvh; }
+  .module-shell-sidebar { display: none; }
+}

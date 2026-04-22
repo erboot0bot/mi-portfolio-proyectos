@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import ModuleShell from './ModuleShell'
+import ModuleTopNav from '../../../components/ModuleTopNav'
+import BottomSheet from '../../../components/BottomSheet'
 import { format, startOfWeek, addDays } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { supabase } from '../../../lib/supabase'
+import { usePWAManifest } from '../../../hooks/usePWAManifest'
 
 const MEALS = [
   { key: 'desayuno', label: 'Desayuno', icon: '☀️', hour: 8  },
@@ -14,11 +17,19 @@ const MEALS = [
 const DAYS_SHORT = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
 
 export default function Menu() {
+  usePWAManifest('menu')
   const { project, modules } = useOutletContext()
+  const isMobile = window.innerWidth < 768
   const [menu, setMenu]             = useState({})
   const [weekStart, setWeekStart]   = useState(() =>
     format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd')
   )
+  const [activeDay, setActiveDay]   = useState(() => {
+    const dow = (new Date().getDay() + 6) % 7
+    return dow
+  })
+  const [menuView, setMenuView]     = useState('day')
+  const [showIA, setShowIA]         = useState(false)
   const [modal, setModal]           = useState(null)
   const [editVal, setEditVal]       = useState('')
   const [recipes, setRecipes]       = useState([])
@@ -50,6 +61,15 @@ export default function Menu() {
     d.setDate(d.getDate() + delta * 7)
     setWeekStart(format(d, 'yyyy-MM-dd'))
     setMenu({})
+  }
+
+  function prevDay() {
+    if (activeDay === 0) { shiftWeek(-1); setActiveDay(6) }
+    else setActiveDay(d => d - 1)
+  }
+  function nextDay() {
+    if (activeDay === 6) { shiftWeek(1); setActiveDay(0) }
+    else setActiveDay(d => d + 1)
   }
 
   async function saveCell(value, recipeId = null) {
@@ -129,6 +149,168 @@ export default function Menu() {
   })
   const isCurrentWeek = format(startOfWeek(today, { weekStartsOn: 1 }), 'yyyy-MM-dd') === weekStart
   const weekLabel = `${format(weekDates[0], "d MMM", { locale: es })} – ${format(weekDates[6], "d MMM", { locale: es })}`
+
+  const activeDayDate = weekDates[activeDay]
+  const dayLabel = format(activeDayDate, "EEEE", { locale: es })
+  const dayLabelCap = dayLabel.charAt(0).toUpperCase() + dayLabel.slice(1)
+  const daySubLabel = format(activeDayDate, "d 'de' MMMM", { locale: es })
+
+  if (isMobile) {
+    return (
+      <ModuleShell project={project} modules={modules}>
+      <div style={{ display:'flex', flexDirection:'column', height:'100%', overflow:'hidden' }}>
+        <ModuleTopNav
+          title={dayLabelCap}
+          subtitle={daySubLabel}
+          leftAction={{ icon: '‹', onClick: prevDay }}
+          rightAction={{ icon: '✨ IA', onClick: () => setShowIA(true), accent: true }}
+          tabs={[{ key:'day', label:'Día' }, { key:'week', label:'Semana' }]}
+          activeTab={menuView}
+          onTabChange={setMenuView}
+        />
+
+        {menuView === 'day' ? (
+          <div style={{ flex:1, overflowY:'auto', padding:'12px 16px', display:'flex', flexDirection:'column', gap:10 }}>
+            {MEALS.map(meal => {
+              const key = `${activeDay}-${meal.key}`
+              const val = menu[key]
+              return (
+                <div
+                  key={meal.key}
+                  onClick={() => { setEditVal(val?.custom_name ?? ''); setModal({ dayIdx: activeDay, mealKey: meal.key, key }) }}
+                  style={{
+                    display:'flex', alignItems:'center', gap:14,
+                    minHeight:64, padding:'12px 16px', borderRadius:'var(--radius-md)',
+                    border:`1px ${val ? 'solid' : 'dashed'} var(--border)`,
+                    background: val ? 'var(--bg-card)' : 'transparent',
+                    cursor:'pointer', transition:'all var(--transition)',
+                  }}
+                >
+                  <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:2, flexShrink:0, width:44 }}>
+                    <span style={{ fontSize:22 }}>{meal.icon}</span>
+                    <span style={{ fontSize:9, fontWeight:700, textTransform:'uppercase', letterSpacing:'.06em', color:'var(--text-faint)' }}>{String(meal.hour).padStart(2,'0')}:00</span>
+                  </div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'.08em', color:'var(--text-faint)', marginBottom:3 }}>{meal.label}</div>
+                    {val
+                      ? <div style={{ fontSize:14, fontWeight:600, color:'var(--text)' }}>{val.custom_name}</div>
+                      : <div style={{ fontSize:13, color:'var(--text-faint)' }}>Toca para añadir</div>
+                    }
+                  </div>
+                  {val && (
+                    <button
+                      onClick={e => clearCell(key, e)}
+                      style={{ width:28, height:28, borderRadius:'50%', background:'#ef4444', color:'#fff', fontSize:14, border:'none', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}
+                    >×</button>
+                  )}
+                </div>
+              )
+            })}
+
+            <div style={{ display:'flex', gap:8, marginTop:4 }}>
+              <button onClick={addToCalendar}
+                style={{ flex:1, padding:'12px', borderRadius:'var(--radius-md)', background:'#3b82f6', color:'#fff', border:'none', fontSize:13, fontWeight:600, cursor:'pointer' }}>
+                📅 Al calendario
+              </button>
+              <button onClick={addIngredientsToList}
+                style={{ flex:1, padding:'12px', borderRadius:'var(--radius-md)', border:'1px solid var(--border)', background:'none', color:'var(--text-muted)', fontSize:13, cursor:'pointer' }}>
+                🛒 A la lista
+              </button>
+            </div>
+          </div>
+        ) : (
+          /* Week view on mobile — horizontal scroll grid */
+          <div style={{ flex:1, overflowY:'auto', padding:'12px 16px' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:10 }}>
+              <button onClick={() => shiftWeek(-1)} style={{ width:32, height:32, borderRadius:8, border:'1px solid var(--border)', background:'var(--bg-card)', color:'var(--text-muted)', cursor:'pointer', fontSize:14, display:'flex', alignItems:'center', justifyContent:'center' }}>‹</button>
+              <span style={{ flex:1, textAlign:'center', fontSize:13, fontWeight:600, color:'var(--text)' }}>{weekLabel}</span>
+              <button onClick={() => shiftWeek(1)} style={{ width:32, height:32, borderRadius:8, border:'1px solid var(--border)', background:'var(--bg-card)', color:'var(--text-muted)', cursor:'pointer', fontSize:14, display:'flex', alignItems:'center', justifyContent:'center' }}>›</button>
+            </div>
+            {MEALS.map(meal => (
+              <div key={meal.key} style={{ marginBottom:12 }}>
+                <div style={{ fontSize:10, fontWeight:700, textTransform:'uppercase', letterSpacing:'.1em', color:'var(--text-faint)', marginBottom:6 }}>{meal.icon} {meal.label}</div>
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:4 }}>
+                  {Array.from({ length:7 }, (_, dayIdx) => {
+                    const key = `${dayIdx}-${meal.key}`
+                    const val = menu[key]
+                    return (
+                      <div key={dayIdx}
+                        onClick={() => { setEditVal(val?.custom_name ?? ''); setModal({ dayIdx, mealKey: meal.key, key }) }}
+                        style={{ borderRadius:8, border:`1px ${val ? 'solid' : 'dashed'} var(--border)`, minHeight:44, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer', padding:4, background: val ? 'var(--bg-card)' : 'transparent', textAlign:'center' }}>
+                        <span style={{ fontSize:9, fontWeight:val ? 600 : 400, color: val ? 'var(--text)' : 'var(--text-faint)', lineHeight:1.2 }}>
+                          {val ? val.custom_name.split(' ').slice(0,2).join(' ') : DAYS_SHORT[dayIdx]}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <BottomSheet open={showIA} onClose={() => setShowIA(false)} title="✨ Sugerencias IA">
+          <button
+            onClick={() => { showToast('✨ Generando menú con IA...'); setShowIA(false) }}
+            style={{ width:'100%', padding:12, borderRadius:'var(--radius-md)', background:'linear-gradient(135deg,#8b5cf6,#3b82f6)', color:'#fff', border:'none', fontSize:13, fontWeight:700, cursor:'pointer', marginBottom:16 }}>
+            Rellenar semana completa
+          </button>
+          <div style={{ fontSize:11, color:'var(--text-faint)', marginBottom:10 }}>Basadas en tus recetas guardadas:</div>
+          {recipes.slice(0, 8).map(r => (
+            <div key={r.id}
+              onClick={() => { if (modal) { setEditVal(r.title); setShowIA(false) } else { showToast(`Selecciona un slot y elige "${r.title}"`); setShowIA(false) } }}
+              style={{ padding:'12px 14px', borderRadius:'var(--radius-md)', border:'1px solid var(--border)', background:'var(--bg-card)', marginBottom:8, cursor:'pointer' }}>
+              <div style={{ fontSize:13, fontWeight:600, color:'var(--text)' }}>{r.title}</div>
+            </div>
+          ))}
+          {recipes.length === 0 && (
+            <div style={{ fontSize:13, color:'var(--text-faint)', textAlign:'center', padding:'20px 0' }}>Añade recetas para ver sugerencias</div>
+          )}
+        </BottomSheet>
+
+        {modal && (
+          <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.4)', backdropFilter:'blur(4px)', zIndex:200, display:'flex', alignItems:'flex-end', padding:0 }}>
+            <div style={{ background:'var(--bg-card)', border:'1px solid var(--border)', borderRadius:'16px 16px 0 0', padding:24, width:'100%', boxShadow:'0 -8px 24px rgba(0,0,0,.15)' }}>
+              <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:16 }}>
+                <div style={{ fontWeight:700, fontSize:15, color:'var(--text)' }}>
+                  {MEALS.find(m => m.key === modal.mealKey)?.icon} {MEALS.find(m => m.key === modal.mealKey)?.label} — {DAYS_SHORT[modal.dayIdx]}
+                </div>
+                <button onClick={() => setModal(null)} style={{ background:'none', border:'none', color:'var(--text-faint)', cursor:'pointer', fontSize:22 }}>×</button>
+              </div>
+              <input autoFocus value={editVal} onChange={e => setEditVal(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && editVal.trim() && saveCell(editVal.trim())}
+                placeholder="Plato o receta..."
+                style={{ width:'100%', padding:'12px 14px', borderRadius:10, border:'1px solid var(--border)', background:'var(--bg)', color:'var(--text)', fontSize:15, outline:'none', marginBottom:12 }} />
+              {recipes.length > 0 && (
+                <div style={{ marginBottom:14, display:'flex', flexWrap:'wrap', gap:6 }}>
+                  {recipes.slice(0, 6).map(r => (
+                    <button key={r.id} onClick={() => saveCell(r.title, r.id)}
+                      style={{ padding:'6px 12px', borderRadius:8, border:'1px solid var(--border)', background:'transparent', color:'var(--text-muted)', fontSize:12, cursor:'pointer' }}>
+                      {r.title}
+                    </button>
+                  ))}
+                </div>
+              )}
+              <div style={{ display:'flex', gap:8 }}>
+                <button onClick={() => setModal(null)} style={{ flex:1, padding:12, borderRadius:10, background:'none', border:'1px solid var(--border)', color:'var(--text-muted)', fontSize:14, cursor:'pointer' }}>Cancelar</button>
+                <button onClick={() => editVal.trim() && saveCell(editVal.trim())} disabled={!editVal.trim()}
+                  style={{ flex:2, padding:12, borderRadius:10, background:'var(--accent)', color:'#fff', border:'none', fontSize:14, fontWeight:600, cursor:'pointer', opacity: editVal.trim() ? 1 : .4 }}>
+                  Guardar
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {toast && (
+          <div style={{ position:'fixed', bottom:80, left:'50%', transform:'translateX(-50%)', background:'#09090b', color:'#fff', padding:'10px 18px', borderRadius:999, fontSize:12, fontWeight:500, zIndex:500, whiteSpace:'nowrap' }}>
+            {toast}
+          </div>
+        )}
+      </div>
+      </ModuleShell>
+    )
+  }
 
   return (
     <ModuleShell project={project} modules={modules}>

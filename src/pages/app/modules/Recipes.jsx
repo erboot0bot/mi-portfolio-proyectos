@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useOutletContext, useNavigate } from 'react-router-dom'
 import ModuleShell from './ModuleShell'
+import ModuleTopNav from '../../../components/ModuleTopNav'
 import { motion } from 'framer-motion'
 import { supabase } from '../../../lib/supabase'
 import { suggestRecipes } from '../../../lib/anthropic'
+import { usePWAManifest } from '../../../hooks/usePWAManifest'
 
 function AIModal({ projectId, onSaved, onClose }) {
   const [form, setForm] = useState({ ingredients: '', restrictions: '', timeMinutes: 30, servings: 4 })
@@ -301,6 +303,7 @@ function ManualModal({ projectId, recipe: existingRecipe, onSaved, onClose }) {
 }
 
 export default function Recipes() {
+  usePWAManifest('recipes')
   const { project, modules } = useOutletContext()
   const navigate = useNavigate()
   const [recipes, setRecipes]           = useState([])
@@ -311,7 +314,8 @@ export default function Recipes() {
   const [deleteRecipe, setDeleteRecipe] = useState(null)
   const [deleteConfirming, setDeleteConfirming] = useState(false)
   // New: tabs + filters + AI panel
-  const [tab, setTab]               = useState('all') // 'all'|'fav'|'ai'|'quick'
+  const isMobile = window.innerWidth < 768
+  const [tab, setTab]               = useState('fav') // 'fav'|'all'|'ai'|'quick'
   const [timeFilter, setTimeFilter] = useState(null)  // null|15|30|60
   const [favIds, setFavIds]         = useState(new Set())
   const [searchQuery, setSearchQuery] = useState('')
@@ -364,31 +368,49 @@ export default function Recipes() {
   if (tab === 'quick') visibleRecipes = visibleRecipes.filter(r => (r.prep_time ?? 0) + (r.cook_time ?? 0) <= 20)
   if (timeFilter)      visibleRecipes = visibleRecipes.filter(r => (r.prep_time ?? 0) + (r.cook_time ?? 0) <= timeFilter)
 
+  const RECIPE_TABS = [
+    { key: 'fav',   label: '⭐ Favoritas' },
+    { key: 'all',   label: 'Todas' },
+    { key: 'ai',    label: '✨ IA' },
+    { key: 'quick', label: "⚡ Rápidas" },
+  ]
+
   return (
     <ModuleShell project={project} modules={modules}>
     <div style={{ display:'flex', flexDirection:'column', height:'100%', overflow:'hidden' }}>
-      {/* Tabs */}
-      <div style={{ display:'flex', gap:2, padding:'12px 20px', borderBottom:'1px solid var(--border)', flexShrink:0, overflowX:'auto' }}>
-        {[['all','Todas'],['fav',"⭐ Favoritas"],['ai',"✨ Con IA"],['quick',"⚡ Rápidas (<20')"]].map(([v,l]) => (
-          <button key={v} onClick={() => setTab(v)} style={{
-            padding:'6px 14px', borderRadius:8, fontSize:13, fontWeight:500, border:'none',
-            cursor:'pointer', whiteSpace:'nowrap', transition:'all .15s',
-            background: tab === v ? 'var(--accent)' : 'none',
-            color: tab === v ? '#fff' : 'var(--text-muted)',
-          }}>{l}</button>
-        ))}
-        <div style={{ marginLeft:'auto', display:'flex', gap:6 }}>
-          <button onClick={() => setShowManual(true)} style={{
-            padding:'6px 14px', borderRadius:8, fontSize:13, fontWeight:500,
-            border:'1px solid var(--border)', background:'none', color:'var(--text-muted)',
-            cursor:'pointer', transition:'all .15s', whiteSpace:'nowrap',
-          }}
-          onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.color = 'var(--accent)' }}
-          onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-muted)' }}>
-            + Nueva receta
-          </button>
+      {/* Unified top nav for mobile / header for desktop */}
+      {isMobile ? (
+        <ModuleTopNav
+          title="Recetas"
+          subtitle={`${recipes.length} guardadas`}
+          rightAction={{ icon: '+', onClick: () => setShowManual(true) }}
+          tabs={RECIPE_TABS}
+          activeTab={tab}
+          onTabChange={setTab}
+        />
+      ) : (
+        <div style={{ display:'flex', gap:2, padding:'12px 20px', borderBottom:'1px solid var(--border)', flexShrink:0, overflowX:'auto', alignItems:'center' }}>
+          {RECIPE_TABS.map(({ key: v, label: l }) => (
+            <button key={v} onClick={() => setTab(v)} style={{
+              padding:'6px 14px', borderRadius:8, fontSize:13, fontWeight:500, border:'none',
+              cursor:'pointer', whiteSpace:'nowrap', transition:'all .15s',
+              background: tab === v ? 'var(--accent)' : 'none',
+              color: tab === v ? '#fff' : 'var(--text-muted)',
+            }}>{l}</button>
+          ))}
+          <div style={{ marginLeft:'auto', display:'flex', gap:6 }}>
+            <button onClick={() => setShowManual(true)} style={{
+              padding:'6px 14px', borderRadius:8, fontSize:13, fontWeight:500,
+              border:'1px solid var(--border)', background:'none', color:'var(--text-muted)',
+              cursor:'pointer', transition:'all .15s', whiteSpace:'nowrap',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.color = 'var(--accent)' }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-muted)' }}>
+              + Nueva receta
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Toolbar */}
       <div style={{ display:'flex', alignItems:'center', gap:8, padding:'10px 20px', borderBottom:'1px solid var(--border)', flexShrink:0 }}>
@@ -417,9 +439,22 @@ export default function Recipes() {
         {/* Recipe grid */}
         <div style={{ flex:1, overflowY:'auto', padding:'16px 20px' }}>
           {visibleRecipes.length === 0 ? (
-            <div className="text-center py-20 text-[var(--text-faint)]">
-              <p className="text-4xl mb-3">👨‍🍳</p>
-              <p className="text-sm">{tab === 'fav' ? 'Sin recetas favoritas — haz clic en ⭐ para marcarlas' : 'Sin recetas aún — usa la IA para generar las primeras'}</p>
+            <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'60px 24px', textAlign:'center', gap:12 }}>
+              <span style={{ fontSize:48 }}>{tab === 'fav' ? '⭐' : '👨‍🍳'}</span>
+              <h3 style={{ fontSize:16, fontWeight:700, color:'var(--text)', margin:0 }}>
+                {tab === 'fav' ? 'Sin recetas favoritas' : 'Sin recetas aún'}
+              </h3>
+              <p style={{ fontSize:13, color:'var(--text-muted)', margin:0 }}>
+                {tab === 'fav' ? 'Marca recetas como favoritas para verlas aquí' : 'Usa la IA para generar las primeras'}
+              </p>
+              {tab === 'fav' && (
+                <button
+                  onClick={() => setTab('all')}
+                  style={{ marginTop:4, padding:'10px 20px', borderRadius:'var(--radius-full)', background:'var(--accent)', color:'#fff', border:'none', cursor:'pointer', fontSize:13, fontWeight:600 }}
+                >
+                  Ver todas las recetas
+                </button>
+              )}
             </div>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

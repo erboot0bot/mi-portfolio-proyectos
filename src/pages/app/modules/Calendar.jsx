@@ -2,7 +2,9 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import { supabase } from '../../../lib/supabase'
 import ModuleShell from './ModuleShell'
+import ModuleTopNav from '../../../components/ModuleTopNav'
 import './Calendar.css'
+import { usePWAManifest } from '../../../hooks/usePWAManifest'
 
 // ── Constantes ────────────────────────────────────────────────────
 const HOUR_HEIGHT = 48
@@ -454,12 +456,15 @@ function AgendaView({ days, events, onEventClick }) {
 
 // ── Calendar (main export) ────────────────────────────────────────
 export default function Calendar() {
+  usePWAManifest('calendar')
   const { project, modules } = useOutletContext()
+  const isMobile = window.innerWidth < 768
   const [events, setEvents]         = useState([])
   const [anchor, setAnchor]         = useState(new Date())
-  const [view, setView]             = useState('week')
+  const [view, setView]             = useState(() => isMobile ? 'day' : 'week')
   const [showWeekends, setWeekends] = useState(true)
   const [modal, setModal]           = useState(null)
+  const scrollRef = useRef(null)
 
   useEffect(() => {
     supabase
@@ -509,12 +514,18 @@ export default function Calendar() {
 
   function prevWeek() { const d = new Date(anchor); d.setDate(d.getDate() - 7); setAnchor(d) }
   function nextWeek() { const d = new Date(anchor); d.setDate(d.getDate() + 7); setAnchor(d) }
+  function prevDay()  { const d = new Date(anchor); d.setDate(d.getDate() - 1); setAnchor(d) }
+  function nextDay()  { const d = new Date(anchor); d.setDate(d.getDate() + 1); setAnchor(d) }
   function goToday()  { setAnchor(new Date()) }
 
   const d0 = weekDays[0], d1 = weekDays[6]
   const titleStr = d0.getMonth() === d1.getMonth()
     ? `${d0.getDate()}–${d1.getDate()} ${MONTHS_ES[d0.getMonth()]} ${d0.getFullYear()}`
     : `${d0.getDate()} ${MONTHS_ES[d0.getMonth()].slice(0,3)} – ${d1.getDate()} ${MONTHS_ES[d1.getMonth()].slice(0,3)}`
+
+  const isToday = sameDay(anchor, new Date())
+  const dayTitle = `${DAYS_ES_LONG[anchor.getDay()].charAt(0).toUpperCase() + DAYS_ES_LONG[anchor.getDay()].slice(1)} ${anchor.getDate()}`
+  const monthTitle = `${MONTHS_ES[anchor.getMonth()]} ${anchor.getFullYear()}`
 
   return (
     <ModuleShell
@@ -538,40 +549,70 @@ export default function Calendar() {
         </>
       }
     >
+      {/* Mobile top nav */}
+      {isMobile && (
+        <ModuleTopNav
+          title={dayTitle}
+          subtitle={isToday ? 'Hoy · ' + monthTitle : monthTitle}
+          leftAction={{ icon: '‹', onClick: prevDay }}
+          rightAction={{ icon: '+', onClick: () => setModal({ ev: null, slot: null }) }}
+          extraAction={!isToday ? { icon: 'Hoy', onClick: goToday } : undefined}
+          tabs={[
+            { key: 'day', label: 'Día' },
+            { key: 'week', label: 'Semana' },
+            { key: 'agenda', label: 'Agenda' },
+          ]}
+          activeTab={view}
+          onTabChange={setView}
+          scrollRef={scrollRef}
+        />
+      )}
+
       {/* Main calendar area */}
       <div className="cal-main-area">
-        <div className="cal-header">
-          <button className="cal-nav-btn" onClick={prevWeek}>‹</button>
-          <button className="cal-nav-btn" onClick={nextWeek}>›</button>
-          <button className="cal-today-btn" onClick={goToday}>Hoy</button>
-          <span className="cal-title">{titleStr}</span>
+        {!isMobile && (
+          <div className="cal-header">
+            <button className="cal-nav-btn" onClick={prevWeek}>‹</button>
+            <button className="cal-nav-btn" onClick={nextWeek}>›</button>
+            <button className="cal-today-btn" onClick={goToday}>Hoy</button>
+            <span className="cal-title">{titleStr}</span>
 
-          <div className="cal-view-tabs">
-            <button className={`cal-view-tab ${view === 'week' ? 'active' : ''}`} onClick={() => setView('week')}>Semana</button>
-            <button className={`cal-view-tab ${view === 'agenda' ? 'active' : ''}`} onClick={() => setView('agenda')}>Agenda</button>
+            <div className="cal-view-tabs">
+              <button className={`cal-view-tab ${view === 'week' ? 'active' : ''}`} onClick={() => setView('week')}>Semana</button>
+              <button className={`cal-view-tab ${view === 'agenda' ? 'active' : ''}`} onClick={() => setView('agenda')}>Agenda</button>
+            </div>
+
+            <button className="cal-add-btn" onClick={() => setModal({ ev: null, slot: null })}>
+              + Nueva tarea
+            </button>
           </div>
+        )}
 
-          <button className="cal-add-btn" onClick={() => setModal({ ev: null, slot: null })}>
-            + Nueva tarea
-          </button>
+        <div ref={scrollRef} style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column' }}>
+          {(view === 'week' || (!isMobile && view === 'week')) && (
+            <WeekView
+              days={weekDays}
+              events={events}
+              onSlotClick={slot => setModal({ ev: null, slot })}
+              onEventClick={ev  => setModal({ ev, slot: null })}
+              showWeekends={showWeekends}
+            />
+          )}
+          {view === 'agenda' && (
+            <AgendaView
+              days={isMobile ? [anchor] : weekDays}
+              events={events}
+              onEventClick={ev => setModal({ ev, slot: null })}
+            />
+          )}
+          {view === 'day' && (
+            <AgendaView
+              days={[anchor]}
+              events={events}
+              onEventClick={ev => setModal({ ev, slot: null })}
+            />
+          )}
         </div>
-
-        {view === 'week' && (
-          <WeekView
-            days={weekDays}
-            events={events}
-            onSlotClick={slot => setModal({ ev: null, slot })}
-            onEventClick={ev  => setModal({ ev, slot: null })}
-            showWeekends={showWeekends}
-          />
-        )}
-        {view === 'agenda' && (
-          <AgendaView
-            days={weekDays}
-            events={events}
-            onEventClick={ev => setModal({ ev, slot: null })}
-          />
-        )}
       </div>
 
       {modal && (

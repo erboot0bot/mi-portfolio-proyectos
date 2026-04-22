@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background circle -->
+  <circle cx="256" cy="256" r="256" fill="#9B59B6"/>
+  <!-- Book spine (center line) -->
+  <line x1="256" y1="140" x2="256" y2="380" stroke="white" stroke-width="24" stroke-linecap="round"/>
+  <!-- Left page -->
+  <path d="M256 150 Q180 160 140 200 L140 370 Q180 340 256 350 Z" fill="none" stroke="white" stroke-width="24" stroke-linejoin="round"/>
+  <!-- Right page -->
+  <path d="M256 150 Q332 160 372 200 L372 370 Q332 340 256 350 Z" fill="none" stroke="white" stroke-width="24" stroke-linejoin="round"/>
+  <!-- Text lines left page -->
+  <line x1="168" y1="230" x2="236" y2="222" stroke="white" stroke-width="14" stroke-linecap="round"/>
+  <line x1="165" y1="258" x2="234" y2="250" stroke="white" stroke-width="14" stroke-linecap="round"/>
+  <line x1="163" y1="286" x2="232" y2="278" stroke="white" stroke-width="14" stroke-linecap="round"/>
+  <!-- Text lines right page -->
+  <line x1="276" y1="222" x2="344" y2="230" stroke="white" stroke-width="14" stroke-linecap="round"/>
+  <line x1="278" y1="250" x2="347" y2="258" stroke="white" stroke-width="14" stroke-linecap="round"/>
+  <line x1="280" y1="278" x2="349" y2="286" stroke="white" stroke-width="14" stroke-linecap="round"/>
+</svg>

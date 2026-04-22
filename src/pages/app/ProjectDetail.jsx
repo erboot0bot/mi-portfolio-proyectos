@@ -127,15 +127,46 @@ export default function AppProjectDetail() {
 
   return (
     <ProjectProvider project={project}>
-      <div className="max-w-[1440px] mx-auto px-6 sm:px-10 lg:px-16">
+      {/* ── Mobile layout (< 768px) ── */}
+      <div className="flex flex-col md:hidden min-h-[70vh] px-4 py-0">
+        <div style={{ display:'flex', alignItems:'center', gap:12, padding:'20px 0 8px' }}>
+          <span style={{ fontSize:36 }}>{project.icon}</span>
+          <h1 style={{ fontSize:22, fontWeight:700, color:'var(--text)', margin:0 }}>{project.name}</h1>
+        </div>
+        <nav style={{ display:'flex', flexDirection:'column', gap:6, marginBottom:16 }}>
+          {MODULES.map(m => (
+            <NavLink
+              key={m.path}
+              to={m.path}
+              className={({ isActive }) => isActive ? 'module-card active' : 'module-card'}
+              style={({ isActive }) => ({
+                display:'flex', alignItems:'center', gap:12,
+                height:56, padding:'0 16px', borderRadius:12,
+                background:'var(--bg-card)',
+                border: isActive ? '1px solid var(--accent)' : '1px solid var(--border)',
+                borderLeft: isActive ? '3px solid var(--accent)' : '1px solid var(--border)',
+                textDecoration:'none', transition:'all var(--transition)',
+              })}
+            >
+              <span style={{ fontSize:22, flexShrink:0 }}>{m.icon}</span>
+              <span style={{ flex:1, fontSize:14, fontWeight:600, color:'var(--text)' }}>{m.label}</span>
+              <span style={{ color:'var(--text-faint)', fontSize:16 }}>›</span>
+            </NavLink>
+          ))}
+        </nav>
+        <div style={{ borderTop:'1px solid var(--border)' }}>
+          <MembersSection project={project} />
+        </div>
+      </div>
+
+      {/* ── Desktop layout (≥ 768px) ── */}
+      <div className="hidden md:block max-w-[1440px] mx-auto px-6 sm:px-10 lg:px-16">
         <div className="flex gap-8 py-8 min-h-[70vh]">
-          {/* Sidebar */}
           <aside className="w-52 shrink-0">
             <div className="mb-6">
               <div className="text-3xl mb-1">{project.icon}</div>
               <h1 className="font-bold text-[var(--text)]">{project.name}</h1>
             </div>
-
             <nav className="flex flex-col gap-1">
               {MODULES.map(m => (
                 <NavLink
@@ -154,11 +185,8 @@ export default function AppProjectDetail() {
                 </NavLink>
               ))}
             </nav>
-
             <MembersSection project={project} />
           </aside>
-
-          {/* Main content */}
           <main className="flex-1 min-w-0">
             <Outlet context={{ project }} />
           </main>

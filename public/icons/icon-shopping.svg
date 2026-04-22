@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background circle -->
+  <circle cx="256" cy="256" r="256" fill="#4CAF82"/>
+  <!-- Shopping cart handle -->
+  <path d="M120 160 L160 160 L210 340 L370 340 L400 220 L175 220" fill="none" stroke="white" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Cart wheels -->
+  <circle cx="230" cy="375" r="22" fill="none" stroke="white" stroke-width="28"/>
+  <circle cx="355" cy="375" r="22" fill="none" stroke="white" stroke-width="28"/>
+</svg>
