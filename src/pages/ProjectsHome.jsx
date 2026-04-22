@@ -38,6 +38,7 @@ export default function Home() {
 
   return (
     <div>
+      <title>Proyectos | H3nky</title>
       {/* ── Hero Split ── */}
       <section className="relative mb-16 overflow-hidden">
 

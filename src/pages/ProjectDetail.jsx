@@ -36,6 +36,7 @@ export default function ProjectDetail() {
 
   return (
     <article>
+      <title>{project.title} | H3nky</title>
       {/* ── Hero ── */}
       <section className="relative overflow-hidden -mt-10 mb-0"
         style={{ minHeight: '52vh' }}>

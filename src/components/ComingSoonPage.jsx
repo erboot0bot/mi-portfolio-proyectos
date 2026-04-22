@@ -5,6 +5,7 @@ export default function ComingSoonPage({ title, icon }) {
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh]
       text-center px-6 gap-5">
+      <title>{title} | H3nky</title>
       <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
         transition={{ type: 'spring', stiffness: 200, damping: 18 }}
         className="text-6xl">

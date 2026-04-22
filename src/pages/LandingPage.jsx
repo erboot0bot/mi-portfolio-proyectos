@@ -50,6 +50,7 @@ const SECTIONS = [
 export default function LandingPage() {
   return (
     <div>
+      <title>H3nky | Portfolio</title>
       <HeroSection />
       <SectionsGrid />
       <AboutSection />
