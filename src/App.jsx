@@ -1,25 +1,25 @@
-import React from 'react'
+import React, { Suspense } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
 import ComingSoonPage from './components/ComingSoonPage'
 
-import LandingPage   from './pages/LandingPage'
-import ProjectsHome  from './pages/ProjectsHome'
-import ProjectDetail from './pages/ProjectDetail'
-import Login         from './pages/Login'
-import NotFound      from './pages/NotFound'
+const LandingPage   = React.lazy(() => import('./pages/LandingPage'))
+const ProjectsHome  = React.lazy(() => import('./pages/ProjectsHome'))
+const ProjectDetail = React.lazy(() => import('./pages/ProjectDetail'))
+const Login         = React.lazy(() => import('./pages/Login'))
+const NotFound      = React.lazy(() => import('./pages/NotFound'))
 
-import AppsHub       from './pages/AppsHub'
+const AppsHub       = React.lazy(() => import('./pages/AppsHub'))
 
-import HogarLayout   from './pages/app/HogarLayout'
-import Welcome       from './pages/app/modules/Welcome'
-import Calendar      from './pages/app/modules/Calendar'
-import ShoppingList  from './pages/app/modules/ShoppingList'
-import Menu          from './pages/app/modules/Menu'
-import Recipes       from './pages/app/modules/Recipes'
-import RecipeDetail  from './pages/app/modules/RecipeDetail'
+const HogarLayout   = React.lazy(() => import('./pages/app/HogarLayout'))
+const Welcome       = React.lazy(() => import('./pages/app/modules/Welcome'))
+const Calendar      = React.lazy(() => import('./pages/app/modules/Calendar'))
+const ShoppingList  = React.lazy(() => import('./pages/app/modules/ShoppingList'))
+const Menu          = React.lazy(() => import('./pages/app/modules/Menu'))
+const Recipes       = React.lazy(() => import('./pages/app/modules/Recipes'))
+const RecipeDetail  = React.lazy(() => import('./pages/app/modules/RecipeDetail'))
 
 class ErrorBoundary extends React.Component {
   state = { hasError: false, error: null }
@@ -65,6 +65,11 @@ export default function App() {
   return (
     <ErrorBoundary>
     <Layout>
+      <Suspense fallback={
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="w-6 h-6 border-2 border-[var(--accent)] border-t-transparent rounded-full animate-spin" />
+        </div>
+      }>
       <AnimatePresence mode="wait" onExitComplete={() => window.scrollTo(0, 0)}>
         <motion.div
           key={location.pathname}
@@ -108,6 +113,7 @@ export default function App() {
           </Routes>
         </motion.div>
       </AnimatePresence>
+      </Suspense>
     </Layout>
     </ErrorBoundary>
   )

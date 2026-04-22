@@ -17,14 +17,20 @@ function renderAt(path) {
 }
 
 describe('App routing', () => {
-  it('renders LandingPage at /', () => {
+  it('renders LandingPage at /', async () => {
     renderAt('/')
-    expect(screen.getByRole('heading', { name: /herramientas reales/i })).toBeInTheDocument()
+    await waitFor(
+      () => expect(screen.getByRole('heading', { name: /herramientas reales/i })).toBeInTheDocument(),
+      { timeout: 5000 },
+    )
   })
 
-  it('renders ProjectsHome at /projects', () => {
+  it('renders ProjectsHome at /projects', async () => {
     renderAt('/projects')
-    expect(screen.getByRole('heading', { name: /proyectos/i })).toBeInTheDocument()
+    await waitFor(
+      () => expect(screen.getByRole('heading', { name: /proyectos/i })).toBeInTheDocument(),
+      { timeout: 5000 },
+    )
   })
 
   it('renders ComingSoonPage at /courses', () => {
@@ -46,9 +52,9 @@ describe('App routing', () => {
     )
   })
 
-  it('renders NotFound at /404', () => {
+  it('renders NotFound at /404', async () => {
     renderAt('/404')
-    expect(screen.getByText('404')).toBeInTheDocument()
+    expect(await screen.findByText('404')).toBeInTheDocument()
   })
 
   it('redirects unknown routes to /404', async () => {
@@ -56,9 +62,9 @@ describe('App routing', () => {
     await waitFor(() => expect(screen.getByText('404')).toBeInTheDocument())
   })
 
-  it('renders ProjectDetail for a valid slug', () => {
+  it('renders ProjectDetail for a valid slug', async () => {
     renderAt('/projects/portfolio-personal')
-    expect(screen.getByRole('heading', { name: /portfolio personal/i })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: /portfolio personal/i })).toBeInTheDocument()
   })
 
   it('redirects to /404 for an invalid slug', async () => {

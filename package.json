@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "test": "vitest",
     "test:run": "vitest run",
-    "generate-image": "node src/scripts/generate-image.js"
+    "generate-image": "node scripts/generate-image.js"
   },
   "dependencies": {
     "@fullcalendar/daygrid": "^6.1.20",
