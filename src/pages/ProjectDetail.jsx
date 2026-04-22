@@ -26,6 +26,91 @@ const statusColor = {
 
 const fadein = { hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0 } }
 
+// Renders inline markdown: **bold** and `code`
+function renderInline(text) {
+  const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`)/g)
+  return parts.map((part, i) => {
+    if (part.startsWith('**') && part.endsWith('**'))
+      return <strong key={i}>{part.slice(2, -2)}</strong>
+    if (part.startsWith('`') && part.endsWith('`'))
+      return <code key={i} className="doc-inline-code">{part.slice(1, -1)}</code>
+    return part
+  })
+}
+
+// Renders multi-paragraph text with inline markdown
+function renderContent(text) {
+  if (!text) return null
+  return text.split('\n\n').map((para, i) => (
+    <p key={i} className="text-base leading-relaxed text-[var(--text-muted)] mb-4">
+      {renderInline(para)}
+    </p>
+  ))
+}
+
+function DocSection({ doc }) {
+  if (doc.type === 'table') {
+    return (
+      <section className="mb-10">
+        <h2 className="text-lg font-bold text-[var(--text)] mb-4">{doc.title}</h2>
+        <div className="overflow-x-auto rounded-xl border border-[var(--border)]">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-[var(--border)] bg-[var(--bg-subtle)]">
+                <th className="text-left px-4 py-2.5 font-semibold text-[var(--text-faint)] uppercase tracking-wider text-xs">Nombre</th>
+                <th className="text-left px-4 py-2.5 font-semibold text-[var(--text-faint)] uppercase tracking-wider text-xs">Versión</th>
+                <th className="text-left px-4 py-2.5 font-semibold text-[var(--text-faint)] uppercase tracking-wider text-xs">Rol</th>
+              </tr>
+            </thead>
+            <tbody>
+              {doc.items.map((item, i) => (
+                <tr key={i} className="border-b border-[var(--border)] last:border-0 hover:bg-[var(--bg-subtle)] transition-colors">
+                  <td className="px-4 py-3 font-semibold text-[var(--text)]">{item.name}</td>
+                  <td className="px-4 py-3 font-mono text-xs text-[var(--accent)]">{item.version}</td>
+                  <td className="px-4 py-3 text-[var(--text-muted)]">{item.role}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    )
+  }
+
+  if (doc.type === 'metrics') {
+    return (
+      <section className="mb-10">
+        <h2 className="text-lg font-bold text-[var(--text)] mb-4">{doc.title}</h2>
+        <div className="doc-metrics-grid">
+          {doc.items.map((item, i) => (
+            <div key={i} className="doc-metric-card">
+              <span className="doc-metric-value">{item.value}</span>
+              <span className="doc-metric-label">{item.label}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+    )
+  }
+
+  // Default: content + optional code block + content2
+  return (
+    <section className="mb-10">
+      <h2 className="text-lg font-bold text-[var(--text)] mb-3">{doc.title}</h2>
+      {doc.content && renderContent(doc.content)}
+      {doc.code && (
+        <div className="doc-code-block">
+          {doc.code.lang && doc.code.lang !== 'text' && (
+            <div className="doc-code-lang">{doc.code.lang}</div>
+          )}
+          <pre><code>{doc.code.src}</code></pre>
+        </div>
+      )}
+      {doc.content2 && renderContent(doc.content2)}
+    </section>
+  )
+}
+
 export default function ProjectDetail() {
   const { slug } = useParams()
   const project = projects.find(p => p.slug === slug)
@@ -116,13 +201,19 @@ export default function ProjectDetail() {
             ))}
           </div>
 
-          {/* Long description */}
-          <p className="text-sm uppercase tracking-widest font-semibold mb-3 text-[var(--text-faint)]">
-            Descripción
-          </p>
-          <p className="text-base leading-relaxed text-[var(--text-muted)] mb-10 max-w-2xl">
-            {project.longDescription || project.description}
-          </p>
+          {/* Docs sections */}
+          {project.docs && project.docs.length > 0 ? (
+            project.docs.map(doc => <DocSection key={doc.id} doc={doc} />)
+          ) : (
+            <>
+              <p className="text-sm uppercase tracking-widest font-semibold mb-3 text-[var(--text-faint)]">
+                Descripción
+              </p>
+              <p className="text-base leading-relaxed text-[var(--text-muted)] mb-10 max-w-2xl">
+                {project.description}
+              </p>
+            </>
+          )}
 
           {/* Gallery */}
           {project.images && project.images.length > 0 && (

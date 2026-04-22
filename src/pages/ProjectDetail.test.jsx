@@ -28,7 +28,7 @@ describe('ProjectDetail', () => {
 
   it('renders tech badges', () => {
     renderDetail('portfolio-personal')
-    expect(screen.getByText('React')).toBeInTheDocument()
+    expect(screen.getAllByText('React').length).toBeGreaterThan(0)
   })
 
   it('renders GitHub button when github is set', () => {
