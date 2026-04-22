@@ -2,23 +2,28 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
-import Home from './pages/Home'
+import ComingSoonPage from './components/ComingSoonPage'
+
+import LandingPage   from './pages/LandingPage'
+import ProjectsHome  from './pages/ProjectsHome'
 import ProjectDetail from './pages/ProjectDetail'
-import NotFound from './pages/NotFound'
-import Login from './pages/Login'
-import AppProjects from './pages/app/Projects'
-import AppProjectDetail from './pages/app/ProjectDetail'
-import Calendar from './pages/app/modules/Calendar'
-import ShoppingList from './pages/app/modules/ShoppingList'
-import Menu from './pages/app/modules/Menu'
-import Recipes from './pages/app/modules/Recipes'
-import RecipeDetail from './pages/app/modules/RecipeDetail'
-import Welcome from './pages/app/modules/Welcome'
+import Login         from './pages/Login'
+import NotFound      from './pages/NotFound'
+
+import AppsHub       from './pages/AppsHub'
+
+import HogarLayout   from './pages/app/HogarLayout'
+import Welcome       from './pages/app/modules/Welcome'
+import Calendar      from './pages/app/modules/Calendar'
+import ShoppingList  from './pages/app/modules/ShoppingList'
+import Menu          from './pages/app/modules/Menu'
+import Recipes       from './pages/app/modules/Recipes'
+import RecipeDetail  from './pages/app/modules/RecipeDetail'
 
 const pageVariants = {
   initial: { opacity: 0, y: 10 },
   animate: { opacity: 1, y: 0 },
-  exit: { opacity: 0, y: -10 },
+  exit:    { opacity: 0, y: -10 },
 }
 
 export default function App() {
@@ -36,30 +41,36 @@ export default function App() {
           transition={{ duration: 0.2, ease: 'easeInOut' }}
         >
           <Routes location={location}>
-            {/* Public portfolio routes — unchanged */}
-            <Route path="/" element={<Home />} />
-            <Route path="/projects/:slug" element={<ProjectDetail />} />
-            <Route path="/login" element={<Login />} />
 
-            {/* Protected app routes */}
-            <Route
-              path="/app/projects"
-              element={<ProtectedRoute><AppProjects /></ProtectedRoute>}
-            />
-            <Route
-              path="/app/projects/:slug"
-              element={<ProtectedRoute><AppProjectDetail /></ProtectedRoute>}
-            >
-              <Route index element={<Welcome />} />
-              <Route path="calendar" element={<Calendar />} />
-              <Route path="shopping" element={<ShoppingList />} />
-              <Route path="menu" element={<Menu />} />
-              <Route path="recipes" element={<Recipes />} />
+            {/* Públicas */}
+            <Route path="/"               element={<LandingPage />} />
+            <Route path="/projects"       element={<ProjectsHome />} />
+            <Route path="/projects/:slug" element={<ProjectDetail />} />
+            <Route path="/courses"        element={<ComingSoonPage title="Cursos" icon="📚" />} />
+            <Route path="/store"          element={<ComingSoonPage title="Tienda" icon="🛒" />} />
+            <Route path="/login"          element={<Login />} />
+
+            {/* Hub de apps */}
+            <Route path="/apps" element={
+              <ProtectedRoute><AppsHub /></ProtectedRoute>
+            } />
+
+            {/* Hogar */}
+            <Route path="/app/projects/hogar" element={
+              <ProtectedRoute><HogarLayout /></ProtectedRoute>
+            }>
+              <Route index                    element={<Welcome />} />
+              <Route path="calendar"          element={<Calendar />} />
+              <Route path="shopping"          element={<ShoppingList />} />
+              <Route path="menu"              element={<Menu />} />
+              <Route path="recipes"           element={<Recipes />} />
               <Route path="recipes/:recipeId" element={<RecipeDetail />} />
             </Route>
 
+            {/* 404 */}
             <Route path="/404" element={<NotFound />} />
-            <Route path="*" element={<Navigate to="/404" replace />} />
+            <Route path="*"    element={<Navigate to="/404" replace />} />
+
           </Routes>
         </motion.div>
       </AnimatePresence>

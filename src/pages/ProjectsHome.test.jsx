@@ -2,10 +2,10 @@ import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
-import Home from './Home'
+import ProjectsHome from './ProjectsHome'
 
 function renderHome() {
-  return render(<MemoryRouter><Home /></MemoryRouter>)
+  return render(<MemoryRouter><ProjectsHome /></MemoryRouter>)
 }
 
 describe('Home', () => {
@@ -16,7 +16,7 @@ describe('Home', () => {
 
   it('renders project cards', () => {
     renderHome()
-    expect(screen.getByText('Portfolio Personal')).toBeInTheDocument()
+    expect(screen.getAllByText('Portfolio Personal').length).toBeGreaterThan(0)
   })
 
   it('shows all projects when no filter is active', () => {
@@ -31,7 +31,7 @@ describe('Home', () => {
     const reactBtn = screen.queryByRole('button', { name: 'React' })
     if (!reactBtn) return // skip if no React projects
     await user.click(reactBtn)
-    expect(screen.getByText('Portfolio Personal')).toBeInTheDocument()
+    expect(screen.getAllByText('Portfolio Personal').length).toBeGreaterThan(0)
   })
 
   it('clicking a tech filter twice deselects it (shows all)', async () => {

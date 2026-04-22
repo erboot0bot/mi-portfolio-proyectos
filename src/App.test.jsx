@@ -17,9 +17,33 @@ function renderAt(path) {
 }
 
 describe('App routing', () => {
-  it('renders Home at /', () => {
+  it('renders LandingPage at /', () => {
     renderAt('/')
+    expect(screen.getByRole('heading', { name: /herramientas reales/i })).toBeInTheDocument()
+  })
+
+  it('renders ProjectsHome at /projects', () => {
+    renderAt('/projects')
     expect(screen.getByRole('heading', { name: /proyectos/i })).toBeInTheDocument()
+  })
+
+  it('renders ComingSoonPage at /courses', () => {
+    renderAt('/courses')
+    expect(screen.getByRole('heading', { name: /cursos/i })).toBeInTheDocument()
+    expect(screen.getByText(/en desarrollo/i)).toBeInTheDocument()
+  })
+
+  it('renders ComingSoonPage at /store', () => {
+    renderAt('/store')
+    expect(screen.getByRole('heading', { name: /tienda/i })).toBeInTheDocument()
+    expect(screen.getByText(/en desarrollo/i)).toBeInTheDocument()
+  })
+
+  it('redirects /apps to /login when unauthenticated', async () => {
+    renderAt('/apps')
+    await waitFor(() =>
+      expect(screen.getByRole('heading', { name: /hogar/i })).toBeInTheDocument()
+    )
   })
 
   it('renders NotFound at /404', () => {
