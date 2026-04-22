@@ -1,7 +1,7 @@
 # Estado del Proyecto — Portfolio Personal H3nky
 
 > Documento de contexto para retomar el trabajo en una nueva sesión de Claude.
-> Última actualización: 2026-04-14
+> Última actualización: 2026-04-22
 
 ---
 
@@ -159,15 +159,29 @@ Para dark variants: `className="... dark:text-white dark:bg-zinc-800"`
 
 ---
 
-## ProjectDetail — estado actual y deuda técnica
+## Mejoras aplicadas (2026-04-22) — Production Readiness
 
-> **AVISO:** `ProjectDetail.jsx` tiene las clases hardcodeadas en modo oscuro (zinc-xxx, text-white, etc.) y **no usa los CSS custom properties de tema**. Cuando se limpie el modo claro del hero, hay que actualizar también esta página para ser theme-aware.
+### FASE 1 — Deuda técnica
+- **`<title>` dinámico**: React 19 nativo, sin librerías. En LandingPage, ProjectsHome, ProjectDetail `{project.title} | H3nky`, NotFound, ComingSoonPage.
+- **ErrorBoundary**: envuelve `<Layout>` en `App.jsx`. Captura errores de render con fallback claro y botón "Volver al inicio".
+- **NotFound.jsx**: migrado a CSS custom properties (eliminadas clases zinc hardcodeadas).
+- **ProjectDetail**: ya estaba theme-aware (CSS custom properties), redirect `<Navigate to="/404">` para slug inválido ya existía.
 
-Clases hardcodeadas en ProjectDetail que hay que migrar:
-- `text-white` → `text-[var(--text)]`
-- `text-zinc-400` → `text-[var(--text-muted)]`
-- `bg-zinc-800 hover:bg-zinc-700 border-zinc-700` → versiones con `var(--border)` y dual light/dark
-- `border-zinc-800` → `border-[var(--border)]`
+### FASE 2 — Estructura y lazy loading
+- **React.lazy + Suspense**: todas las rutas lazy-loaded. Bundle principal: 713 KB → 198 KB. Chunks separados por página.
+- **scripts/generate-image.js**: movido de `src/scripts/` → `scripts/` (tooling fuera del bundle). package.json actualizado.
+- **App.test.jsx**: tests de rutas con lazy loading usan `waitFor` + timeout 5s.
+
+### FASE 3 — Debug y observabilidad
+- **generate-image.js mejorado**: logger con timestamp+colores (ANSI), AbortController 15s timeout, formato `.webp`, mensajes claros para `--force`.
+- **Tests edge cases** (`ProjectsHome.edge.test.jsx`): datos mockeados, sin featured, filtro activo, ausencia de mensaje vacío.
+
+### FASE 4 — Production readiness
+- **index.html**: `og:image`, `twitter:image` apuntando a `h3nky.dev/og-cover.jpg`, `canonical`, `author meta`. Título unificado.
+- **public/robots.txt**: `Allow: *` + `Sitemap: https://h3nky.dev/sitemap.xml`
+- **public/sitemap.xml**: 6 URLs (/, /projects, 4 slugs de proyecto)
+- **vercel.json**: `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, `Referrer-Policy`, `Cache-Control: immutable` para assets
+- **vite.config.js**: `sourcemap: true`, `manualChunks` (vendor/router/animations), puertos explícitos 5173/4173
 
 ---
 
@@ -267,7 +281,7 @@ npm run preview          # preview del build en puerto 4173
 npm run test             # Vitest en modo watch
 npm run test:run         # Vitest una pasada
 npm run lint             # ESLint
-npm run generate-image   # alias de node src/scripts/generate-image.js
+npm run generate-image   # alias de node scripts/generate-image.js
 ```
 
 ---
@@ -276,21 +290,27 @@ npm run generate-image   # alias de node src/scripts/generate-image.js
 
 | Tarea | Prioridad | Estado |
 |-------|-----------|--------|
-| OG tags + `<title>` dinámico por ruta | Media | **Pendiente** |
-| ProjectDetail: migrar a CSS custom properties (theme-aware) | Media | **Pendiente** |
-| Dominio propio (h3nky.dev) | Baja | **Pendiente** — requiere deploy primero |
-| Deploy en Vercel | Pendiente | **Pendiente** |
+| Crear `public/og-cover.jpg` (1200×630px) para OG preview en redes | Media | **Pendiente** |
+| Configurar dominio h3nky.dev en Vercel Settings → Domains | Baja | **Pendiente** |
+| Auditoría imports: `no-unused-vars` ESLint + limpiar devDependencies | Baja | **Pendiente** |
+| Añadir más proyectos en projects.js + sitemap.xml | Baja | Continuo |
 | Sección de artículos estilo "C" (mono, editorial) | Baja | Deferred — futuro |
 
 **Ya hecho:**
-- Grid 2-3 columnas
-- Hero section con intro personal
-- Subtítulo personal
-- Máximo 3 badges por card + "+N"
-- Fix espaciado inferior
-- Light/dark mode toggle completo
-- Generación de imágenes con Pollinations.ai (reemplaza Replicate)
-- Profundidad visual en modo claro (dot grid + gradientes)
+- Grid 2-3 columnas + hero section con intro personal
+- Light/dark mode toggle completo con localStorage
+- Generación de imágenes con Pollinations.ai (formato .webp)
+- Refactor web completo: Landing / Projects / Apps / Courses / Store
+- Plataforma multi-sección con LandingPage, AppsHub, ComingSoonPage
+- Hogar app: Calendario, Lista compra, Menú, Recetas con IA
+- Google OAuth + Supabase auth + ProtectedRoute
+- React.lazy + Suspense en todas las rutas
+- ErrorBoundary global
+- `<title>` dinámico nativo React 19
+- SEO: OG, Twitter Card, canonical, robots.txt, sitemap.xml
+- Security headers en Vercel + cache inmutable en assets
+- vite.config: sourcemap, manualChunks (vendor/router/animations)
+- 40 tests pasando (8 archivos)
 
 ---
 
@@ -325,11 +345,11 @@ ef32c40 feat: hero section, subtítulo personal, badges limitados a 3, spacing f
 
 ## Próximos pasos sugeridos (orden lógico)
 
-1. **Migrar ProjectDetail.jsx** a CSS custom properties para que sea theme-aware en modo claro
-2. **Añadir `<title>` dinámico** en Home y ProjectDetail (una línea cada uno, React 19 lo soporta nativamente)
-3. **Deploy en Vercel** — conectar repo de GitHub, auto-deploy al hacer push a main
-4. **Dominio propio** — configurar en Vercel > Settings > Domains
-5. **Añadir más proyectos** al portfolio con `projects.js` + `generate-image.js`
+1. **Crear `public/og-cover.jpg`** (1200×630px) — imagen de preview para redes sociales. Puede generarse con `generate-image.js` o diseñarse manualmente.
+2. **Configurar dominio `h3nky.dev`** en Vercel > Settings > Domains (requiere comprar/transferir dominio primero).
+3. **Auditoría de imports**: ejecutar `npm run lint` y corregir `no-unused-vars`, mover dependencias de `dependencies` a `devDependencies` si corresponde.
+4. **Añadir más proyectos** en `projects.js` + `npm run generate-image -- --slug <slug>` + actualizar `sitemap.xml`.
+5. **Sección de artículos/blog** estilo editorial — deferred para cuando haya contenido.
 
 ---
 

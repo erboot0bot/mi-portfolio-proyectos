@@ -1,6 +1,6 @@
 import React, { Suspense } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion' // eslint-disable-line no-unused-vars
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
 import ComingSoonPage from './components/ComingSoonPage'

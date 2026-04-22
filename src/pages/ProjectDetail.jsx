@@ -12,7 +12,7 @@
  */
 
 import { useParams, Navigate, Link } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { motion } from 'framer-motion' // eslint-disable-line no-unused-vars
 import { projects } from '../data/projects'
 import TechBadge from '../components/TechBadge'
 import ImageGallery from '../components/ImageGallery'
