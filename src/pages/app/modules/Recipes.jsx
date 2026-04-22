@@ -4,8 +4,24 @@ import ModuleShell from './ModuleShell'
 import ModuleTopNav from '../../../components/ModuleTopNav'
 import { motion } from 'framer-motion'
 import { supabase } from '../../../lib/supabase'
-import { suggestRecipes } from '../../../lib/anthropic'
 import { usePWAManifest } from '../../../hooks/usePWAManifest'
+
+async function suggestRecipes({ ingredients, restrictions, timeMinutes, servings }) {
+  const { data: { session } } = await supabase.auth.getSession()
+  const response = await fetch(`${import.meta.env.VITE_SUPABASE_FUNCTIONS_URL}/generate-recipe`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session?.access_token}`,
+    },
+    body: JSON.stringify({ ingredients, restrictions, timeMinutes, servings }),
+  })
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}))
+    throw new Error(err.error ?? `HTTP ${response.status}`)
+  }
+  return response.json()
+}
 
 function AIModal({ projectId, onSaved, onClose }) {
   const [form, setForm] = useState({ ingredients: '', restrictions: '', timeMinutes: 30, servings: 4 })
