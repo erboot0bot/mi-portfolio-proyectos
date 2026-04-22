@@ -24,17 +24,20 @@ export default function HogarLayout() {
   const isFullLayout = FULL_LAYOUT_MODULES.includes(currentModule)
 
   useEffect(() => {
+    if (!user) return
     supabase
       .from('projects')
       .select('*')
-      .eq('slug', 'hogar')
+      .eq('owner_id', user.id)
+      .order('created_at', { ascending: true })
+      .limit(1)
       .single()
       .then(({ data, error }) => {
         if (error || !data) { navigate('/apps'); return }
         setProject(data)
         setLoading(false)
       })
-  }, [navigate])
+  }, [user, navigate])
 
   if (loading) {
     return (
