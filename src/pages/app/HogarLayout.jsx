@@ -37,6 +37,7 @@ export default function HogarLayout() {
         setProject(data)
         setLoading(false)
       })
+      .catch(() => navigate('/apps'))
   }, [user, navigate])
 
   if (loading) {

@@ -59,6 +59,11 @@ const pageVariants = {
   exit:    { opacity: 0, y: -10 },
 }
 
+function getAnimKey(pathname) {
+  if (pathname.startsWith('/app/projects/hogar')) return '/app/projects/hogar'
+  return pathname
+}
+
 export default function App() {
   const location = useLocation()
 
@@ -72,7 +77,7 @@ export default function App() {
       }>
       <AnimatePresence mode="wait" onExitComplete={() => window.scrollTo(0, 0)}>
         <motion.div
-          key={location.pathname}
+          key={getAnimKey(location.pathname)}
           variants={pageVariants}
           initial="initial"
           animate="animate"
