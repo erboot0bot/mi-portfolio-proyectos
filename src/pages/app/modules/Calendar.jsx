@@ -457,7 +457,7 @@ function AgendaView({ days, events, onEventClick }) {
 // ── Calendar (main export) ────────────────────────────────────────
 export default function Calendar() {
   usePWAManifest('calendar')
-  const { project, modules } = useOutletContext()
+  const { app, modules } = useOutletContext()
   const isMobile = window.innerWidth < 768
   const [events, setEvents]         = useState([])
   const [anchor, setAnchor]         = useState(new Date())
@@ -468,15 +468,17 @@ export default function Calendar() {
 
   useEffect(() => {
     supabase
-      .from('calendar_tasks')
+      .from('events')
       .select('*')
-      .eq('project_id', project.id)
+      .eq('app_id', app.id)
+      .eq('event_type', 'task')
       .then(({ data }) => { if (data) setEvents(data.map(dbToEvent)) })
-  }, [project.id])
+  }, [app.id])
 
   async function handleSave({ title, description, color, allDay, recurrence, startStr, endStr }) {
     const payload = {
-      project_id:  project.id,
+      app_id:      app.id,
+      event_type:  'task',
       title,
       description,
       color,
@@ -487,7 +489,7 @@ export default function Calendar() {
     }
     if (modal?.ev?.id) {
       const { error } = await supabase
-        .from('calendar_tasks').update(payload).eq('id', modal.ev.id)
+        .from('events').update(payload).eq('id', modal.ev.id)
       if (!error) {
         setEvents(prev => prev.map(e =>
           e.id === modal.ev.id
@@ -498,14 +500,14 @@ export default function Calendar() {
       }
     } else {
       const { data, error } = await supabase
-        .from('calendar_tasks').insert(payload).select().single()
+        .from('events').insert(payload).select().single()
       if (!error && data) setEvents(prev => [...prev, dbToEvent(data)])
     }
     setModal(null)
   }
 
   async function handleDelete(id) {
-    await supabase.from('calendar_tasks').delete().eq('id', id)
+    await supabase.from('events').delete().eq('id', id)
     setEvents(prev => prev.filter(e => e.id !== id))
     setModal(null)
   }
@@ -529,7 +531,7 @@ export default function Calendar() {
 
   return (
     <ModuleShell
-      project={project}
+      project={app}
       modules={modules}
       sidebarExtra={
         <>
