@@ -23,7 +23,7 @@ async function suggestRecipes({ ingredients, restrictions, timeMinutes, servings
   return response.json()
 }
 
-function AIModal({ projectId, onSaved, onClose }) {
+function AIModal({ appId, onSaved, onClose }) {
   const [form, setForm] = useState({ ingredients: '', restrictions: '', timeMinutes: 30, servings: 4 })
   const [loading, setLoading] = useState(false)
   const [suggestions, setSuggestions] = useState([])
@@ -49,7 +49,7 @@ function AIModal({ projectId, onSaved, onClose }) {
   async function handleSave(recipe, index) {
     setSaving(p => ({ ...p, [index]: true }))
     const { data } = await supabase.from('recipes').insert({
-      project_id: projectId,
+      app_id: appId,
       title: recipe.title,
       ingredients: recipe.ingredients,
       instructions: recipe.instructions,
@@ -150,7 +150,7 @@ function AIModal({ projectId, onSaved, onClose }) {
   )
 }
 
-function ManualModal({ projectId, recipe: existingRecipe, onSaved, onClose }) {
+function ManualModal({ appId, recipe: existingRecipe, onSaved, onClose }) {
   const [form, setForm] = useState({
     title: existingRecipe?.title ?? '',
     instructions: existingRecipe?.instructions ?? '',
@@ -195,7 +195,7 @@ function ManualModal({ projectId, recipe: existingRecipe, onSaved, onClose }) {
     }))
     const tags = form.tags.split(',').map(t => t.trim()).filter(Boolean)
     const payload = {
-      project_id: projectId,
+      app_id: appId,
       title: form.title.trim(),
       ingredients: ings,
       instructions: form.instructions.trim(),
@@ -320,7 +320,7 @@ function ManualModal({ projectId, recipe: existingRecipe, onSaved, onClose }) {
 
 export default function Recipes() {
   usePWAManifest('recipes')
-  const { project, modules } = useOutletContext()
+  const { app, modules } = useOutletContext()
   const navigate = useNavigate()
   const [recipes, setRecipes]           = useState([])
   const [showAI, setShowAI]             = useState(false)
@@ -346,10 +346,10 @@ export default function Recipes() {
   }
 
   useEffect(() => {
-    supabase.from('recipes').select('*').eq('project_id', project.id)
+    supabase.from('recipes').select('*').eq('app_id', app.id)
       .order('created_at', { ascending: false })
       .then(({ data }) => { if (data) setRecipes(data) })
-  }, [project.id])
+  }, [app.id])
 
   useEffect(() => {
     if (!menuOpen) return
@@ -392,7 +392,7 @@ export default function Recipes() {
   ]
 
   return (
-    <ModuleShell project={project} modules={modules}>
+    <ModuleShell project={app} modules={modules}>
     <div style={{ display:'flex', flexDirection:'column', height:'100%', overflow:'hidden' }}>
       {/* Unified top nav for mobile / header for desktop */}
       {isMobile ? (
@@ -578,14 +578,14 @@ export default function Recipes() {
 
       {showAI && (
         <AIModal
-          projectId={project.id}
+          appId={app.id}
           onSaved={handleSaved}
           onClose={() => setShowAI(false)}
         />
       )}
       {showManual && (
         <ManualModal
-          projectId={project.id}
+          appId={app.id}
           onSaved={r => { handleSaved(r); setShowManual(false) }}
           onClose={() => setShowManual(false)}
         />
@@ -616,7 +616,7 @@ export default function Recipes() {
       {/* Edit modal */}
       {editRecipe && (
         <ManualModal
-          projectId={project.id}
+          appId={app.id}
           recipe={editRecipe}
           onSaved={handleEdited}
           onClose={() => setEditRecipe(null)}

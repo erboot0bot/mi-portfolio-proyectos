@@ -11,7 +11,7 @@ const MEAL_TYPES = [
   { key: 'snack', label: 'Merienda' },
 ]
 
-function AddToMenuModal({ recipe, project, onClose }) {
+function AddToMenuModal({ recipe, app, onClose }) {
   const [day, setDay] = useState(0)
   const [meal, setMeal] = useState('lunch')
   const [saving, setSaving] = useState(false)
@@ -21,13 +21,13 @@ function AddToMenuModal({ recipe, project, onClose }) {
     setSaving(true)
     const weekStart = format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd')
     await supabase.from('menu_items').upsert({
-      project_id: project.id,
+      app_id: app.id,
       week_start: weekStart,
       day_of_week: day,
       meal_type: meal,
       recipe_id: recipe.id,
       custom_name: recipe.title,
-    }, { onConflict: 'project_id,week_start,day_of_week,meal_type' })
+    }, { onConflict: 'app_id,week_start,day_of_week,meal_type' })
     setDone(true)
     setTimeout(onClose, 1000)
   }
@@ -66,7 +66,7 @@ function AddToMenuModal({ recipe, project, onClose }) {
 
 export default function RecipeDetail() {
   const { recipeId } = useParams()
-  const { project } = useOutletContext()
+  const { app } = useOutletContext()
   const navigate = useNavigate()
   const [recipe, setRecipe] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -100,7 +100,7 @@ export default function RecipeDetail() {
 
   async function addToShoppingList() {
     const items = ingredients.map(ing => ({
-      project_id: project.id,
+      app_id: app.id,
       name: typeof ing === 'string' ? ing : (ing.name ?? ''),
       quantity: typeof ing === 'object' ? (ing.quantity ?? null) : null,
       unit: typeof ing === 'object' ? (ing.unit ?? null) : null,
@@ -207,7 +207,7 @@ export default function RecipeDetail() {
         </div>
       )}
 
-      {showMenuPicker && <AddToMenuModal recipe={recipe} project={project} onClose={() => setShowMenuPicker(false)} />}
+      {showMenuPicker && <AddToMenuModal recipe={recipe} app={app} onClose={() => setShowMenuPicker(false)} />}
 
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
