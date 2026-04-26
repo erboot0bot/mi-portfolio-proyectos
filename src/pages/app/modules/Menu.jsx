@@ -7,6 +7,7 @@ import { format, startOfWeek, addDays } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { supabase } from '../../../lib/supabase'
 import { usePWAManifest } from '../../../hooks/usePWAManifest'
+import { menuEventFromDb, menuEventToDb } from '../../../utils/menuTransformers'
 
 const MEALS = [
   { key: 'desayuno', label: 'Desayuno', icon: '☀️', hour: 8  },
@@ -18,7 +19,7 @@ const DAYS_SHORT = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
 
 export default function Menu() {
   usePWAManifest('menu')
-  const { project, modules } = useOutletContext()
+  const { app, modules } = useOutletContext()
   const isMobile = window.innerWidth < 768
   const [menu, setMenu]             = useState({})
   const [weekStart, setWeekStart]   = useState(() =>
@@ -39,22 +40,30 @@ export default function Menu() {
 
   useEffect(() => {
     supabase.from('recipes').select('id, title')
-      .eq('project_id', project.id)
+      .eq('app_id', app.id)
       .then(({ data }) => { if (data) setRecipes(data) })
-  }, [project.id])
+  }, [app.id])
 
   useEffect(() => {
-    supabase.from('menu_items').select('*')
-      .eq('project_id', project.id)
-      .eq('week_start', weekStart)
+    const weekEnd = new Date(weekStart + 'T00:00:00Z')
+    weekEnd.setUTCDate(weekEnd.getUTCDate() + 6)
+    weekEnd.setUTCHours(23, 59, 59, 999)
+
+    supabase.from('events').select('*')
+      .eq('app_id', app.id)
+      .eq('event_type', 'meal')
+      .gte('start_time', weekStart + 'T00:00:00Z')
+      .lte('start_time', weekEnd.toISOString())
       .then(({ data }) => {
         if (data) {
           const map = {}
-          data.forEach(e => { map[`${e.day_of_week}-${e.meal_type}`] = e })
+          data.map(menuEventFromDb).forEach(e => {
+            map[`${e.day_of_week}-${e.meal_type}`] = e
+          })
           setMenu(map)
         }
       })
-  }, [project.id, weekStart])
+  }, [app.id, weekStart])
 
   function shiftWeek(delta) {
     const d = new Date(weekStart)
@@ -76,17 +85,17 @@ export default function Menu() {
     if (!modal) return
     const { dayIdx, mealKey, key } = modal
     const existing = menu[key]
-    const payload = {
-      project_id: project.id, week_start: weekStart,
-      day_of_week: dayIdx, meal_type: mealKey,
-      custom_name: value, recipe_id: recipeId,
-    }
+    const payload = menuEventToDb(app.id, weekStart, dayIdx, mealKey, value, recipeId || null)
+
     if (existing) {
-      await supabase.from('menu_items').update(payload).eq('id', existing.id)
-      setMenu(p => ({ ...p, [key]: { ...existing, ...payload } }))
+      const { data } = await supabase.from('events')
+        .update({ title: payload.title, metadata: payload.metadata, start_time: payload.start_time })
+        .eq('id', existing.id)
+        .select().single()
+      if (data) setMenu(p => ({ ...p, [key]: menuEventFromDb(data) }))
     } else {
-      const { data } = await supabase.from('menu_items').insert(payload).select().single()
-      if (data) setMenu(p => ({ ...p, [key]: data }))
+      const { data } = await supabase.from('events').insert(payload).select().single()
+      if (data) setMenu(p => ({ ...p, [key]: menuEventFromDb(data) }))
     }
     setModal(null)
   }
@@ -95,7 +104,7 @@ export default function Menu() {
     e.stopPropagation()
     const existing = menu[key]
     if (existing) {
-      await supabase.from('menu_items').delete().eq('id', existing.id)
+      await supabase.from('events').delete().eq('id', existing.id)
       setMenu(p => { const n = { ...p }; delete n[key]; return n })
     }
   }
@@ -110,7 +119,7 @@ export default function Menu() {
       day.setHours(meal?.hour ?? 12, 0, 0, 0)
       const end = new Date(day); end.setHours(day.getHours() + 1)
       return {
-        project_id: project.id,
+        app_id: app.id,
         title: `${meal?.icon ?? ''} ${e.custom_name}`,
         start_time: day.toISOString(),
         end_time: end.toISOString(),
@@ -130,7 +139,7 @@ export default function Menu() {
     if (!data) return
     const items = data.flatMap(r => Array.isArray(r.ingredients) ? r.ingredients : [])
       .map(ing => ({
-        project_id: project.id,
+        app_id: app.id,
         name: typeof ing === 'string' ? ing : (ing.name ?? ''),
         quantity: typeof ing === 'object' ? (ing.quantity ?? null) : null,
         unit: typeof ing === 'object' ? (ing.unit ?? null) : null,
@@ -157,7 +166,7 @@ export default function Menu() {
 
   if (isMobile) {
     return (
-      <ModuleShell project={project} modules={modules}>
+      <ModuleShell app={app} modules={modules}>
       <div style={{ display:'flex', flexDirection:'column', height:'100%', overflow:'hidden' }}>
         <ModuleTopNav
           title={dayLabelCap}
@@ -313,7 +322,7 @@ export default function Menu() {
   }
 
   return (
-    <ModuleShell project={project} modules={modules}>
+    <ModuleShell app={app} modules={modules}>
     <div style={{ display:'flex', flexDirection:'column', height:'100%', overflow:'hidden' }}>
       {/* Header */}
       <div style={{ display:'flex', alignItems:'center', gap:10, padding:'12px 20px', borderBottom:'1px solid var(--border)', flexShrink:0, flexWrap:'wrap' }}>
