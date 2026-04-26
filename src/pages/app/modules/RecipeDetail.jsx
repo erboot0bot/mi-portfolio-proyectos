@@ -3,6 +3,7 @@ import { useParams, useOutletContext, useNavigate } from 'react-router-dom'
 import { format, startOfWeek } from 'date-fns'
 import { supabase } from '../../../lib/supabase'
 import { menuEventToDb } from '../../../utils/menuTransformers'
+import { recipeIngredientFromDb } from '../../../utils/recipeTransformers'
 
 const DAYS = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo']
 const MEAL_TYPES = [
@@ -68,13 +69,28 @@ export default function RecipeDetail() {
   const [addedMsg, setAddedMsg] = useState(null)
   const [showMenuPicker, setShowMenuPicker] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [normalizedIngredients, setNormalizedIngredients] = useState(null) // null = not yet loaded
   const [deleteConfirming, setDeleteConfirming] = useState(false)
 
   useEffect(() => {
     supabase.from('recipes').select('*').eq('id', recipeId).single()
-      .then(({ data, error }) => {
+      .then(async ({ data, error }) => {
         if (error || !data) { navigate('..'); return }
         setRecipe(data)
+
+        // Load normalized ingredients; fallback to JSONB if no rows
+        const { data: riRows } = await supabase
+          .from('recipe_ingredients')
+          .select('*')
+          .eq('recipe_id', data.id)
+          .order('sort_order')
+
+        setNormalizedIngredients(
+          riRows?.length
+            ? riRows.map(recipeIngredientFromDb)
+            : null // signal to use JSONB fallback
+        )
+
         setLoading(false)
       })
   }, [recipeId, navigate])
@@ -85,7 +101,8 @@ export default function RecipeDetail() {
     </div>
   )
 
-  const ingredients = Array.isArray(recipe.ingredients) ? recipe.ingredients : []
+  const ingredients = normalizedIngredients
+    ?? (Array.isArray(recipe?.ingredients) ? recipe.ingredients : [])
 
   async function handleDelete() {
     setDeleteConfirming(true)
