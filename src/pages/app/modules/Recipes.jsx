@@ -49,7 +49,7 @@ function AIModal({ appId, onSaved, onClose }) {
 
   async function handleSave(recipe, index) {
     setSaving(p => ({ ...p, [index]: true }))
-    const { data } = await supabase.from('recipes').insert({
+    const { data, error: recipeErr } = await supabase.from('recipes').insert({
       app_id:       appId,
       title:        recipe.title,
       ingredients:  recipe.ingredients,
@@ -61,25 +61,29 @@ function AIModal({ appId, onSaved, onClose }) {
       ai_generated: true,
     }).select().single()
 
-    if (data) {
-      // Guardar ingredientes normalizados
-      const ings = Array.isArray(recipe.ingredients) ? recipe.ingredients : []
-      if (ings.length) {
-        const rows = ings
-          .map((ing, i) =>
-            recipeIngredientToDb(
-              data.id,
-              typeof ing === 'string' ? ing : (ing.name ?? ''),
-              typeof ing === 'object' ? (ing.quantity ?? null) : null,
-              typeof ing === 'object' ? (ing.unit ?? '') : '',
-              i
-            )
-          )
-          .filter(r => r.name)
-        if (rows.length) await supabase.from('recipe_ingredients').insert(rows)
-      }
-      onSaved(data)
+    if (recipeErr || !data) {
+      setSaving(p => ({ ...p, [index]: false }))
+      return
     }
+
+    // Guardar ingredientes normalizados
+    const ings = Array.isArray(recipe.ingredients) ? recipe.ingredients : []
+    if (ings.length) {
+      const rows = ings
+        .map((ing, i) =>
+          recipeIngredientToDb(
+            data.id,
+            typeof ing === 'string' ? ing : (ing.name ?? ''),
+            typeof ing === 'object' ? (ing.quantity ?? null) : null,
+            typeof ing === 'object' ? (ing.unit ?? '') : '',
+            i
+          )
+        )
+        .filter(r => r.name)
+      if (rows.length) await supabase.from('recipe_ingredients').insert(rows)
+    }
+
+    onSaved(data)
     setSaving(p => ({ ...p, [index]: 'done' }))
   }
 
@@ -243,14 +247,17 @@ function ManualModal({ appId, recipe: existingRecipe, onSaved, onClose }) {
     if (err) { setError(err.message); setSaving(false); return }
 
     // Sincronizar recipe_ingredients (DELETE + re-INSERT)
-    await supabase.from('recipe_ingredients').delete().eq('recipe_id', data.id)
+    const { error: delErr } = await supabase.from('recipe_ingredients').delete().eq('recipe_id', data.id)
+    if (delErr) { setError('Error al actualizar ingredientes: ' + delErr.message); setSaving(false); return }
     if (ings.length) {
       const rows = ings.map((ing, i) =>
         recipeIngredientToDb(data.id, ing.name, ing.quantity ?? null, ing.unit ?? '', i)
       )
-      await supabase.from('recipe_ingredients').insert(rows)
+      const { error: insErr } = await supabase.from('recipe_ingredients').insert(rows)
+      if (insErr) { setError('Error al guardar ingredientes: ' + insErr.message); setSaving(false); return }
     }
 
+    setSaving(false)
     onSaved(data)
   }
 
