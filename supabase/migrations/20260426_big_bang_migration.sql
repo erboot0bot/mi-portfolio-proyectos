@@ -225,6 +225,16 @@ CREATE POLICY "recipe_ingredients_via_recipe" ON recipe_ingredients
 CREATE POLICY "diet_plans_by_app_member" ON diet_plans
   FOR ALL USING (is_app_member(app_id));
 
+-- project_members (actualizar política que referenciaba projects.project_id)
+DROP POLICY IF EXISTS "members_by_owner" ON project_members;
+CREATE POLICY "members_by_owner" ON project_members
+  FOR ALL USING (
+    app_id IN (
+      SELECT id FROM apps WHERE owner_id = auth.uid()
+    )
+  );
+-- "members_read_own" no referencia la columna renombrada, no necesita cambio
+
 -- ══════════════════════════════════════════════════════
 -- 11. ELIMINAR TABLAS ANTIGUAS
 -- ══════════════════════════════════════════════════════
