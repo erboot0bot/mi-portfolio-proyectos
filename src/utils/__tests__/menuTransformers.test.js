@@ -28,13 +28,13 @@ describe('menuEventToDb', () => {
     expect(result.metadata.day_of_week).toBe(1)
     expect(result.metadata.recipe_id).toBe('rec1')
     const d = new Date(result.start_time)
-    expect(d.getHours()).toBe(14)
+    expect(d.getUTCHours()).toBe(14)
   })
 
   it('asigna hora correcta según meal_type', () => {
     const desayuno = menuEventToDb('app1', '2026-04-27', 0, 'desayuno', 'Tostadas', null)
     const cena     = menuEventToDb('app1', '2026-04-27', 0, 'cena', 'Cena', null)
-    expect(new Date(desayuno.start_time).getHours()).toBe(8)
-    expect(new Date(cena.start_time).getHours()).toBe(21)
+    expect(new Date(desayuno.start_time).getUTCHours()).toBe(8)
+    expect(new Date(cena.start_time).getUTCHours()).toBe(21)
   })
 })

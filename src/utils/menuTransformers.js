@@ -13,9 +13,9 @@ export function menuEventFromDb(ev) {
 
 export function menuEventToDb(appId, weekStart, dayIdx, mealKey, value, recipeId) {
   const hour = MEAL_HOURS[mealKey] ?? 12
-  const date = new Date(weekStart)
-  date.setDate(date.getDate() + dayIdx)
-  date.setHours(hour, 0, 0, 0)
+  const date = new Date(weekStart + 'T00:00:00Z')
+  date.setUTCDate(date.getUTCDate() + dayIdx)
+  date.setUTCHours(hour, 0, 0, 0)
   return {
     app_id:     appId,
     event_type: 'meal',
