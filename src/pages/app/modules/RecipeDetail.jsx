@@ -2,32 +2,27 @@ import { useState, useEffect } from 'react'
 import { useParams, useOutletContext, useNavigate } from 'react-router-dom'
 import { format, startOfWeek } from 'date-fns'
 import { supabase } from '../../../lib/supabase'
+import { menuEventToDb } from '../../../utils/menuTransformers'
 
 const DAYS = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo']
 const MEAL_TYPES = [
-  { key: 'breakfast', label: 'Desayuno' },
-  { key: 'lunch', label: 'Comida' },
-  { key: 'dinner', label: 'Cena' },
-  { key: 'snack', label: 'Merienda' },
+  { key: 'desayuno', label: 'Desayuno' },
+  { key: 'almuerzo', label: 'Almuerzo' },
+  { key: 'comida',   label: 'Comida' },
+  { key: 'cena',     label: 'Cena' },
 ]
 
 function AddToMenuModal({ recipe, app, onClose }) {
   const [day, setDay] = useState(0)
-  const [meal, setMeal] = useState('lunch')
+  const [meal, setMeal] = useState('comida')
   const [saving, setSaving] = useState(false)
   const [done, setDone] = useState(false)
 
   async function handleAdd() {
     setSaving(true)
     const weekStart = format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd')
-    await supabase.from('menu_items').upsert({
-      app_id: app.id,
-      week_start: weekStart,
-      day_of_week: day,
-      meal_type: meal,
-      recipe_id: recipe.id,
-      custom_name: recipe.title,
-    }, { onConflict: 'app_id,week_start,day_of_week,meal_type' })
+    const payload = menuEventToDb(app.id, weekStart, day, meal, recipe.title, recipe.id)
+    await supabase.from('events').insert(payload)
     setDone(true)
     setTimeout(onClose, 1000)
   }
@@ -101,14 +96,20 @@ export default function RecipeDetail() {
   async function addToShoppingList() {
     const items = ingredients.map(ing => ({
       app_id: app.id,
-      name: typeof ing === 'string' ? ing : (ing.name ?? ''),
-      quantity: typeof ing === 'object' ? (ing.quantity ?? null) : null,
-      unit: typeof ing === 'object' ? (ing.unit ?? null) : null,
-      category: 'General',
-    })).filter(i => i.name)
+      module: 'supermercado',
+      type: 'product',
+      title: typeof ing === 'string' ? ing : (ing.name ?? ''),
+      metadata: {
+        quantity: typeof ing === 'object' ? (ing.quantity ?? null) : null,
+        unit: typeof ing === 'object' ? (ing.unit ?? '') : '',
+        category: 'otros',
+        store: 'General',
+        price_unit: null,
+      },
+    })).filter(i => i.title)
 
     if (!items.length) return
-    await supabase.from('shopping_items').insert(items)
+    await supabase.from('items').insert(items)
     setAddedMsg(`${items.length} ingredientes añadidos`)
     setTimeout(() => setAddedMsg(null), 3000)
   }
