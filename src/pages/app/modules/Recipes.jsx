@@ -4,6 +4,7 @@ import ModuleShell from './ModuleShell'
 import ModuleTopNav from '../../../components/ModuleTopNav'
 import { motion } from 'framer-motion'
 import { supabase } from '../../../lib/supabase'
+import { recipeIngredientToDb } from '../../../utils/recipeTransformers'
 import { usePWAManifest } from '../../../hooks/usePWAManifest'
 
 async function suggestRecipes({ ingredients, restrictions, timeMinutes, servings }) {
@@ -49,17 +50,36 @@ function AIModal({ appId, onSaved, onClose }) {
   async function handleSave(recipe, index) {
     setSaving(p => ({ ...p, [index]: true }))
     const { data } = await supabase.from('recipes').insert({
-      app_id: appId,
-      title: recipe.title,
-      ingredients: recipe.ingredients,
+      app_id:       appId,
+      title:        recipe.title,
+      ingredients:  recipe.ingredients,
       instructions: recipe.instructions,
-      tags: recipe.tags ?? [],
-      prep_time: recipe.prep_time,
-      cook_time: recipe.cook_time,
-      servings: recipe.servings,
+      tags:         recipe.tags ?? [],
+      prep_time:    recipe.prep_time,
+      cook_time:    recipe.cook_time,
+      servings:     recipe.servings,
       ai_generated: true,
     }).select().single()
-    if (data) onSaved(data)
+
+    if (data) {
+      // Guardar ingredientes normalizados
+      const ings = Array.isArray(recipe.ingredients) ? recipe.ingredients : []
+      if (ings.length) {
+        const rows = ings
+          .map((ing, i) =>
+            recipeIngredientToDb(
+              data.id,
+              typeof ing === 'string' ? ing : (ing.name ?? ''),
+              typeof ing === 'object' ? (ing.quantity ?? null) : null,
+              typeof ing === 'object' ? (ing.unit ?? '') : '',
+              i
+            )
+          )
+          .filter(r => r.name)
+        if (rows.length) await supabase.from('recipe_ingredients').insert(rows)
+      }
+      onSaved(data)
+    }
     setSaving(p => ({ ...p, [index]: 'done' }))
   }
 
@@ -221,6 +241,16 @@ function ManualModal({ appId, recipe: existingRecipe, onSaved, onClose }) {
     }
 
     if (err) { setError(err.message); setSaving(false); return }
+
+    // Sincronizar recipe_ingredients (DELETE + re-INSERT)
+    await supabase.from('recipe_ingredients').delete().eq('recipe_id', data.id)
+    if (ings.length) {
+      const rows = ings.map((ing, i) =>
+        recipeIngredientToDb(data.id, ing.name, ing.quantity ?? null, ing.unit ?? '', i)
+      )
+      await supabase.from('recipe_ingredients').insert(rows)
+    }
+
     onSaved(data)
   }
 
