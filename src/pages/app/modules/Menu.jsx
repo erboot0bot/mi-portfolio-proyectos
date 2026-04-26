@@ -35,6 +35,7 @@ export default function Menu() {
   const [editVal, setEditVal]       = useState('')
   const [recipes, setRecipes]       = useState([])
   const [toast, setToast]           = useState(null)
+  const [generating, setGenerating] = useState(false)
 
   function showToast(msg) { setToast(msg); setTimeout(() => setToast(null), 2500) }
 
@@ -158,60 +159,90 @@ export default function Menu() {
   }
 
   async function generateShoppingList() {
-    // 1. Collect unique recipe_ids from this week's menu events
-    const recipeIds = [...new Set(
-      Object.values(menu).filter(ev => ev?.recipe_id).map(ev => ev.recipe_id)
-    )]
-    if (!recipeIds.length) { showToast('No hay recetas enlazadas en el menú'); return }
+    if (generating) return
+    setGenerating(true)
+    try {
+      // 1. Collect unique recipe_ids from this week's menu events
+      const recipeIds = [...new Set(
+        Object.values(menu).filter(ev => ev?.recipe_id).map(ev => ev.recipe_id)
+      )]
+      if (!recipeIds.length) { showToast('No hay recetas enlazadas en el menú'); return }
 
-    // 2. Load recipe_ingredients for those recipes
-    const { data: riRows } = await supabase
-      .from('recipe_ingredients')
-      .select('*')
-      .in('recipe_id', recipeIds)
+      // 2. Load recipe_ingredients for those recipes
+      const { data: riRows, error: riErr } = await supabase
+        .from('recipe_ingredients')
+        .select('*')
+        .in('recipe_id', recipeIds)
 
-    if (!riRows?.length) { showToast('Las recetas no tienen ingredientes normalizados'); return }
+      if (riErr) { showToast('Error cargando ingredientes'); return }
+      if (!riRows?.length) { showToast('Las recetas no tienen ingredientes normalizados'); return }
 
-    // 3. Load current inventory for this app
-    const { data: invRows } = await supabase
-      .from('inventory')
-      .select('current_stock, product:products(name)')
-      .eq('app_id', app.id)
+      // 3. Load current inventory for this app
+      const { data: invRows, error: invErr } = await supabase
+        .from('inventory')
+        .select('current_stock, unit, product:products(name)')
+        .eq('app_id', app.id)
 
-    // Map name→stock (lowercase for case-insensitive comparison)
-    const stockMap = {}
-    for (const inv of (invRows ?? [])) {
-      if (inv.product?.name) {
-        stockMap[inv.product.name.toLowerCase()] = inv.current_stock ?? 0
+      if (invErr) { showToast('Error cargando inventario'); return }
+
+      // Map name→{stock, unit} (lowercase for case-insensitive comparison)
+      const stockMap = {}
+      for (const inv of (invRows ?? [])) {
+        if (inv.product?.name) {
+          stockMap[inv.product.name.toLowerCase()] = {
+            stock: inv.current_stock ?? 0,
+            unit:  inv.unit ?? '',
+          }
+        }
       }
+
+      // Load existing pending shopping list items to avoid duplicates
+      const { data: existingItems } = await supabase
+        .from('items')
+        .select('title')
+        .eq('app_id', app.id)
+        .eq('module', 'supermercado')
+        .is('done_at', null)
+
+      const existingTitles = new Set((existingItems ?? []).map(i => i.title.toLowerCase()))
+
+      // 4. Filter ingredients with insufficient stock
+      const toAdd = riRows.filter(ri => {
+        if (!ri.name) return false
+        const name = ri.name.toLowerCase()
+        if (existingTitles.has(name)) return false
+        const inv = stockMap[name]
+        if (!inv) return true  // not tracked → assume missing
+        // If units don't match, conservatively add to list
+        if (ri.unit && inv.unit && ri.unit.toLowerCase() !== inv.unit.toLowerCase()) return true
+        const needed = ri.quantity != null ? ri.quantity : null
+        if (needed == null) return true   // no quantity data → assume needed
+        return inv.stock < needed
+      })
+
+      if (!toAdd.length) { showToast('✅ Todo está en el inventario'); return }
+
+      // 5. Insert into shopping list
+      const payload = toAdd.map(ri => ({
+        app_id:   app.id,
+        module:   'supermercado',
+        type:     'product',
+        title:    ri.name,
+        metadata: {
+          quantity:   ri.quantity ?? null,
+          unit:       ri.unit ?? '',
+          category:   'otros',
+          store:      'General',
+          price_unit: null,
+        },
+      }))
+
+      const { error: insertErr } = await supabase.from('items').insert(payload)
+      if (insertErr) { showToast('Error al guardar en la lista'); return }
+      showToast(`🛒 ${payload.length} ingrediente${payload.length !== 1 ? 's' : ''} añadido${payload.length !== 1 ? 's' : ''} a la lista`)
+    } finally {
+      setGenerating(false)
     }
-
-    // 4. Filter ingredients with insufficient stock
-    const toAdd = riRows.filter(ri => {
-      const stock  = stockMap[ri.name.toLowerCase()] ?? 0
-      const needed = ri.quantity ?? 1
-      return stock < needed
-    })
-
-    if (!toAdd.length) { showToast('✅ Todo está en el inventario'); return }
-
-    // 5. Insert into shopping list
-    const payload = toAdd.map(ri => ({
-      app_id:   app.id,
-      module:   'supermercado',
-      type:     'product',
-      title:    ri.name,
-      metadata: {
-        quantity:   ri.quantity ?? null,
-        unit:       ri.unit ?? '',
-        category:   'otros',
-        store:      'General',
-        price_unit: null,
-      },
-    }))
-
-    await supabase.from('items').insert(payload)
-    showToast(`🛒 ${payload.length} ingrediente${payload.length !== 1 ? 's' : ''} añadido${payload.length !== 1 ? 's' : ''} a la lista`)
   }
 
   const today = new Date()
@@ -288,9 +319,9 @@ export default function Menu() {
                 style={{ flex:1, padding:'12px', borderRadius:'var(--radius-md)', border:'1px solid var(--border)', background:'none', color:'var(--text-muted)', fontSize:13, cursor:'pointer' }}>
                 🛒 A la lista
               </button>
-              <button onClick={generateShoppingList}
+              <button onClick={generateShoppingList} disabled={generating}
                 style={{ flex:1, padding:'12px', borderRadius:'var(--radius-md)', border:'1px solid #10b981', background:'none', color:'#10b981', fontSize:13, fontWeight:600, cursor:'pointer' }}>
-                🧠 Generar
+                {generating ? '⏳...' : '🧠 Generar'}
               </button>
             </div>
           </div>
@@ -415,11 +446,11 @@ export default function Menu() {
             onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}>
             🛒 Añadir a la lista
           </button>
-          <button onClick={generateShoppingList}
+          <button onClick={generateShoppingList} disabled={generating}
             style={{ padding:'6px 14px', borderRadius:9, border:'1px solid var(--border)', background:'none', color:'var(--text-muted)', fontSize:12, cursor:'pointer', display:'flex', alignItems:'center', gap:5, transition:'all .15s' }}
             onMouseEnter={e => { e.currentTarget.style.borderColor = '#10b981'; e.currentTarget.style.color = '#10b981' }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-muted)' }}>
-            🧠 Generar lista
+            {generating ? '⏳ Generando...' : '🧠 Generar lista'}
           </button>
         </div>
       </div>
