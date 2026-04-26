@@ -5,13 +5,15 @@ import { useAuth } from '../../contexts/AuthContext'
 import { AppProvider } from '../../contexts/AppContext'
 
 const HOGAR_MODULES = [
-  { path: 'calendar', label: 'Calendario', icon: '📅' },
-  { path: 'shopping', label: 'Lista',       icon: '🛒' },
-  { path: 'menu',     label: 'Menú',        icon: '🍽️' },
-  { path: 'recipes',  label: 'Recetas',     icon: '👨‍🍳' },
+  { path: 'calendar',   label: 'Calendario', icon: '📅' },
+  { path: 'shopping',   label: 'Lista',       icon: '🛒' },
+  { path: 'menu',       label: 'Menú',        icon: '🍽️' },
+  { path: 'recipes',    label: 'Recetas',     icon: '👨‍🍳' },
+  { path: 'inventario', label: 'Inventario',  icon: '📦' },
+  { path: 'limpieza',   label: 'Limpieza',    icon: '🧹' },
 ]
 
-const FULL_LAYOUT_MODULES = ['calendar', 'shopping', 'menu', 'recipes']
+const FULL_LAYOUT_MODULES = ['calendar', 'shopping', 'menu', 'recipes', 'inventario', 'limpieza']
 
 export default function AppLayout() {
   const { user } = useAuth()

@@ -531,7 +531,7 @@ export default function Calendar() {
 
   return (
     <ModuleShell
-      project={app}
+      app={app}
       modules={modules}
       sidebarExtra={
         <>

@@ -21,6 +21,8 @@ const ShoppingList  = React.lazy(() => import('./pages/app/modules/ShoppingList'
 const Menu          = React.lazy(() => import('./pages/app/modules/Menu'))
 const Recipes       = React.lazy(() => import('./pages/app/modules/Recipes'))
 const RecipeDetail  = React.lazy(() => import('./pages/app/modules/RecipeDetail'))
+const Inventario    = React.lazy(() => import('./pages/app/modules/Inventario'))
+const Limpieza      = React.lazy(() => import('./pages/app/modules/Limpieza'))
 
 class ErrorBoundary extends React.Component {
   state = { hasError: false, error: null }
@@ -112,6 +114,8 @@ export default function App() {
               <Route path="menu"              element={<Menu />} />
               <Route path="recipes"           element={<Recipes />} />
               <Route path="recipes/:recipeId" element={<RecipeDetail />} />
+              <Route path="inventario"        element={<Inventario />} />
+              <Route path="limpieza"          element={<Limpieza />} />
             </Route>
 
             {/* 404 */}

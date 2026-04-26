@@ -392,7 +392,7 @@ export default function Recipes() {
   ]
 
   return (
-    <ModuleShell project={app} modules={modules}>
+    <ModuleShell app={app} modules={modules}>
     <div style={{ display:'flex', flexDirection:'column', height:'100%', overflow:'hidden' }}>
       {/* Unified top nav for mobile / header for desktop */}
       {isMobile ? (
