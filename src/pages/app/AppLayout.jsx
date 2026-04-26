@@ -117,7 +117,7 @@ export default function AppLayout() {
             </nav>
           </aside>
           <main className="flex-1 min-w-0">
-            <Outlet context={{ app }} />
+            <Outlet context={{ app, modules }} />
           </main>
         </div>
       </div>
