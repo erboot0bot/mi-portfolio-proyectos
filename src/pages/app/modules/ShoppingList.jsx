@@ -5,6 +5,7 @@ import ModuleShell from './ModuleShell'
 import ModuleTopNav from '../../../components/ModuleTopNav'
 import { usePWAManifest } from '../../../hooks/usePWAManifest'
 import { itemFromDb, itemToDb } from '../../../utils/itemTransformers'
+import { computeConsumptionUpdate } from '../../../utils/consumptionUtils'
 
 const CATEGORIES = [
   { id: 'frutas',   label: 'Frutas & Verduras', icon: '🥦' },
@@ -276,6 +277,33 @@ export default function ShoppingList() {
     setShowDefaultModal(false)
   }
 
+  async function updateConsumptionForItem(title, purchaseDateStr) {
+    // Buscar producto en catálogo por nombre (case-insensitive)
+    const { data: product } = await supabase
+      .from('products')
+      .select('id')
+      .ilike('name', title.trim())
+      .maybeSingle()
+    if (!product) return // item sin producto en catálogo → ignorar
+
+    // Cargar registro actual de consumo
+    const { data: existing } = await supabase
+      .from('product_consumption')
+      .select('last_purchase_date, avg_days_between_purchases')
+      .eq('product_id', product.id)
+      .eq('app_id', app.id)
+      .maybeSingle()
+
+    const update = computeConsumptionUpdate(existing, purchaseDateStr)
+
+    await supabase.from('product_consumption').upsert({
+      product_id: product.id,
+      app_id:     app.id,
+      ...update,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'product_id,app_id' })
+  }
+
   async function saveCart() {
     const cartItems = items.filter(i => i.checked)
       .sort((a, b) => new Date(b.checked_at || 0) - new Date(a.checked_at || 0))
@@ -300,6 +328,12 @@ export default function ShoppingList() {
       item_count: cartItems.length,
     })
     if (error) { showToast('Error al guardar la compra'); return }
+
+    // Actualizar product_consumption (errores silenciosos — no bloquean el flujo)
+    const purchaseDate = new Date().toISOString().slice(0, 10)
+    await Promise.allSettled(
+      cartItems.map(item => updateConsumptionForItem(item.title, purchaseDate))
+    )
 
     const ids = cartItems.map(i => i.id)
     await supabase.from('items').update({ checked: false, checked_at: null }).in('id', ids)
