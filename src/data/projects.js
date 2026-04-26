@@ -187,6 +187,36 @@ link#pwa-manifest.href = '/icons/icon-calendar-192.png'
         ],
       },
     ],
+    product: {
+      tagline: "Tu vida diaria, organizada con IA.",
+      description: "Suite de apps personales: calendario, menú semanal, lista de la compra y recetas generadas con IA. Autenticación real con Google vía Supabase.",
+      features: [
+        "Calendario personal con FullCalendar",
+        "Menú semanal editable",
+        "Lista de la compra sincronizada",
+        "Recetas generadas con Claude AI",
+        "Login con Google (Supabase OAuth)"
+      ]
+    },
+    documentation: {
+      problem: "Necesitaba herramientas del día a día propias, sin depender de apps de terceros con datos en servidores ajenos.",
+      approach: "Construir un módulo unificado dentro del portfolio, con autenticación real y base de datos propia en Supabase.",
+      decisions: [
+        "Supabase en lugar de Firebase: SQL real, sin vendor lock-in",
+        "FullCalendar por su API declarativa compatible con React",
+        "Claude AI para generación de recetas en lugar de base de datos estática"
+      ],
+      result: "App en uso personal real. Autenticación funcional, calendario operativo, recetas con IA integradas."
+    },
+    meta: {
+      status: "En uso personal. Algunas funcionalidades en desarrollo activo.",
+      limitations: [
+        "Requiere cuenta Google para autenticarse",
+        "Generación de recetas depende de disponibilidad de la API de Anthropic",
+        "UI en iteración continua"
+      ],
+      aiProcess: "Desarrollado con Claude Code. Arquitectura inicial generada mediante prompts, iterada y refinada manualmente."
+    }
   },
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -197,14 +227,39 @@ link#pwa-manifest.href = '/icons/icon-calendar-192.png'
     shortTitle: 'Portfolio',
     gradientFrom: '#f97316', gradientVia: '#f59e0b', gradientTo: '#d97706',
     title: 'Portfolio Personal',
-    description: 'Esta misma web — documentación de proyectos con React, Vite, Tailwind y Framer Motion.',
+    description: 'Esta misma web — documentación de proyectos con React, Vite, Tailwind, Framer Motion y GSAP.',
     status: 'wip',
     featured: true,
-    technologies: ['React', 'Vite', 'Tailwind', 'Framer Motion', 'Vitest', 'Pollinations.ai'],
+    technologies: ['React', 'Vite', 'Tailwind', 'Framer Motion', 'GSAP', 'Vitest', 'Pollinations.ai'],
     github: 'https://github.com/H3nky/mi-portfolio-proyectos',
     demo: null,
     images: ['/projects/portfolio-personal/cover.jpg'],
     date: '2026-04',
+    documentation: {
+      problem: `Las animaciones del portfolio eran todas pasivas: reaccionaban al mount de React pero nunca al scroll. El hero de LandingPage no tenía ninguna animación de entrada. Framer Motion estaba importado con eslint-disable en varios archivos sin usarse en el componente donde se importaba. Sin scroll storytelling, el portfolio se sentía estático.`,
+      approach: `Auditoría completa de todos los contextos de animación para decidir dónde Framer Motion es la herramienta correcta (estado React: mount/unmount, hover, gestures) y dónde GSAP aporta más (timelines complejos, scroll-linked animations, secuencias con control fino). Implementar GSAP con el hook oficial useGSAP y ScrollTrigger donde corresponde, manteniendo Framer Motion donde ya funciona bien.`,
+      decisions: [
+        'GSAP + Framer Motion en coexistencia deliberada — no es migración total, es especialización por caso de uso',
+        'useGSAP({ scope: ref }) en todos los componentes GSAP — garantiza cleanup automático vía ctx.revert() y evita memory leaks al desmontar',
+        'gsap.matchMedia() con prefers-reduced-motion en cada animación — accesibilidad por defecto, sin código extra por componente',
+        'ScrollTrigger con once: true en todos los reveals — el elemento se anima una sola vez al entrar en viewport, no se repite al hacer scroll',
+        'data-* attributes como targets GSAP en lugar de clases CSS — desacopla animaciones de estilos, las clases de Tailwind pueden cambiar sin romper animaciones',
+        'Framer Motion retenido para: page transitions (AnimatePresence mode="wait"), lightbox (ImageGallery), hover lift (ProjectCard), sidebar mount (ProjectDetail)',
+        'gsap.timeline() con defaults { ease: "power3.out" } — consistencia de easing sin repetir en cada tween del timeline',
+        'HeroSection de LandingPage: secuencia badge → title → subtitle → CTAs con overlaps negativos para ritmo natural (no robótico)',
+        'ProjectsGrid extraído a componente propio para aislar el ScrollTrigger y evitar re-crearlo al cambiar el filtro de tecnologías',
+      ],
+      result: `5 componentes migrados o mejorados con GSAP. Hero de LandingPage con timeline de entrada por primera vez. ProjectsHome y LandingPage con scroll reveals. ComingSoonPage con timeline limpio (eliminados 3 tweens manuales con delay). Build limpio en 1.09s. prefers-reduced-motion respetado en todos los puntos de animación.`,
+    },
+    meta: {
+      status: 'En iteración activa. Animaciones implementadas, documentación técnica completa.',
+      limitations: [
+        'El browser del preview de Claude Code no puede conectar a localhost — verificación visual manual necesaria',
+        'GSAP ScrollTrigger requiere que los elementos sean visibles en el DOM cuando se inicializa — cuidado con lazy loading',
+        'Los tests de Vitest no cubren las animaciones GSAP (jsdom no soporta IntersectionObserver de ScrollTrigger)',
+      ],
+      aiProcess: 'Auditoría, diseño de la estrategia de coexistencia Framer/GSAP, implementación y documentación generados íntegramente con Claude Code en una sesión de 4 fases.',
+    },
     docs: [
       {
         id: 'descripcion',
@@ -307,31 +362,58 @@ El fondo de puntos (\`radial-gradient\` + \`background-size: 26px 26px\`) adapta
       },
       {
         id: 'animaciones',
-        title: 'Animaciones con Framer Motion',
-        content: `9 contextos de animación distintos, todos coordinados para que la web se sienta viva sin ser ostentosa.`,
+        title: 'Sistema de animaciones: Framer Motion + GSAP',
+        content: `Dos librerías en coexistencia deliberada. Framer Motion gestiona animaciones ligadas al estado de React (mount/unmount, hover, gestures). GSAP se encarga de timelines complejos y scroll-linked animations. Cada herramienta donde gana.`,
         code: {
           lang: 'jsx',
-          src: `// App.jsx — transición entre páginas (200ms, y: ±10px)
+          src: `// App.jsx — transición entre páginas con Framer Motion (AnimatePresence)
 const pageVariants = {
   initial: { opacity: 0, y: 10 },
   animate: { opacity: 1, y: 0, transition: { duration: 0.2 } },
   exit:    { opacity: 0, y: -10, transition: { duration: 0.15 } },
 }
+// Framer gestiona el unmount — GSAP no tiene equivalente nativo en React
 
-<AnimatePresence mode="wait">
-  <motion.div key={location.pathname} variants={pageVariants}
-    initial="initial" animate="animate" exit="exit">
-    <Routes location={location}>...</Routes>
-  </motion.div>
-</AnimatePresence>
+// LandingPage.jsx — hero timeline con GSAP
+useGSAP(() => {
+  const mm = gsap.matchMedia()
+  mm.add('(prefers-reduced-motion: no-preference)', () => {
+    const tl = gsap.timeline({ defaults: { ease: 'power3.out' } })
+    tl.from('[data-hero-badge]', { opacity: 0, y: 12, duration: 0.5 })
+      .from('[data-hero-title]', { opacity: 0, y: 24, duration: 0.6 }, '-=0.25')
+      .from('[data-hero-sub]',   { opacity: 0, y: 16, duration: 0.5 }, '-=0.3')
+      .from('[data-hero-ctas] > *', { opacity: 0, y: 12, stagger: 0.1 }, '-=0.25')
+    return () => tl.kill()
+  })
+  return () => mm.revert()  // cleanup automático al desmontar
+}, { scope: containerRef })
 
-// ProjectCard.jsx — hover lift
-<motion.div whileHover={{ y: -3 }} transition={{ type: 'spring', stiffness: 400 }}>
-
-// ImageGallery.jsx — lightbox con AnimatePresence
-// LandingPage.jsx — stagger en SectionsGrid (hidden → visible)
-// ComingSoonPage.jsx — spring en icon (scale + opacity)`,
+// ProjectsHome.jsx — grid reveal con ScrollTrigger
+gsap.from('[data-project-card]', {
+  opacity: 0, y: 40, duration: 0.5,
+  stagger: { each: 0.07, from: 'start' },
+  scrollTrigger: { trigger: gridRef.current, start: 'top 88%', once: true },
+})`,
         },
+        content2: `Criterio de decisión: si la animación necesita saber si el componente está montado o desmontado → Framer Motion. Si necesita scroll, timeline con múltiples elementos, o control preciso de secuencia → GSAP. prefers-reduced-motion respetado en todos los puntos GSAP vía gsap.matchMedia().`,
+      },
+      {
+        id: 'gsap-migration',
+        title: 'Migración a GSAP — decisiones y trade-offs',
+        content: `Auditoría completa del portfolio detectó: hero sin animaciones, patrón opacity/y repetido en 6+ archivos sin abstracción, imports con eslint-disable, y cero scroll storytelling. La migración fue quirúrgica — no un reemplazo total.`,
+        code: {
+          lang: 'text',
+          src: `FRAMER MOTION (retenido)          GSAP (migrado/añadido)
+─────────────────────────         ──────────────────────────────────
+App.jsx page transitions          LandingPage HeroSection — timeline entrada
+ImageGallery lightbox             LandingPage SectionsGrid — ScrollTrigger
+ProjectCard whileHover            LandingPage AboutSection — ScrollTrigger
+ProjectDetail sidebar mount       ProjectsHome Hero — timeline entrada
+Login entrance                    ProjectsHome grid — ScrollTrigger + stagger
+AppsHub grid (app interna)        ProjectDetail hero — gsap.timeline()
+Recipes list (app interna)        ComingSoonPage — 3 tweens → 1 timeline`,
+        },
+        content2: `Patrón de cleanup en React: useGSAP({ scope: containerRef }) crea un contexto GSAP scoped al contenedor. Al desmontar el componente, ctx.revert() limpia todos los tweens, ScrollTriggers y listeners del contexto automáticamente. gsap.matchMedia() añade una capa adicional: cada breakpoint/media query tiene su propio contexto que se revierte cuando deja de coincidir.`,
       },
       {
         id: 'testing',

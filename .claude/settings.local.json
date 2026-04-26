@@ -4,7 +4,9 @@
       "Read(//home/user/.claude/skills/gstack/**)",
       "Bash(~/.bun/bin/bun --version)",
       "Bash(./setup)",
-      "Bash(export PATH=\"$HOME/.bun/bin:$PATH\")"
+      "Bash(export PATH=\"$HOME/.bun/bin:$PATH\")",
+      "Bash(git -C /home/user/mi-portfolio-proyectos log --oneline -10)",
+      "WebSearch"
     ]
   }
 }

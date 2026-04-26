@@ -1,21 +1,17 @@
-/*
- * ProjectDetail.jsx — single project page
- *
- * Layout: Variant A "Cinematic Hero"
- * - Full-bleed hero with gradient overlay, title overlaid bottom-left
- * - Below hero: wide 2-column layout (prose left, metadata sidebar right)
- * - Theme-aware: uses CSS custom properties only (no hardcoded zinc/white)
- *
- * Slug lookup: direct find (no decodeURIComponent — slugs are kebab-case
- * and React Router passes them as-is with no encoding).
- * Invalid slug → redirect to /404.
- */
-
+import { useState, useRef } from 'react'
 import { useParams, Navigate, Link } from 'react-router-dom'
-import { motion } from 'framer-motion' // eslint-disable-line no-unused-vars
+import { useGSAP } from '@gsap/react'
+import gsap from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import { motion } from 'framer-motion'
 import { projects } from '../data/projects'
-import TechBadge from '../components/TechBadge'
-import ImageGallery from '../components/ImageGallery'
+import ProjectTabs from '../components/project/ProjectTabs'
+import ProjectInfo from '../components/project/ProjectInfo'
+import ProjectTechDocs from '../components/project/ProjectTechDocs'
+
+gsap.registerPlugin(ScrollTrigger)
+
+const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
 const statusLabel = { completed: 'Completado', wip: 'En progreso', archived: 'Archivado' }
 const statusColor = {
@@ -24,114 +20,70 @@ const statusColor = {
   archived:  'text-[var(--text-faint)] bg-[var(--bg-card)] border-[var(--border)]',
 }
 
-const fadein = { hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0 } }
-
-// Renders inline markdown: **bold** and `code`
-function renderInline(text) {
-  const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`)/g)
-  return parts.map((part, i) => {
-    if (part.startsWith('**') && part.endsWith('**'))
-      return <strong key={i}>{part.slice(2, -2)}</strong>
-    if (part.startsWith('`') && part.endsWith('`'))
-      return <code key={i} className="doc-inline-code">{part.slice(1, -1)}</code>
-    return part
-  })
-}
-
-// Renders multi-paragraph text with inline markdown
-function renderContent(text) {
-  if (!text) return null
-  return text.split('\n\n').map((para, i) => (
-    <p key={i} className="text-base leading-relaxed text-[var(--text-muted)] mb-4">
-      {renderInline(para)}
-    </p>
-  ))
-}
-
-function DocSection({ doc }) {
-  if (doc.type === 'table') {
-    return (
-      <section className="mb-10">
-        <h2 className="text-lg font-bold text-[var(--text)] mb-4">{doc.title}</h2>
-        <div className="overflow-x-auto rounded-xl border border-[var(--border)]">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-[var(--border)] bg-[var(--bg-subtle)]">
-                <th className="text-left px-4 py-2.5 font-semibold text-[var(--text-faint)] uppercase tracking-wider text-xs">Nombre</th>
-                <th className="text-left px-4 py-2.5 font-semibold text-[var(--text-faint)] uppercase tracking-wider text-xs">Versión</th>
-                <th className="text-left px-4 py-2.5 font-semibold text-[var(--text-faint)] uppercase tracking-wider text-xs">Rol</th>
-              </tr>
-            </thead>
-            <tbody>
-              {doc.items.map((item, i) => (
-                <tr key={i} className="border-b border-[var(--border)] last:border-0 hover:bg-[var(--bg-subtle)] transition-colors">
-                  <td className="px-4 py-3 font-semibold text-[var(--text)]">{item.name}</td>
-                  <td className="px-4 py-3 font-mono text-xs text-[var(--accent)]">{item.version}</td>
-                  <td className="px-4 py-3 text-[var(--text-muted)]">{item.role}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-    )
-  }
-
-  if (doc.type === 'metrics') {
-    return (
-      <section className="mb-10">
-        <h2 className="text-lg font-bold text-[var(--text)] mb-4">{doc.title}</h2>
-        <div className="doc-metrics-grid">
-          {doc.items.map((item, i) => (
-            <div key={i} className="doc-metric-card">
-              <span className="doc-metric-value">{item.value}</span>
-              <span className="doc-metric-label">{item.label}</span>
-            </div>
-          ))}
-        </div>
-      </section>
-    )
-  }
-
-  // Default: content + optional code block + content2
-  return (
-    <section className="mb-10">
-      <h2 className="text-lg font-bold text-[var(--text)] mb-3">{doc.title}</h2>
-      {doc.content && renderContent(doc.content)}
-      {doc.code && (
-        <div className="doc-code-block">
-          {doc.code.lang && doc.code.lang !== 'text' && (
-            <div className="doc-code-lang">{doc.code.lang}</div>
-          )}
-          <pre><code>{doc.code.src}</code></pre>
-        </div>
-      )}
-      {doc.content2 && renderContent(doc.content2)}
-    </section>
-  )
-}
+const TABS = [
+  { label: 'Información', value: 'info' },
+  { label: 'Documentación técnica', value: 'tech' },
+]
 
 export default function ProjectDetail() {
   const { slug } = useParams()
   const project = projects.find(p => p.slug === slug)
+  const heroRef = useRef(null)
+  const coverRef = useRef(null)
+
+  const [activeTab, setActiveTab] = useState(() => {
+    const params = new URLSearchParams(window.location.search)
+    return params.get('view') === 'tech' ? 'tech' : 'info'
+  })
+
+  useGSAP(() => {
+    if (prefersReducedMotion) return
+
+    const tl = gsap.timeline({ defaults: { ease: 'power3.out' } })
+    tl.to('[data-pd-back]',  { opacity: 1, x: 0, duration: 0.4 })
+      .to('[data-pd-badge]', { opacity: 1, y: 0, duration: 0.4 }, '-=0.2')
+      .to('[data-pd-title]', { opacity: 1, y: 0, duration: 0.55 }, '-=0.25')
+      .to('[data-pd-desc]',  { opacity: 1, y: 0, duration: 0.45 }, '-=0.3')
+
+    if (coverRef.current) {
+      gsap.to(coverRef.current, {
+        yPercent: 30,
+        ease: 'none',
+        scrollTrigger: {
+          trigger: heroRef.current,
+          start: 'top top',
+          end: 'bottom top',
+          scrub: true,
+        },
+      })
+    }
+  }, { scope: heroRef })
 
   if (!project) return <Navigate to="/404" replace />
 
   const cover = project.images?.[0]
 
+  function handleTabChange(tab) {
+    setActiveTab(tab)
+    const params = new URLSearchParams(window.location.search)
+    params.set('view', tab)
+    history.replaceState({}, '', `${window.location.pathname}?${params}`)
+  }
+
   return (
     <article>
       <title>{project.title} | H3nky</title>
+
       {/* ── Hero ── */}
-      <section className="relative overflow-hidden -mt-10 mb-0"
+      <section ref={heroRef} className="relative overflow-hidden -mt-10 mb-0"
         style={{ minHeight: '52vh' }}>
 
         {/* Background: image or gradient fallback */}
         {cover ? (
-          <img src={cover} alt="" aria-hidden
+          <img ref={coverRef} src={cover} alt="" aria-hidden
             className="absolute inset-0 w-full h-full object-cover" />
         ) : (
-          <div className="absolute inset-0"
+          <div ref={coverRef} className="absolute inset-0"
             style={{ background: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 35%, #0f3460 65%, #533483 100%)' }} />
         )}
 
@@ -139,22 +91,20 @@ export default function ProjectDetail() {
         <div className="absolute inset-0 pointer-events-none"
           style={{ background: 'radial-gradient(ellipse at 20% 60%, rgba(249,115,22,0.18) 0%, transparent 55%)' }} />
 
-        {/* Overlay: transparent top → dark bottom */}
+        {/* Overlay */}
         <div className="absolute inset-0"
           style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.35) 55%, rgba(0,0,0,0.08) 100%)' }} />
 
-        {/* Fade to page bg at bottom */}
+        {/* Fade to page bg */}
         <div className="absolute bottom-0 left-0 right-0 h-20 pointer-events-none"
           style={{ background: 'linear-gradient(to bottom, transparent, var(--bg))' }} />
 
         {/* Hero content */}
-        <motion.div
+        <div
           className="relative z-10 flex flex-col justify-end px-6 sm:px-10 lg:px-16"
           style={{ minHeight: '52vh', paddingBottom: '2.5rem' }}
-          initial="hidden" animate="show"
-          variants={{ show: { transition: { staggerChildren: 0.08 } } }}
         >
-          <motion.div variants={fadein}>
+          <div data-pd-back style={prefersReducedMotion ? {} : { opacity: 0, transform: 'translateX(-12px)' }}>
             <Link to="/"
               className="inline-flex items-center gap-1.5 text-sm mb-6 transition-colors"
               style={{ color: 'rgba(255,255,255,0.55)' }}
@@ -163,25 +113,28 @@ export default function ProjectDetail() {
             >
               ← Todos los proyectos
             </Link>
-          </motion.div>
+          </div>
 
-          <motion.div variants={fadein}
+          <div data-pd-badge
+            style={prefersReducedMotion ? {} : { opacity: 0, transform: 'translateY(12px)' }}
             className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border w-fit mb-4 ${statusColor[project.status]}`}>
             {project.status === 'completed' && '✓ '}
             {statusLabel[project.status]}
-          </motion.div>
+          </div>
 
-          <motion.h1 variants={fadein}
+          <h1 data-pd-title
+            style={prefersReducedMotion ? {} : { opacity: 0, transform: 'translateY(24px)' }}
             className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight mb-3 text-white max-w-3xl">
             {project.title}
-          </motion.h1>
+          </h1>
 
-          <motion.p variants={fadein}
+          <p data-pd-desc
+            style={prefersReducedMotion ? {} : { opacity: 0, transform: 'translateY(16px)' }}
             className="text-base sm:text-lg max-w-xl leading-relaxed"
             style={{ color: 'rgba(255,255,255,0.6)' }}>
             {project.description}
-          </motion.p>
-        </motion.div>
+          </p>
+        </div>
       </section>
 
       {/* ── Body: 2-column ── */}
@@ -192,44 +145,20 @@ export default function ProjectDetail() {
         {/* ── Main content ── */}
         <motion.main
           initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.25, duration: 0.4 }}
+          transition={{ delay: 0.3, duration: 0.4 }}
         >
-          {/* Tech badges */}
-          <div className="flex flex-wrap gap-2 mb-8">
-            {project.technologies.map(tech => (
-              <TechBadge key={tech} tech={tech} />
-            ))}
-          </div>
+          <ProjectTabs tabs={TABS} active={activeTab} onChange={handleTabChange} />
 
-          {/* Docs sections */}
-          {project.docs && project.docs.length > 0 ? (
-            project.docs.map(doc => <DocSection key={doc.id} doc={doc} />)
-          ) : (
-            <>
-              <p className="text-sm uppercase tracking-widest font-semibold mb-3 text-[var(--text-faint)]">
-                Descripción
-              </p>
-              <p className="text-base leading-relaxed text-[var(--text-muted)] mb-10 max-w-2xl">
-                {project.description}
-              </p>
-            </>
-          )}
-
-          {/* Gallery */}
-          {project.images && project.images.length > 0 && (
-            <section>
-              <p className="text-sm uppercase tracking-widest font-semibold mb-4 text-[var(--text-faint)]">
-                Capturas
-              </p>
-              <ImageGallery images={project.images} />
-            </section>
-          )}
+          {activeTab === 'info'
+            ? <ProjectInfo project={project} />
+            : <ProjectTechDocs project={project} />
+          }
         </motion.main>
 
         {/* ── Sidebar ── */}
         <motion.aside
           initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.35, duration: 0.4 }}
+          transition={{ delay: 0.4, duration: 0.4 }}
           className="lg:border-l lg:border-[var(--border)] lg:pl-10"
         >
           <div className="flex flex-col gap-6 lg:sticky lg:top-24">

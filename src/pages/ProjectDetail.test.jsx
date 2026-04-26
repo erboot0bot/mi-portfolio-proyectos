@@ -18,7 +18,7 @@ function renderDetail(slug) {
 describe('ProjectDetail', () => {
   it('renders project title for a valid slug', () => {
     renderDetail('portfolio-personal')
-    expect(screen.getByRole('heading', { name: /portfolio personal/i })).toBeInTheDocument()
+    expect(screen.getAllByRole('heading', { name: /portfolio personal/i }).length).toBeGreaterThan(0)
   })
 
   it('renders the back link', () => {

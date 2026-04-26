@@ -18,9 +18,11 @@
     "@fullcalendar/list": "^6.1.20",
     "@fullcalendar/react": "^6.1.20",
     "@fullcalendar/timegrid": "^6.1.20",
+    "@gsap/react": "^2.1.2",
     "@supabase/supabase-js": "^2.103.3",
     "date-fns": "^4.1.0",
     "framer-motion": "^12.38.0",
+    "gsap": "^3.15.0",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-router-dom": "^7.14.0"

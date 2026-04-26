@@ -20,7 +20,7 @@ describe('App routing', () => {
   it('renders LandingPage at /', async () => {
     renderAt('/')
     await waitFor(
-      () => expect(screen.getByRole('heading', { name: /herramientas reales/i })).toBeInTheDocument(),
+      () => expect(screen.getByRole('heading', { name: /construyo aplicaciones reales/i })).toBeInTheDocument(),
       { timeout: 5000 },
     )
   })
@@ -28,7 +28,7 @@ describe('App routing', () => {
   it('renders ProjectsHome at /projects', async () => {
     renderAt('/projects')
     await waitFor(
-      () => expect(screen.getByRole('heading', { name: /proyectos/i })).toBeInTheDocument(),
+      () => expect(screen.getByRole('heading', { name: /documentaci/i })).toBeInTheDocument(),
       { timeout: 5000 },
     )
   })
@@ -64,7 +64,7 @@ describe('App routing', () => {
 
   it('renders ProjectDetail for a valid slug', async () => {
     renderAt('/projects/portfolio-personal')
-    expect(await screen.findByRole('heading', { name: /portfolio personal/i })).toBeInTheDocument()
+    expect((await screen.findAllByRole('heading', { name: /portfolio personal/i })).length).toBeGreaterThan(0)
   })
 
   it('redirects to /404 for an invalid slug', async () => {

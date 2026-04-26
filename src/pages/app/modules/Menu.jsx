@@ -128,7 +128,7 @@ export default function Menu() {
         recurrence: 'none',
       }
     })
-    await supabase.from('calendar_tasks').insert(tasks)
+    await supabase.from('events').insert(tasks.map(t => ({ ...t, event_type: 'task' })))
     showToast(`📅 ${tasks.length} eventos añadidos al calendario`)
   }
 
@@ -140,13 +140,19 @@ export default function Menu() {
     const items = data.flatMap(r => Array.isArray(r.ingredients) ? r.ingredients : [])
       .map(ing => ({
         app_id: app.id,
-        name: typeof ing === 'string' ? ing : (ing.name ?? ''),
-        quantity: typeof ing === 'object' ? (ing.quantity ?? null) : null,
-        unit: typeof ing === 'object' ? (ing.unit ?? null) : null,
-        category: 'otros', store: 'General',
-      })).filter(i => i.name)
+        module: 'supermercado',
+        type: 'product',
+        title: typeof ing === 'string' ? ing : (ing.name ?? ''),
+        metadata: {
+          quantity: typeof ing === 'object' ? (ing.quantity ?? null) : null,
+          unit: typeof ing === 'object' ? (ing.unit ?? '') : '',
+          category: 'otros',
+          store: 'General',
+          price_unit: null,
+        },
+      })).filter(i => i.title)
     if (items.length) {
-      await supabase.from('shopping_items').insert(items)
+      await supabase.from('items').insert(items)
       showToast(`🛒 ${items.length} ingredientes añadidos a la lista`)
     }
   }

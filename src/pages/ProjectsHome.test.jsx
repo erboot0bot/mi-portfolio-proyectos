@@ -2,16 +2,17 @@ import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
+import { LanguageProvider } from '../contexts/LanguageContext'
 import ProjectsHome from './ProjectsHome'
 
 function renderHome() {
-  return render(<MemoryRouter><ProjectsHome /></MemoryRouter>)
+  return render(<MemoryRouter><LanguageProvider><ProjectsHome /></LanguageProvider></MemoryRouter>)
 }
 
 describe('Home', () => {
   it('renders the page heading', () => {
     renderHome()
-    expect(screen.getByRole('heading', { name: /proyectos/i })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /documentaci/i })).toBeInTheDocument()
   })
 
   it('renders project cards', () => {

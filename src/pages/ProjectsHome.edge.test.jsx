@@ -31,17 +31,18 @@ vi.mock('../data/projects', () => ({
   ],
 }))
 
+import { LanguageProvider } from '../contexts/LanguageContext'
 import ProjectsHome from './ProjectsHome'
 
 function renderHome() {
-  return render(<MemoryRouter><ProjectsHome /></MemoryRouter>)
+  return render(<MemoryRouter><LanguageProvider><ProjectsHome /></LanguageProvider></MemoryRouter>)
 }
 
 describe('ProjectsHome — edge cases', () => {
   it('renderiza correctamente sin proyectos featured', () => {
     renderHome()
     // Page heading still renders even when no project is featured
-    expect(screen.getByRole('heading', { name: /proyectos/i })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /documentaci/i })).toBeInTheDocument()
   })
 
   it('muestra los proyectos que coinciden con el filtro activo', async () => {
