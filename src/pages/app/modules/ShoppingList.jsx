@@ -332,7 +332,7 @@ export default function ShoppingList() {
     // Actualizar product_consumption (errores silenciosos — no bloquean el flujo)
     const purchaseDate = new Date().toISOString().slice(0, 10)
     await Promise.allSettled(
-      cartItems.map(item => updateConsumptionForItem(item.title, purchaseDate))
+      cartItems.map(item => updateConsumptionForItem(item.name, purchaseDate))
     )
 
     const ids = cartItems.map(i => i.id)
