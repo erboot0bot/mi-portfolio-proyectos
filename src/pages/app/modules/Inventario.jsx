@@ -1,5 +1,5 @@
 // src/pages/app/modules/Inventario.jsx
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import { supabase } from '../../../lib/supabase'
 import ModuleShell from './ModuleShell'
@@ -10,17 +10,28 @@ export default function Inventario() {
   const [loading, setLoading]     = useState(true)
   const [showAdd, setShowAdd]     = useState(false)
   const [form, setForm]           = useState({ name: '', current_stock: '', min_stock: '', unit: 'unidad' })
+  const [error, setError]         = useState(null)
+  const [fetchError, setFetchError] = useState(null)
+  const adjusting                 = useRef(new Set())
 
   useEffect(() => {
+    let cancelled = false
     supabase.from('inventory')
       .select('*, product:products(*)')
       .eq('app_id', app.id)
       .order('created_at', { ascending: true })
-      .then(({ data }) => { if (data) setInventory(data); setLoading(false) })
+      .then(({ data, error }) => {
+        if (cancelled) return
+        if (error) { setFetchError(error.message); setLoading(false); return }
+        if (data) setInventory(data)
+        setLoading(false)
+      })
+    return () => { cancelled = true }
   }, [app.id])
 
   async function handleAdd() {
     if (!form.name.trim()) return
+    setError(null)
 
     // Buscar o crear producto en catálogo global
     const { data: existing } = await supabase.from('products')
@@ -33,7 +44,10 @@ export default function Inventario() {
         .select('id').single()
       productId = created?.id
     }
-    if (!productId) return
+    if (!productId) {
+      setError('No se pudo crear el producto. Inténtalo de nuevo.')
+      return
+    }
 
     const { data, error } = await supabase.from('inventory')
       .insert({
@@ -46,7 +60,12 @@ export default function Inventario() {
       .select('*, product:products(*)')
       .single()
 
-    if (!error && data) {
+    if (error) {
+      setError('No se pudo añadir el producto al inventario. Inténtalo de nuevo.')
+      return
+    }
+
+    if (data) {
       setInventory(p => [...p, data])
       setForm({ name: '', current_stock: '', min_stock: '', unit: 'unidad' })
       setShowAdd(false)
@@ -54,18 +73,21 @@ export default function Inventario() {
   }
 
   async function adjustStock(id, delta) {
+    if (adjusting.current.has(id)) return
+    adjusting.current.add(id)
     const item = inventory.find(i => i.id === id)
-    if (!item) return
+    if (!item) { adjusting.current.delete(id); return }
     const newStock = Math.max(0, (item.current_stock ?? 0) + delta)
     const { error } = await supabase.from('inventory')
       .update({ current_stock: newStock, updated_at: new Date().toISOString() })
       .eq('id', id)
+    adjusting.current.delete(id)
     if (!error) setInventory(p => p.map(i => i.id === id ? { ...i, current_stock: newStock } : i))
   }
 
   async function removeItem(id) {
-    await supabase.from('inventory').delete().eq('id', id)
-    setInventory(p => p.filter(i => i.id !== id))
+    const { error } = await supabase.from('inventory').delete().eq('id', id)
+    if (!error) setInventory(p => p.filter(i => i.id !== id))
   }
 
   const lowStock = inventory.filter(i => i.min_stock > 0 && (i.current_stock ?? 0) <= i.min_stock)
@@ -134,12 +156,17 @@ export default function Inventario() {
                   Añadir
                 </button>
               </div>
+              {error && (
+                <p style={{ margin: '4px 0 0', fontSize: 12, color: '#ef4444' }}>{error}</p>
+              )}
             </div>
           </div>
         )}
 
         {/* Lista */}
-        {loading ? (
+        {fetchError ? (
+          <p style={{ color: '#ef4444', fontSize: 13 }}>Error al cargar el inventario: {fetchError}</p>
+        ) : loading ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}>
             <div style={{ width: 24, height: 24, borderRadius: '50%', border: '2px solid var(--accent)', borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite' }} />
           </div>
