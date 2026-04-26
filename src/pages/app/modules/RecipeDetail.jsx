@@ -73,26 +73,32 @@ export default function RecipeDetail() {
   const [deleteConfirming, setDeleteConfirming] = useState(false)
 
   useEffect(() => {
+    let cancelled = false
     supabase.from('recipes').select('*').eq('id', recipeId).single()
       .then(async ({ data, error }) => {
+        if (cancelled) return
         if (error || !data) { navigate('..'); return }
         setRecipe(data)
 
-        // Load normalized ingredients; fallback to JSONB if no rows
-        const { data: riRows } = await supabase
-          .from('recipe_ingredients')
-          .select('*')
-          .eq('recipe_id', data.id)
-          .order('sort_order')
+        try {
+          // Load normalized ingredients; fallback to JSONB if no rows
+          const { data: riRows } = await supabase
+            .from('recipe_ingredients')
+            .select('*')
+            .eq('recipe_id', data.id)
+            .order('sort_order')
 
-        setNormalizedIngredients(
-          riRows?.length
-            ? riRows.map(recipeIngredientFromDb)
-            : null // signal to use JSONB fallback
-        )
-
-        setLoading(false)
+          if (cancelled) return
+          setNormalizedIngredients(
+            riRows?.length
+              ? riRows.map(recipeIngredientFromDb)
+              : null // signal to use JSONB fallback
+          )
+        } finally {
+          if (!cancelled) setLoading(false)
+        }
       })
+    return () => { cancelled = true }
   }, [recipeId, navigate])
 
   if (loading) return (
