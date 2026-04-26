@@ -157,6 +157,63 @@ export default function Menu() {
     }
   }
 
+  async function generateShoppingList() {
+    // 1. Collect unique recipe_ids from this week's menu events
+    const recipeIds = [...new Set(
+      Object.values(menu).filter(ev => ev?.recipe_id).map(ev => ev.recipe_id)
+    )]
+    if (!recipeIds.length) { showToast('No hay recetas enlazadas en el menú'); return }
+
+    // 2. Load recipe_ingredients for those recipes
+    const { data: riRows } = await supabase
+      .from('recipe_ingredients')
+      .select('*')
+      .in('recipe_id', recipeIds)
+
+    if (!riRows?.length) { showToast('Las recetas no tienen ingredientes normalizados'); return }
+
+    // 3. Load current inventory for this app
+    const { data: invRows } = await supabase
+      .from('inventory')
+      .select('current_stock, product:products(name)')
+      .eq('app_id', app.id)
+
+    // Map name→stock (lowercase for case-insensitive comparison)
+    const stockMap = {}
+    for (const inv of (invRows ?? [])) {
+      if (inv.product?.name) {
+        stockMap[inv.product.name.toLowerCase()] = inv.current_stock ?? 0
+      }
+    }
+
+    // 4. Filter ingredients with insufficient stock
+    const toAdd = riRows.filter(ri => {
+      const stock  = stockMap[ri.name.toLowerCase()] ?? 0
+      const needed = ri.quantity ?? 1
+      return stock < needed
+    })
+
+    if (!toAdd.length) { showToast('✅ Todo está en el inventario'); return }
+
+    // 5. Insert into shopping list
+    const payload = toAdd.map(ri => ({
+      app_id:   app.id,
+      module:   'supermercado',
+      type:     'product',
+      title:    ri.name,
+      metadata: {
+        quantity:   ri.quantity ?? null,
+        unit:       ri.unit ?? '',
+        category:   'otros',
+        store:      'General',
+        price_unit: null,
+      },
+    }))
+
+    await supabase.from('items').insert(payload)
+    showToast(`🛒 ${payload.length} ingrediente${payload.length !== 1 ? 's' : ''} añadido${payload.length !== 1 ? 's' : ''} a la lista`)
+  }
+
   const today = new Date()
   const todayDow = (today.getDay() + 6) % 7
   const weekDates = Array.from({ length: 7 }, (_, i) => {
@@ -230,6 +287,10 @@ export default function Menu() {
               <button onClick={addIngredientsToList}
                 style={{ flex:1, padding:'12px', borderRadius:'var(--radius-md)', border:'1px solid var(--border)', background:'none', color:'var(--text-muted)', fontSize:13, cursor:'pointer' }}>
                 🛒 A la lista
+              </button>
+              <button onClick={generateShoppingList}
+                style={{ flex:1, padding:'12px', borderRadius:'var(--radius-md)', border:'1px solid #10b981', background:'none', color:'#10b981', fontSize:13, fontWeight:600, cursor:'pointer' }}>
+                🧠 Generar
               </button>
             </div>
           </div>
@@ -353,6 +414,12 @@ export default function Menu() {
             onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--accent)'}
             onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}>
             🛒 Añadir a la lista
+          </button>
+          <button onClick={generateShoppingList}
+            style={{ padding:'6px 14px', borderRadius:9, border:'1px solid var(--border)', background:'none', color:'var(--text-muted)', fontSize:12, cursor:'pointer', display:'flex', alignItems:'center', gap:5, transition:'all .15s' }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = '#10b981'; e.currentTarget.style.color = '#10b981' }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-muted)' }}>
+            🧠 Generar lista
           </button>
         </div>
       </div>
