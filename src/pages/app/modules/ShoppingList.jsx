@@ -225,6 +225,8 @@ export default function ShoppingList() {
   const [newUnit, setNewUnit] = useState('')
   const [newCat, setNewCat]   = useState('otros')
   const [toast, setToast]     = useState(null)
+  const [suggestions,   setSuggestions]   = useState([])
+  const [editingFreqId, setEditingFreqId] = useState(null)
 
   useEffect(() => {
     const handler = () => setIsMobile(window.innerWidth < 640)
@@ -238,7 +240,79 @@ export default function ShoppingList() {
       .eq('module', 'supermercado')
       .order('created_at')
       .then(({ data }) => { if (data) setItems(data.map(itemFromDb)) })
+    loadSuggestions()
   }, [app.id])
+
+  async function loadSuggestions() {
+    const horizon = new Date()
+    horizon.setDate(horizon.getDate() + 7)
+    const horizonStr = horizon.toISOString().slice(0, 10)
+
+    const { data } = await supabase
+      .from('product_consumption')
+      .select('*, product:products(name)')
+      .eq('app_id', app.id)
+      .not('avg_days_between_purchases', 'is', null)
+      .lte('estimated_next_purchase', horizonStr)
+      .order('estimated_next_purchase')
+
+    setSuggestions(data ?? [])
+  }
+
+  async function addSuggestion(suggestion) {
+    const payload = {
+      app_id:   app.id,
+      module:   'supermercado',
+      type:     'product',
+      title:    suggestion.product.name,
+      metadata: { quantity: null, unit: '', category: 'otros', store: activeStore, price_unit: null },
+    }
+    const { data, error } = await supabase.from('items').insert(payload).select().single()
+    if (!error && data) {
+      setItems(p => [...p, itemFromDb(data)])
+      showToast(`${suggestion.product.name} añadido ✓`)
+    }
+  }
+
+  async function dismissSuggestion(productId) {
+    await supabase.from('product_consumption')
+      .update({
+        avg_days_between_purchases: null,
+        estimated_next_purchase:    null,
+        updated_at:                 new Date().toISOString(),
+      })
+      .eq('product_id', productId)
+      .eq('app_id', app.id)
+    setSuggestions(p => p.filter(s => s.product_id !== productId))
+  }
+
+  async function updateFrequency(productId, newDaysStr) {
+    const days = parseInt(newDaysStr)
+    setEditingFreqId(null)
+    if (!days || days < 1) { dismissSuggestion(productId); return }
+
+    const suggestion = suggestions.find(s => s.product_id === productId)
+    if (!suggestion) return
+
+    const newEstimated = new Date(suggestion.last_purchase_date)
+    newEstimated.setDate(newEstimated.getDate() + days)
+    const newEstimatedStr = newEstimated.toISOString().slice(0, 10)
+
+    await supabase.from('product_consumption')
+      .update({
+        avg_days_between_purchases: days,
+        estimated_next_purchase:    newEstimatedStr,
+        updated_at:                 new Date().toISOString(),
+      })
+      .eq('product_id', productId)
+      .eq('app_id', app.id)
+
+    setSuggestions(p => p.map(s =>
+      s.product_id === productId
+        ? { ...s, avg_days_between_purchases: days, estimated_next_purchase: newEstimatedStr }
+        : s
+    ))
+  }
 
   function showToast(msg) { setToast(msg); setTimeout(() => setToast(null), 2600) }
 
@@ -338,6 +412,7 @@ export default function ShoppingList() {
     const ids = cartItems.map(i => i.id)
     await supabase.from('items').update({ checked: false, checked_at: null }).in('id', ids)
     setItems(p => p.map(i => ids.includes(i.id) ? { ...i, checked: false, checked_at: null } : i))
+    loadSuggestions()
     showToast(`✅ Compra guardada — ${activeStore} · ${dateStr} · ${cartItems.length} productos`)
   }
 
@@ -359,6 +434,80 @@ export default function ShoppingList() {
   const pct = items.length ? Math.round(inCart.length / items.length * 100) : 0
 
   // ── Shared UI pieces ──────────────────────────────────────────
+  const SugerenciasSection = () => suggestions.length > 0 ? (
+    <div style={{ marginBottom: 16 }}>
+      <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '.08em', margin: '0 0 8px' }}>
+        💡 Sugerencias
+      </p>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {suggestions.map(s => (
+          <div
+            key={s.product_id}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px',
+              borderRadius: 12, border: '1px solid var(--border)', background: 'var(--bg-card)',
+            }}
+          >
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {s.product?.name}
+              </p>
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 2 }}>
+                {editingFreqId === s.product_id ? (
+                  <input
+                    type="number" min="1"
+                    defaultValue={s.avg_days_between_purchases}
+                    autoFocus
+                    onBlur={e  => updateFrequency(s.product_id, e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter')  updateFrequency(s.product_id, e.target.value)
+                      if (e.key === 'Escape') setEditingFreqId(null)
+                    }}
+                    style={{ width: 52, padding: '2px 6px', borderRadius: 6, border: '1px solid var(--accent)', background: 'var(--bg)', color: 'var(--text)', fontSize: 11, outline: 'none' }}
+                  />
+                ) : (
+                  <button
+                    onClick={() => setEditingFreqId(s.product_id)}
+                    title="Editar frecuencia"
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, color: 'var(--text-muted)', padding: 0, textDecoration: 'underline dotted' }}
+                  >
+                    cada {s.avg_days_between_purchases} días
+                  </button>
+                )}
+                <span style={{
+                  fontSize: 10, padding: '1px 6px', borderRadius: 999, flexShrink: 0,
+                  background: s.confidence === 'alta'  ? 'rgba(16,185,129,.12)'
+                             : s.confidence === 'media' ? 'rgba(245,158,11,.12)'
+                             : 'rgba(156,163,175,.12)',
+                  color: s.confidence === 'alta'  ? '#10b981'
+                       : s.confidence === 'media' ? '#f59e0b'
+                       : 'var(--text-faint)',
+                }}>
+                  {s.confidence}
+                </span>
+              </div>
+            </div>
+
+            <button
+              onClick={() => addSuggestion(s)}
+              style={{ padding: '6px 12px', borderRadius: 8, background: 'var(--accent)', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, flexShrink: 0 }}
+            >
+              + Añadir
+            </button>
+
+            <button
+              onClick={() => dismissSuggestion(s.product_id)}
+              title="No sugerir más"
+              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: 'var(--text-faint)', padding: '0 2px', flexShrink: 0 }}
+              onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
+              onMouseLeave={e => e.currentTarget.style.color = 'var(--text-faint)'}
+            >×</button>
+          </div>
+        ))}
+      </div>
+    </div>
+  ) : null
+
   const TrashSection = () => (
     deletedItems.length > 0 ? (
       <div style={{ borderRadius: 12, border: '1px solid var(--border)', overflow: 'hidden' }}>
@@ -451,6 +600,9 @@ export default function ShoppingList() {
         </div>
 
         <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 8 }}>
+          <div style={{ margin: '8px 10px 0' }}>
+            <SugerenciasSection />
+          </div>
           {Object.entries(byCat).map(([catId, catItems]) => {
             const cat = CATEGORIES.find(c => c.id === catId)
             return (
@@ -574,6 +726,8 @@ export default function ShoppingList() {
 
         {/* Items */}
         <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {/* Sugerencias */}
+          <SugerenciasSection />
           {/* Active items by category */}
           {Object.entries(byCat).map(([catId, catItems]) => {
             const cat = CATEGORIES.find(c => c.id === catId)
