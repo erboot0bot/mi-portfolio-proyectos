@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion' // eslint-disable-line n
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
 import ComingSoonPage from './components/ComingSoonPage'
+import { LanguageProvider } from './contexts/LanguageContext'
 
 const LandingPage   = React.lazy(() => import('./pages/LandingPage'))
 const ProjectsHome  = React.lazy(() => import('./pages/ProjectsHome'))
@@ -13,7 +14,7 @@ const NotFound      = React.lazy(() => import('./pages/NotFound'))
 
 const AppsHub       = React.lazy(() => import('./pages/AppsHub'))
 
-const HogarLayout   = React.lazy(() => import('./pages/app/HogarLayout'))
+const AppLayout     = React.lazy(() => import('./pages/app/AppLayout'))
 const Welcome       = React.lazy(() => import('./pages/app/modules/Welcome'))
 const Calendar      = React.lazy(() => import('./pages/app/modules/Calendar'))
 const ShoppingList  = React.lazy(() => import('./pages/app/modules/ShoppingList'))
@@ -60,7 +61,7 @@ const pageVariants = {
 }
 
 function getAnimKey(pathname) {
-  if (pathname.startsWith('/app/projects/hogar')) return '/app/projects/hogar'
+  if (pathname.startsWith('/app/hogar')) return '/app/hogar'
   return pathname
 }
 
@@ -68,6 +69,7 @@ export default function App() {
   const location = useLocation()
 
   return (
+    <LanguageProvider>
     <ErrorBoundary>
     <Layout>
       <Suspense fallback={
@@ -100,8 +102,9 @@ export default function App() {
             } />
 
             {/* Hogar */}
-            <Route path="/app/projects/hogar" element={
-              <ProtectedRoute><HogarLayout /></ProtectedRoute>
+            <Route path="/app/projects/hogar" element={<Navigate to="/app/hogar" replace />} />
+            <Route path="/app/hogar" element={
+              <ProtectedRoute><AppLayout /></ProtectedRoute>
             }>
               <Route index                    element={<Welcome />} />
               <Route path="calendar"          element={<Calendar />} />
@@ -121,5 +124,6 @@ export default function App() {
       </Suspense>
     </Layout>
     </ErrorBoundary>
+    </LanguageProvider>
   )
 }
