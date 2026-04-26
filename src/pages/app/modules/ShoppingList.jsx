@@ -4,6 +4,7 @@ import { supabase } from '../../../lib/supabase'
 import ModuleShell from './ModuleShell'
 import ModuleTopNav from '../../../components/ModuleTopNav'
 import { usePWAManifest } from '../../../hooks/usePWAManifest'
+import { itemFromDb, itemToDb } from '../../../utils/itemTransformers'
 
 const CATEGORIES = [
   { id: 'frutas',   label: 'Frutas & Verduras', icon: '🥦' },
@@ -207,7 +208,7 @@ function SwipeItem({ item, onToggle, onDelete }) {
 // ── Main component ────────────────────────────────────────────────
 export default function ShoppingList() {
   usePWAManifest('shopping')
-  const { project, modules } = useOutletContext()
+  const { app, modules } = useOutletContext()
   const [items, setItems]               = useState([])
   const [deletedItems, setDeletedItems] = useState([])
   const [showTrash, setShowTrash]       = useState(false)
@@ -231,10 +232,12 @@ export default function ShoppingList() {
   }, [])
 
   useEffect(() => {
-    supabase.from('shopping_items').select('*')
-      .eq('project_id', project.id).order('created_at')
-      .then(({ data }) => { if (data) setItems(data) })
-  }, [project.id])
+    supabase.from('items').select('*')
+      .eq('app_id', app.id)
+      .eq('module', 'supermercado')
+      .order('created_at')
+      .then(({ data }) => { if (data) setItems(data.map(itemFromDb)) })
+  }, [app.id])
 
   function showToast(msg) { setToast(msg); setTimeout(() => setToast(null), 2600) }
 
@@ -243,7 +246,7 @@ export default function ShoppingList() {
     if (!item) return
     const checked = !item.checked
     const checked_at = checked ? new Date().toISOString() : null
-    await supabase.from('shopping_items').update({ checked, checked_at }).eq('id', id)
+    await supabase.from('items').update({ checked, checked_at }).eq('id', id)
     setItems(p => p.map(i => i.id === id ? { ...i, checked, checked_at } : i))
   }
 
@@ -262,7 +265,7 @@ export default function ShoppingList() {
   async function emptyTrash() {
     const ids = deletedItems.map(i => i.id)
     if (!ids.length) return
-    await supabase.from('shopping_items').delete().in('id', ids)
+    await supabase.from('items').delete().in('id', ids)
     setDeletedItems([])
     showToast('Papelera vaciada')
   }
@@ -299,7 +302,7 @@ export default function ShoppingList() {
     if (error) { showToast('Error al guardar la compra'); return }
 
     const ids = cartItems.map(i => i.id)
-    await supabase.from('shopping_items').update({ checked: false, checked_at: null }).in('id', ids)
+    await supabase.from('items').update({ checked: false, checked_at: null }).in('id', ids)
     setItems(p => p.map(i => ids.includes(i.id) ? { ...i, checked: false, checked_at: null } : i))
     showToast(`✅ Compra guardada — ${activeStore} · ${dateStr} · ${cartItems.length} productos`)
   }
@@ -307,18 +310,10 @@ export default function ShoppingList() {
   async function addItem(e) {
     if (e) e.preventDefault()
     if (!newName.trim()) return
-    const payload = {
-      project_id: project.id,
-      name: newName.trim(),
-      quantity: newQty ? Number(newQty) : null,
-      unit: newUnit.trim() || null,
-      category: newCat,
-      store: activeStore,
-      checked: false,
-    }
-    const { data, error } = await supabase.from('shopping_items').insert(payload).select().single()
+    const payload = itemToDb(app.id, newName.trim(), newQty ? Number(newQty) : null, newUnit || '', newCat, activeStore)
+    const { data, error } = await supabase.from('items').insert(payload).select().single()
     if (!error && data) {
-      setItems(p => [...p, data])
+      setItems(p => [...p, itemFromDb(data)])
       setNewName(''); setNewQty(''); setNewUnit('')
       showToast('Añadido ✓')
     }
@@ -485,7 +480,7 @@ export default function ShoppingList() {
   }, {})
 
   return (
-    <ModuleShell project={project} modules={modules}>
+    <ModuleShell app={app} modules={modules}>
     <div style={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
 
       {/* Category sidebar */}
