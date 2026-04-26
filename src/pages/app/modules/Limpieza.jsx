@@ -24,6 +24,9 @@ export default function Limpieza() {
   const [loading, setLoading] = useState(true)
   const [showAdd, setShowAdd] = useState(false)
   const [form, setForm]       = useState({ title: '', due: '', interval_days: '', products: '' })
+  const [addError, setAddError]     = useState(null)
+  const [markError, setMarkError]   = useState(null)
+  const [fetchError, setFetchError] = useState(null)
 
   const today = new Date().toISOString().slice(0, 10)
 
@@ -34,8 +37,9 @@ export default function Limpieza() {
       .eq('app_id', app.id)
       .eq('event_type', 'cleaning')
       .order('start_time', { ascending: true })
-      .then(({ data }) => {
+      .then(({ data, error }) => {
         if (cancelled) return
+        if (error) { setFetchError(error.message); setLoading(false); return }
         if (data) setTasks(data)
         setLoading(false)
       })
@@ -44,6 +48,7 @@ export default function Limpieza() {
 
   async function handleAdd() {
     if (!form.title.trim() || !form.due) return
+    setAddError(null)
     const startTime = new Date(form.due + 'T09:00:00').toISOString()
     const { data, error } = await supabase.from('events').insert({
       app_id:     app.id,
@@ -52,7 +57,7 @@ export default function Limpieza() {
       start_time: startTime,
       all_day:    true,
       metadata: {
-        interval_days: form.interval_days ? Number(form.interval_days) : null,
+        interval_days: form.interval_days && Number(form.interval_days) > 0 ? Number(form.interval_days) : null,
         products:      form.products.trim(),
       },
     }).select().single()
@@ -61,6 +66,9 @@ export default function Limpieza() {
       setTasks(p => [...p, data].sort((a, b) => new Date(a.start_time) - new Date(b.start_time)))
       setForm({ title: '', due: '', interval_days: '', products: '' })
       setShowAdd(false)
+      setMarkError(null)
+    } else if (error) {
+      setAddError('No se pudo guardar la tarea. Inténtalo de nuevo.')
     }
   }
 
@@ -82,7 +90,11 @@ export default function Limpieza() {
         all_day:    true,
         metadata:   task.metadata,
       }).select().single()
-      if (data) setTasks(p => [...p, data].sort((a, b) => new Date(a.start_time) - new Date(b.start_time)))
+      if (data) {
+        setTasks(p => [...p, data].sort((a, b) => new Date(a.start_time) - new Date(b.start_time)))
+      } else {
+        setMarkError('La tarea se completó pero no se pudo programar la siguiente. Créala manualmente.')
+      }
     }
   }
 
@@ -106,6 +118,9 @@ export default function Limpieza() {
                 ? `${overdueCount} vencida${overdueCount !== 1 ? 's' : ''}`
                 : `${tasks.length} tarea${tasks.length !== 1 ? 's' : ''}`}
             </p>
+            {markError && (
+              <p style={{ fontSize: 12, color: '#ef4444', margin: '4px 0 0' }}>{markError}</p>
+            )}
           </div>
           <button
             onClick={() => setShowAdd(p => !p)}
@@ -156,6 +171,9 @@ export default function Limpieza() {
                   Crear
                 </button>
               </div>
+              {addError && (
+                <p style={{ fontSize: 12, color: '#ef4444', margin: '4px 0 0' }}>{addError}</p>
+              )}
             </div>
           </div>
         )}
@@ -165,6 +183,8 @@ export default function Limpieza() {
           <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}>
             <div style={{ width: 24, height: 24, borderRadius: '50%', border: '2px solid var(--accent)', borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite' }} />
           </div>
+        ) : fetchError ? (
+          <p style={{ fontSize: 13, color: '#ef4444', textAlign: 'center', padding: '20px 0' }}>{fetchError}</p>
         ) : tasks.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '40px 20px' }}>
             <p style={{ fontSize: 40, margin: '0 0 8px' }}>🧹</p>
