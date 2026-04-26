@@ -18,6 +18,12 @@ describe('recipeIngredientFromDb', () => {
     expect(result.quantity).toBeNull()
     expect(result.unit).toBe('')
   })
+
+  it('sort_order con null devuelve 0', () => {
+    const row = { id: 'ri3', recipe_id: 'r1', name: 'Azúcar', quantity: 100, unit: 'g', sort_order: null }
+    const result = recipeIngredientFromDb(row)
+    expect(result.sort_order).toBe(0)
+  })
 })
 
 describe('recipeIngredientToDb', () => {
@@ -45,5 +51,15 @@ describe('recipeIngredientToDb', () => {
   it('sort_order por defecto es 0', () => {
     const result = recipeIngredientToDb('r1', 'Tomate', null, '', undefined)
     expect(result.sort_order).toBe(0)
+  })
+
+  it('preserva quantity=0 como 0 (no convierte a null)', () => {
+    const result = recipeIngredientToDb('r1', 'Sal', 0, 'g', 0)
+    expect(result.quantity).toBe(0)
+  })
+
+  it('preserva quantity="0" (string cero) como 0', () => {
+    const result = recipeIngredientToDb('r1', 'Sal', '0', 'g', 0)
+    expect(result.quantity).toBe(0)
   })
 })
