@@ -11,6 +11,13 @@ const APP_NAMES = {
   finanzas: 'Finanzas',
 }
 
+const APP_ICONS = {
+  hogar:    '🏠',
+  mascotas: '🐾',
+  vehiculo: '🚗',
+  finanzas: '💰',
+}
+
 const HOGAR_MODULES = [
   { path: 'calendar',   label: 'Calendario', icon: '📅' },
   { path: 'shopping',   label: 'Lista',       icon: '🛒' },
@@ -80,7 +87,7 @@ export default function AppLayout() {
 
       const { data: created, error: createError } = await supabase
         .from('apps')
-        .insert({ type: appType, name: APP_NAMES[appType], owner_id: user.id })
+        .insert({ type: appType, name: APP_NAMES[appType], icon: APP_ICONS[appType], owner_id: user.id })
         .select()
         .single()
 
