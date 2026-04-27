@@ -104,8 +104,8 @@ export default function App() {
             <Route path="/"               element={<LandingPage />} />
             <Route path="/projects"       element={<ProjectsHome />} />
             <Route path="/projects/:slug" element={<ProjectDetail />} />
-            <Route path="/courses"        element={<ComingSoonPage title="Cursos" icon="📚" />} />
-            <Route path="/store"          element={<ComingSoonPage title="Tienda" icon="🛒" />} />
+            <Route path="/courses"        element={<ComingSoonPage title="Cursos" icon="📚" waitlistKey="cursos" />} />
+            <Route path="/store"          element={<ComingSoonPage title="Tienda" icon="🛒" waitlistKey="tienda" />} />
             <Route path="/login"          element={<Login />} />
             <Route path="/contact"        element={<Contact />} />
 
