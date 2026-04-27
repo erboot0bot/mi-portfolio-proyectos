@@ -120,7 +120,7 @@ export default function ProjectCard({ project }) {
                 className="text-xs font-semibold px-3 py-1.5 rounded-lg
                   bg-[var(--accent)] text-white hover:opacity-90 transition-opacity"
               >
-                Demo →
+                Demo <span aria-hidden="true">→</span>
               </a>
             )}
             {project.github && (
@@ -132,7 +132,7 @@ export default function ProjectCard({ project }) {
                   border border-[var(--border)] text-[var(--text-muted)]
                   hover:text-[var(--text)] hover:border-[var(--accent)] transition-colors"
               >
-                GitHub →
+                GitHub <span aria-hidden="true">→</span>
               </a>
             )}
           </div>
