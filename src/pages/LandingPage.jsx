@@ -18,7 +18,7 @@ const SECTIONS = [
     icon: '⚡',
     href: '/apps',
     status: 'active',
-    cta: 'Explorar apps',
+    cta: 'Abrir la app',
     accentColor: 'var(--accent)',
   },
   {
@@ -28,8 +28,18 @@ const SECTIONS = [
     icon: '🛠️',
     href: '/projects',
     status: 'active',
-    cta: 'Ver documentación',
+    cta: 'Ver el portfolio',
     accentColor: '#6366f1',
+  },
+  {
+    key: 'lab',
+    title: 'Lab',
+    description: 'Experimentos, prototipos y cosas en construcción. El proceso sin filtrar.',
+    icon: '🧪',
+    href: '/lab',
+    status: 'active',
+    cta: 'Explorar el lab',
+    accentColor: '#06b6d4',
   },
   {
     key: 'courses',
@@ -53,6 +63,31 @@ const SECTIONS = [
   },
 ]
 
+const STATS = [
+  { value: '4+',   label: 'Apps en producción' },
+  { value: '100%', label: 'Código asistido por IA' },
+  { value: '1',    label: 'Desarrollador solo' },
+  { value: 'Open', label: 'Código fuente público' },
+]
+
+function StatsSection() {
+  return (
+    <section
+      aria-label="Métricas"
+      className="px-6 sm:px-10 lg:px-16 max-w-[1440px] mx-auto py-6">
+      <dl className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        {STATS.map(({ value, label }) => (
+          <div key={label}
+            className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-5 text-center">
+            <dt className="text-xs text-[var(--text-faint)] mb-1">{label}</dt>
+            <dd className="text-2xl font-extrabold text-[var(--text)]">{value}</dd>
+          </div>
+        ))}
+      </dl>
+    </section>
+  )
+}
+
 // Estado inicial oculto — solo si el usuario no prefiere motion reducido
 const hidden = prefersReducedMotion ? {} : { opacity: 0 }
 const hiddenUp = (px) => prefersReducedMotion ? {} : { opacity: 0, transform: `translateY(${px}px)` }
@@ -62,6 +97,7 @@ export default function LandingPage() {
     <div>
       <title>H3nky | Portfolio</title>
       <HeroSection />
+      <StatsSection />
       <SectionsGrid />
       <AboutSection />
     </div>
@@ -111,13 +147,13 @@ function HeroSection() {
             style={{ ...hiddenUp(12), background: 'var(--accent)' }}
             className="px-5 py-2.5 rounded-lg font-semibold text-sm text-white
               transition-all hover:opacity-90 active:scale-95">
-            Explorar Apps →
+            Ver mis apps →
           </Link>
           <Link to="/projects" style={hiddenUp(12)}
             className="px-5 py-2.5 rounded-lg font-semibold text-sm transition-all
               border border-[var(--border)] text-[var(--text)]
               hover:bg-[var(--bg-card)] active:scale-95">
-            Documentación
+            Ver el portfolio →
           </Link>
         </div>
       </div>
@@ -151,7 +187,7 @@ function SectionsGrid() {
       className="px-6 sm:px-10 lg:px-16 max-w-[1440px] mx-auto py-12">
       <h2 className="text-xl font-bold text-[var(--text)] mb-1">Qué hay aquí</h2>
       <p className="text-sm text-[var(--text-muted)] mb-8">Una plataforma en constante construcción.</p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         {SECTIONS.map(s => <SectionCard key={s.key} section={s} />)}
       </div>
     </section>
