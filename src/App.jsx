@@ -24,7 +24,11 @@ const RecipeDetail  = React.lazy(() => import('./pages/app/modules/RecipeDetail'
 const Inventario    = React.lazy(() => import('./pages/app/modules/Inventario'))
 const Limpieza      = React.lazy(() => import('./pages/app/modules/Limpieza'))
 
-const MascotasWelcome = React.lazy(() => import('./pages/app/modules/mascotas/Welcome'))
+const MisMascotas          = React.lazy(() => import('./pages/app/modules/mascotas/MisMascotas'))
+const PetDetail            = React.lazy(() => import('./pages/app/modules/mascotas/PetDetail'))
+const MascotasAlimentacion = React.lazy(() => import('./pages/app/modules/mascotas/Alimentacion'))
+const MascotasSalud        = React.lazy(() => import('./pages/app/modules/mascotas/Salud'))
+const MascotasRutinas      = React.lazy(() => import('./pages/app/modules/mascotas/Rutinas'))
 const VehiculoWelcome  = React.lazy(() => import('./pages/app/modules/vehiculo/Welcome'))
 const FinanzasWelcome  = React.lazy(() => import('./pages/app/modules/finanzas/Welcome'))
 
@@ -127,8 +131,14 @@ export default function App() {
             <Route path="/app/mascotas" element={
               <ProtectedRoute><AppLayout /></ProtectedRoute>
             }>
-              <Route index element={<Navigate to="welcome" replace />} />
-              <Route path="welcome" element={<MascotasWelcome />} />
+              <Route index element={<Navigate to="mis-mascotas" replace />} />
+              <Route path="mis-mascotas" element={<MisMascotas />} />
+              <Route path="mis-mascotas/:petId" element={<PetDetail />}>
+                <Route index element={<Navigate to="alimentacion" replace />} />
+                <Route path="alimentacion" element={<MascotasAlimentacion />} />
+                <Route path="salud" element={<MascotasSalud />} />
+                <Route path="rutinas" element={<MascotasRutinas />} />
+              </Route>
             </Route>
 
             {/* Vehículo */}

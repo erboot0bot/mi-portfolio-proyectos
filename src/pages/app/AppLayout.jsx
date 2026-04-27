@@ -28,7 +28,7 @@ const HOGAR_MODULES = [
 ]
 
 const MASCOTAS_MODULES = [
-  { path: 'welcome', label: 'Inicio', icon: '🐾' },
+  { path: 'mis-mascotas', label: 'Mis Mascotas', icon: '🐾' },
 ]
 
 const VEHICULO_MODULES = [
