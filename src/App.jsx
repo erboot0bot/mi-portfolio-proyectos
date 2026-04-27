@@ -11,6 +11,7 @@ const ProjectsHome  = React.lazy(() => import('./pages/ProjectsHome'))
 const ProjectDetail = React.lazy(() => import('./pages/ProjectDetail'))
 const Login         = React.lazy(() => import('./pages/Login'))
 const NotFound      = React.lazy(() => import('./pages/NotFound'))
+const Contact       = React.lazy(() => import('./pages/Contact'))
 
 const AppsHub       = React.lazy(() => import('./pages/AppsHub'))
 
@@ -106,6 +107,7 @@ export default function App() {
             <Route path="/courses"        element={<ComingSoonPage title="Cursos" icon="📚" />} />
             <Route path="/store"          element={<ComingSoonPage title="Tienda" icon="🛒" />} />
             <Route path="/login"          element={<Login />} />
+            <Route path="/contact"        element={<Contact />} />
 
             {/* Hub de apps */}
             <Route path="/apps" element={
