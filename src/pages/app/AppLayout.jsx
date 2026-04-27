@@ -134,27 +134,30 @@ export default function AppLayout() {
           <span style={{ fontSize: 36 }}>{app.icon}</span>
           <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', margin: 0 }}>{app.name}</h1>
         </div>
-        <nav style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 16 }}>
-          {modules.map(m => (
-            <NavLink
-              key={m.path}
-              to={m.path}
-              className={({ isActive }) => isActive ? 'module-card active' : 'module-card'}
-              style={({ isActive }) => ({
-                display: 'flex', alignItems: 'center', gap: 12,
-                height: 56, padding: '0 16px', borderRadius: 12,
-                background: 'var(--bg-card)',
-                border: isActive ? '1px solid var(--accent)' : '1px solid var(--border)',
-                borderLeft: isActive ? '3px solid var(--accent)' : '1px solid var(--border)',
-                textDecoration: 'none', transition: 'all var(--transition)',
-              })}
-            >
-              <span style={{ fontSize: 22, flexShrink: 0 }}>{m.icon}</span>
-              <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{m.label}</span>
-              <span style={{ color: 'var(--text-faint)', fontSize: 16 }}>›</span>
-            </NavLink>
-          ))}
-        </nav>
+        {modules.length > 1 && (
+          <nav style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 16 }}>
+            {modules.map(m => (
+              <NavLink
+                key={m.path}
+                to={m.path}
+                className={({ isActive }) => isActive ? 'module-card active' : 'module-card'}
+                style={({ isActive }) => ({
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  height: 56, padding: '0 16px', borderRadius: 12,
+                  background: 'var(--bg-card)',
+                  border: isActive ? '1px solid var(--accent)' : '1px solid var(--border)',
+                  borderLeft: isActive ? '3px solid var(--accent)' : '1px solid var(--border)',
+                  textDecoration: 'none', transition: 'all var(--transition)',
+                })}
+              >
+                <span style={{ fontSize: 22, flexShrink: 0 }}>{m.icon}</span>
+                <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{m.label}</span>
+                <span style={{ color: 'var(--text-faint)', fontSize: 16 }}>›</span>
+              </NavLink>
+            ))}
+          </nav>
+        )}
+        <Outlet context={{ app, modules }} />
       </div>
 
       {/* Desktop layout */}
