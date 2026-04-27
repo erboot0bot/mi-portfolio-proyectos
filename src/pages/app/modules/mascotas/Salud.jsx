@@ -80,7 +80,7 @@ export default function Salud() {
 
   async function markDone(event) {
     const { error } = await supabase.from('events').delete().eq('id', event.id)
-    if (error) return
+    if (error) { setMarkError('No se pudo completar el evento.'); return }
     setEvents(p => p.filter(e => e.id !== event.id))
     const intervalDays = event.metadata?.interval_days
     if (intervalDays) {
@@ -105,7 +105,8 @@ export default function Salud() {
 
   async function removeEvent(id) {
     const { error } = await supabase.from('events').delete().eq('id', id)
-    if (!error) setEvents(p => p.filter(e => e.id !== id))
+    if (error) { setMarkError('No se pudo eliminar el evento.'); return }
+    setEvents(p => p.filter(e => e.id !== id))
   }
 
   const overdueCount = events.filter(e => formatDue(e.start_time).overdue).length
