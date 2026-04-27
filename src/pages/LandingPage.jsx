@@ -71,16 +71,38 @@ const STATS = [
 ]
 
 function StatsSection() {
+  const containerRef = useRef(null)
+
+  useGSAP(() => {
+    if (prefersReducedMotion) return
+
+    gsap.to('[data-stat-card]', {
+      opacity: 1,
+      y: 0,
+      duration: 0.45,
+      stagger: 0.07,
+      ease: 'power2.out',
+      clearProps: 'transform',
+      scrollTrigger: {
+        trigger: containerRef.current,
+        start: 'top 90%',
+        once: true,
+      },
+    })
+  }, { scope: containerRef })
+
   return (
-    <section
+    <section ref={containerRef}
       aria-label="Métricas"
       className="px-6 sm:px-10 lg:px-16 max-w-[1440px] mx-auto py-6">
       <dl className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {STATS.map(({ value, label }) => (
-          <div key={label}
+          <div key={label} data-stat-card
+            style={prefersReducedMotion ? {} : { opacity: 0, transform: 'translateY(20px)' }}
             className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-5 text-center">
-            <dt className="text-xs text-[var(--text-faint)] mb-1">{label}</dt>
+            {/* dt = primary identifier (the value), dd = descriptive label */}
             <dd className="text-2xl font-extrabold text-[var(--text)]">{value}</dd>
+            <dt className="text-xs text-[var(--text-faint)] mt-1">{label}</dt>
           </div>
         ))}
       </dl>
