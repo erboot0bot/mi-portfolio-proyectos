@@ -127,7 +127,7 @@ export default function App() {
             <Route path="/app/mascotas" element={
               <ProtectedRoute><AppLayout /></ProtectedRoute>
             }>
-              <Route index element={<MascotasWelcome />} />
+              <Route index element={<Navigate to="welcome" replace />} />
               <Route path="welcome" element={<MascotasWelcome />} />
             </Route>
 
@@ -135,7 +135,7 @@ export default function App() {
             <Route path="/app/vehiculo" element={
               <ProtectedRoute><AppLayout /></ProtectedRoute>
             }>
-              <Route index element={<VehiculoWelcome />} />
+              <Route index element={<Navigate to="welcome" replace />} />
               <Route path="welcome" element={<VehiculoWelcome />} />
             </Route>
 
@@ -143,7 +143,7 @@ export default function App() {
             <Route path="/app/finanzas" element={
               <ProtectedRoute><AppLayout /></ProtectedRoute>
             }>
-              <Route index element={<FinanzasWelcome />} />
+              <Route index element={<Navigate to="welcome" replace />} />
               <Route path="welcome" element={<FinanzasWelcome />} />
             </Route>
 

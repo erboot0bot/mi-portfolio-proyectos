@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
+import { Navigate, NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import { AppProvider } from '../../contexts/AppContext'
@@ -105,8 +105,7 @@ export default function AppLayout() {
 
   // Guard: redirect immediately if appType is unknown (before async effect fires)
   if (appType && !APP_NAMES[appType]) {
-    navigate('/apps')
-    return null
+    return <Navigate to="/apps" replace />
   }
 
   if (loading) {
