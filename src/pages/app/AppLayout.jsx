@@ -54,6 +54,7 @@ export default function AppLayout() {
   const location = useLocation()
   const [app, setApp] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(null)
 
   const appType = location.pathname.split('/').filter(Boolean)[1]
 
@@ -74,7 +75,12 @@ export default function AppLayout() {
 
       if (cancelled) return
 
-      if (error) { navigate('/apps'); return }
+      if (error) {
+        console.error('[AppLayout] Error cargando app:', error)
+        setLoadError(`Error al cargar la app: ${error.message} (code: ${error.code})`)
+        setLoading(false)
+        return
+      }
 
       if (data) {
         setApp(data)
@@ -93,7 +99,12 @@ export default function AppLayout() {
 
       if (cancelled) return
 
-      if (createError || !created) { navigate('/apps'); return }
+      if (createError || !created) {
+        console.error('[AppLayout] Error creando app:', createError)
+        setLoadError(`Error al crear la app: ${createError?.message} (code: ${createError?.code})`)
+        setLoading(false)
+        return
+      }
 
       setApp(created)
       setLoading(false)
@@ -108,10 +119,26 @@ export default function AppLayout() {
     return <Navigate to="/apps" replace />
   }
 
-  if (loading) {
+  if (loading && !loadError) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
         <div className="w-6 h-6 border-2 border-[var(--accent)] border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
+  }
+
+  if (loadError) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4 px-6 text-center">
+        <p className="text-4xl">⚠️</p>
+        <p className="font-bold text-[var(--text)]">No se pudo cargar la app</p>
+        <p className="text-sm font-mono text-red-500 bg-red-50 dark:bg-red-500/10 px-4 py-2 rounded-lg max-w-md break-all">
+          {loadError}
+        </p>
+        <button onClick={() => navigate('/apps')}
+          className="text-sm text-[var(--text-muted)] underline underline-offset-4">
+          ← Volver a Apps
+        </button>
       </div>
     )
   }
