@@ -24,6 +24,10 @@ const RecipeDetail  = React.lazy(() => import('./pages/app/modules/RecipeDetail'
 const Inventario    = React.lazy(() => import('./pages/app/modules/Inventario'))
 const Limpieza      = React.lazy(() => import('./pages/app/modules/Limpieza'))
 
+const MascotasWelcome = React.lazy(() => import('./pages/app/modules/mascotas/Welcome'))
+const VehiculoWelcome  = React.lazy(() => import('./pages/app/modules/vehiculo/Welcome'))
+const FinanzasWelcome  = React.lazy(() => import('./pages/app/modules/finanzas/Welcome'))
+
 class ErrorBoundary extends React.Component {
   state = { hasError: false, error: null }
 
@@ -63,7 +67,8 @@ const pageVariants = {
 }
 
 function getAnimKey(pathname) {
-  if (pathname.startsWith('/app/hogar')) return '/app/hogar'
+  const match = pathname.match(/^\/app\/(\w+)/)
+  if (match) return `/app/${match[1]}`
   return pathname
 }
 
@@ -116,6 +121,30 @@ export default function App() {
               <Route path="recipes/:recipeId" element={<RecipeDetail />} />
               <Route path="inventario"        element={<Inventario />} />
               <Route path="limpieza"          element={<Limpieza />} />
+            </Route>
+
+            {/* Mascotas */}
+            <Route path="/app/mascotas" element={
+              <ProtectedRoute><AppLayout /></ProtectedRoute>
+            }>
+              <Route index element={<MascotasWelcome />} />
+              <Route path="welcome" element={<MascotasWelcome />} />
+            </Route>
+
+            {/* Vehículo */}
+            <Route path="/app/vehiculo" element={
+              <ProtectedRoute><AppLayout /></ProtectedRoute>
+            }>
+              <Route index element={<VehiculoWelcome />} />
+              <Route path="welcome" element={<VehiculoWelcome />} />
+            </Route>
+
+            {/* Finanzas */}
+            <Route path="/app/finanzas" element={
+              <ProtectedRoute><AppLayout /></ProtectedRoute>
+            }>
+              <Route index element={<FinanzasWelcome />} />
+              <Route path="welcome" element={<FinanzasWelcome />} />
             </Route>
 
             {/* 404 */}

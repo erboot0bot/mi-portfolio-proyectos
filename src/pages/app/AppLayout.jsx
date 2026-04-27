@@ -96,6 +96,12 @@ export default function AppLayout() {
     return () => { cancelled = true }
   }, [user, navigate, appType])
 
+  // Guard: redirect immediately if appType is unknown (before async effect fires)
+  if (appType && !APP_NAMES[appType]) {
+    navigate('/apps')
+    return null
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
