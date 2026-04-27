@@ -12,6 +12,7 @@ const ProjectDetail = React.lazy(() => import('./pages/ProjectDetail'))
 const Login         = React.lazy(() => import('./pages/Login'))
 const NotFound      = React.lazy(() => import('./pages/NotFound'))
 const Contact       = React.lazy(() => import('./pages/Contact'))
+const Lab           = React.lazy(() => import('./pages/Lab'))
 
 const AppsHub       = React.lazy(() => import('./pages/AppsHub'))
 
@@ -108,6 +109,7 @@ export default function App() {
             <Route path="/store"          element={<ComingSoonPage title="Tienda" icon="🛒" waitlistKey="tienda" />} />
             <Route path="/login"          element={<Login />} />
             <Route path="/contact"        element={<Contact />} />
+            <Route path="/lab"            element={<Lab />} />
 
             {/* Hub de apps */}
             <Route path="/apps" element={

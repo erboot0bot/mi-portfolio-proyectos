@@ -1,0 +1,48 @@
+// src/data/experiments.js
+export const experiments = [
+  {
+    slug:        'mascotas',
+    title:       'App Mascotas',
+    description: 'Gestión de mascotas con perfiles, alimentación, salud y rutinas adaptadas por especie. Datos vinculados vía metadata.pet_id en JSONB.',
+    icon:        '🐾',
+    status:      'active',
+    tags:        ['React', 'Supabase', 'JSONB', 'RLS'],
+    date:        '2026-04',
+  },
+  {
+    slug:        'ai-recipes',
+    title:       'Recetas con IA',
+    description: 'Generación de recetas personalizadas a partir de ingredientes disponibles. Claude AI via Edge Function — la API key nunca toca el cliente.',
+    icon:        '🍳',
+    status:      'active',
+    tags:        ['Claude AI', 'Supabase Edge Functions', 'React'],
+    date:        '2026-03',
+  },
+  {
+    slug:        'gsap-animations',
+    title:       'Animaciones GSAP',
+    description: 'Transiciones de página, parallax con ScrollTrigger y animaciones de entrada en todo el portfolio. Respeta prefers-reduced-motion.',
+    icon:        '✨',
+    status:      'active',
+    tags:        ['GSAP', 'ScrollTrigger', 'React', 'a11y'],
+    date:        '2026-02',
+  },
+  {
+    slug:        'portfolio-v1',
+    title:       'Este Portfolio',
+    description: 'Construido sin ser "desarrollador profesional". React + Vite + Tailwind v4 + Supabase + Claude Code como copiloto de desarrollo.',
+    icon:        '🛠️',
+    status:      'active',
+    tags:        ['Vite', 'Tailwind v4', 'Vercel', 'Claude Code'],
+    date:        '2026-01',
+  },
+  {
+    slug:        'finanzas',
+    title:       'App Finanzas',
+    description: 'Seguimiento de gastos e ingresos con categorías personalizables. En construcción — módulo siguiente tras Mascotas.',
+    icon:        '💰',
+    status:      'wip',
+    tags:        ['React', 'Supabase', 'Charts'],
+    date:        '2026-05',
+  },
+]
