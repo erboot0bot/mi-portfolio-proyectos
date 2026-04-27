@@ -15,12 +15,6 @@ vi.mock('react-router-dom', async () => {
   }
 })
 
-const mockQuery = {
-  select: vi.fn().mockReturnThis(),
-  eq:     vi.fn().mockReturnThis(),
-  order:  vi.fn().mockResolvedValue({ data: [], error: null }),
-}
-
 vi.mock('../../../../../lib/supabase', () => ({
   supabase: {
     from: vi.fn().mockReturnValue({

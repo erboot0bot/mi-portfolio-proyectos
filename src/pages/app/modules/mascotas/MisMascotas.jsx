@@ -20,6 +20,7 @@ function calcAge(birthDate) {
   const totalMonths =
     (now.getFullYear() - birth.getFullYear()) * 12 +
     (now.getMonth() - birth.getMonth())
+  if (totalMonths < 0) return null
   if (totalMonths < 1) return 'Recién nacido'
   if (totalMonths < 12) return `${totalMonths} mes${totalMonths !== 1 ? 'es' : ''}`
   const y = Math.floor(totalMonths / 12)
