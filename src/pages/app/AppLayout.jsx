@@ -4,6 +4,13 @@ import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import { AppProvider } from '../../contexts/AppContext'
 
+const APP_NAMES = {
+  hogar:    'Hogar',
+  mascotas: 'Mascotas',
+  vehiculo: 'Vehículo',
+  finanzas: 'Finanzas',
+}
+
 const HOGAR_MODULES = [
   { path: 'calendar',   label: 'Calendario', icon: '📅' },
   { path: 'shopping',   label: 'Lista',       icon: '🛒' },
@@ -12,6 +19,25 @@ const HOGAR_MODULES = [
   { path: 'inventario', label: 'Inventario',  icon: '📦' },
   { path: 'limpieza',   label: 'Limpieza',    icon: '🧹' },
 ]
+
+const MASCOTAS_MODULES = [
+  { path: 'welcome', label: 'Inicio', icon: '🐾' },
+]
+
+const VEHICULO_MODULES = [
+  { path: 'welcome', label: 'Inicio', icon: '🚗' },
+]
+
+const FINANZAS_MODULES = [
+  { path: 'welcome', label: 'Inicio', icon: '💰' },
+]
+
+const MODULE_MAP = {
+  hogar:    HOGAR_MODULES,
+  mascotas: MASCOTAS_MODULES,
+  vehiculo: VEHICULO_MODULES,
+  finanzas: FINANZAS_MODULES,
+}
 
 const FULL_LAYOUT_MODULES = ['calendar', 'shopping', 'menu', 'recipes', 'inventario', 'limpieza']
 
@@ -22,25 +48,53 @@ export default function AppLayout() {
   const [app, setApp] = useState(null)
   const [loading, setLoading] = useState(true)
 
+  const appType = location.pathname.split('/').filter(Boolean)[1]
+
   const currentModule = location.pathname.split('/').pop()
   const isFullLayout = FULL_LAYOUT_MODULES.includes(currentModule)
 
   useEffect(() => {
     if (!user) return
-    supabase
-      .from('apps')
-      .select('*')
-      .eq('owner_id', user.id)
-      .order('created_at', { ascending: true })
-      .limit(1)
-      .single()
-      .then(({ data, error }) => {
-        if (error || !data) { navigate('/apps'); return }
+    let cancelled = false
+
+    async function loadOrCreateApp() {
+      const { data, error } = await supabase
+        .from('apps')
+        .select('*')
+        .eq('owner_id', user.id)
+        .eq('type', appType)
+        .maybeSingle()
+
+      if (cancelled) return
+
+      if (error) { navigate('/apps'); return }
+
+      if (data) {
         setApp(data)
         setLoading(false)
-      })
-      .catch(() => navigate('/apps'))
-  }, [user, navigate])
+        return
+      }
+
+      // Auto-create if no app found for this type
+      if (!APP_NAMES[appType]) { navigate('/apps'); return }
+
+      const { data: created, error: createError } = await supabase
+        .from('apps')
+        .insert({ type: appType, name: APP_NAMES[appType], owner_id: user.id })
+        .select()
+        .single()
+
+      if (cancelled) return
+
+      if (createError || !created) { navigate('/apps'); return }
+
+      setApp(created)
+      setLoading(false)
+    }
+
+    loadOrCreateApp()
+    return () => { cancelled = true }
+  }, [user, navigate, appType])
 
   if (loading) {
     return (
@@ -50,7 +104,7 @@ export default function AppLayout() {
     )
   }
 
-  const modules = HOGAR_MODULES
+  const modules = MODULE_MAP[app?.type] ?? []
 
   if (isFullLayout) {
     return (
