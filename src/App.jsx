@@ -1,6 +1,7 @@
 import React, { Suspense } from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion' // eslint-disable-line no-unused-vars
+import { Analytics } from '@vercel/analytics/react'
 import Layout from './components/Layout'
 import ProtectedRoute from './components/ProtectedRoute'
 import ComingSoonPage from './components/ComingSoonPage'
@@ -171,6 +172,7 @@ export default function App() {
       </Suspense>
     </Layout>
     </ErrorBoundary>
+    <Analytics />
     </LanguageProvider>
   )
 }
