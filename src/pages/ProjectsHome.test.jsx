@@ -1,9 +1,13 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, beforeAll } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { LanguageProvider } from '../contexts/LanguageContext'
 import ProjectsHome from './ProjectsHome'
+
+beforeAll(() => {
+  vi.stubGlobal('scrollTo', vi.fn())
+})
 
 function renderHome() {
   return render(<MemoryRouter><LanguageProvider><ProjectsHome /></LanguageProvider></MemoryRouter>)
