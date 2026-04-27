@@ -10,7 +10,7 @@ const statusColor = {
 }
 
 function CardCover({ project }) {
-  const { gradientFrom, gradientVia, gradientTo, shortTitle, title, technologies } = project
+  const { gradientFrom, gradientTo, shortTitle, title, technologies } = project
 
   if (gradientFrom) {
     return (
@@ -21,26 +21,22 @@ function CardCover({ project }) {
           borderBottom: `1px solid ${gradientFrom}30`,
         }}
       >
-        {/* Glow central */}
         <div className="absolute inset-0 flex items-center justify-center" aria-hidden>
           <div style={{
             width: 96, height: 96, borderRadius: '50%', opacity: 0.18,
             background: `radial-gradient(circle, ${gradientFrom}, transparent)`,
           }} />
         </div>
-        {/* Fade inferior */}
         <div
           className="absolute bottom-0 left-0 right-0 h-2/3 pointer-events-none"
           style={{ background: `linear-gradient(to top, ${gradientTo}cc, transparent)` }}
         />
-        {/* Stack esquina */}
         <span
           className="absolute top-3 right-3 z-10 font-mono text-[10px] tracking-wider"
           style={{ color: 'rgba(255,255,255,0.35)' }}
         >
           {technologies.slice(0, 2).join(' · ')}
         </span>
-        {/* Título */}
         <span
           className="relative z-10 px-5 pb-4 text-2xl font-black text-white tracking-tight leading-none"
           style={{ textShadow: '0 1px 4px rgba(0,0,0,0.35)' }}
@@ -72,46 +68,76 @@ function CardCover({ project }) {
 }
 
 export default function ProjectCard({ project }) {
+  const hasLinks = project.demo || project.github
+
   return (
     <motion.div
       whileHover={{ y: -3 }}
       transition={{ duration: 0.18, ease: 'easeOut' }}
+      className="h-full"
     >
-      <Link
-        to={`/projects/${project.slug}`}
-        className="block h-full rounded-xl overflow-hidden transition-all duration-200
-          border border-[var(--border)] bg-[var(--bg-card)]
-          hover:border-orange-200 hover:shadow-[0_4px_20px_rgba(249,115,22,0.08)]
-          dark:hover:border-orange-500/30
-          dark:hover:shadow-[0_0_32px_rgba(249,115,22,0.10),0_8px_28px_rgba(0,0,0,0.4)]"
-      >
-        <CardCover project={project} />
+      <div className="flex flex-col h-full rounded-xl overflow-hidden transition-all duration-200
+        border border-[var(--border)] bg-[var(--bg-card)]
+        hover:border-orange-200 hover:shadow-[0_4px_20px_rgba(249,115,22,0.08)]
+        dark:hover:border-orange-500/30
+        dark:hover:shadow-[0_0_32px_rgba(249,115,22,0.10),0_8px_28px_rgba(0,0,0,0.4)]">
 
-        <div className="p-5">
-          <div className="flex items-start justify-between gap-2 mb-2">
-            <h2 className="font-semibold leading-snug text-[var(--text)]">{project.title}</h2>
-            <span className={`shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full border ${statusColor[project.status]}`}>
-              {statusLabel[project.status]}
-            </span>
-          </div>
-
-          <p className="text-sm mb-4 line-clamp-2 leading-relaxed text-[var(--text-muted)]">
-            {project.description}
-          </p>
-
-          <div className="flex flex-wrap gap-1.5">
-            {project.technologies.slice(0, 3).map(tech => (
-              <TechBadge key={tech} tech={tech} />
-            ))}
-            {project.technologies.length > 3 && (
-              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full border
-                border-[var(--border)] text-[var(--text-faint)]">
-                +{project.technologies.length - 3}
+        {/* Clickable area → project detail */}
+        <Link to={`/projects/${project.slug}`} className="block flex-1">
+          <CardCover project={project} />
+          <div className="p-5">
+            <div className="flex items-start justify-between gap-2 mb-2">
+              <h2 className="font-semibold leading-snug text-[var(--text)]">{project.title}</h2>
+              <span className={`shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full border ${statusColor[project.status]}`}>
+                {statusLabel[project.status]}
               </span>
+            </div>
+            <p className="text-sm mb-4 line-clamp-2 leading-relaxed text-[var(--text-muted)]">
+              {project.description}
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {project.technologies.slice(0, 3).map(tech => (
+                <TechBadge key={tech} tech={tech} />
+              ))}
+              {project.technologies.length > 3 && (
+                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full border
+                  border-[var(--border)] text-[var(--text-faint)]">
+                  +{project.technologies.length - 3}
+                </span>
+              )}
+            </div>
+          </div>
+        </Link>
+
+        {/* Demo / GitHub links — outside the Link to avoid nested anchors */}
+        {hasLinks && (
+          <div className="px-5 pb-4 pt-3 flex gap-2 border-t border-[var(--border)]">
+            {project.demo && (
+              <a
+                href={project.demo}
+                target="_blank"
+                rel="noreferrer"
+                className="text-xs font-semibold px-3 py-1.5 rounded-lg
+                  bg-[var(--accent)] text-white hover:opacity-90 transition-opacity"
+              >
+                Demo →
+              </a>
+            )}
+            {project.github && (
+              <a
+                href={project.github}
+                target="_blank"
+                rel="noreferrer"
+                className="text-xs font-semibold px-3 py-1.5 rounded-lg
+                  border border-[var(--border)] text-[var(--text-muted)]
+                  hover:text-[var(--text)] hover:border-[var(--accent)] transition-colors"
+              >
+                GitHub →
+              </a>
             )}
           </div>
-        </div>
-      </Link>
+        )}
+      </div>
     </motion.div>
   )
 }
