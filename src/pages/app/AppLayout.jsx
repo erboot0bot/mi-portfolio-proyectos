@@ -9,6 +9,7 @@ const APP_NAMES = {
   mascotas: 'Mascotas',
   vehiculo: 'Vehículo',
   finanzas: 'Finanzas',
+  personal: 'Personal',
 }
 
 const APP_ICONS = {
@@ -16,6 +17,7 @@ const APP_ICONS = {
   mascotas: '🐾',
   vehiculo: '🚗',
   finanzas: '💰',
+  personal: '🗂️',
 }
 
 const HOGAR_MODULES = [
@@ -32,11 +34,21 @@ const MASCOTAS_MODULES = [
 ]
 
 const VEHICULO_MODULES = [
-  { path: 'welcome', label: 'Inicio', icon: '🚗' },
+  { path: 'mis-vehiculos', label: 'Mis Vehículos', icon: '🚗' },
 ]
 
 const FINANZAS_MODULES = [
-  { path: 'welcome', label: 'Inicio', icon: '💰' },
+  { path: 'resumen',       label: 'Resumen',       icon: '📊' },
+  { path: 'transacciones', label: 'Transacciones', icon: '💳' },
+  { path: 'categorias',    label: 'Categorías',    icon: '🏷️' },
+  { path: 'presupuestos',  label: 'Presupuestos',  icon: '🎯' },
+]
+
+const PERSONAL_MODULES = [
+  { path: 'calendar', label: 'Calendario', icon: '📅' },
+  { path: 'notas',    label: 'Notas',      icon: '📝' },
+  { path: 'tareas',   label: 'Tareas',     icon: '✅' },
+  { path: 'ideas',    label: 'Ideas',      icon: '💡' },
 ]
 
 const MODULE_MAP = {
@@ -44,6 +56,7 @@ const MODULE_MAP = {
   mascotas: MASCOTAS_MODULES,
   vehiculo: VEHICULO_MODULES,
   finanzas: FINANZAS_MODULES,
+  personal: PERSONAL_MODULES,
 }
 
 const FULL_LAYOUT_MODULES = ['calendar', 'shopping', 'menu', 'recipes', 'inventario', 'limpieza']
@@ -67,10 +80,10 @@ export default function AppLayout() {
 
     async function loadOrCreateApp() {
       const { data, error } = await supabase
-        .from('apps')
+        .from('projects')
         .select('*')
         .eq('owner_id', user.id)
-        .eq('type', appType)
+        .eq('name', APP_NAMES[appType])
         .maybeSingle()
 
       if (cancelled) return
@@ -83,7 +96,7 @@ export default function AppLayout() {
       }
 
       if (data) {
-        setApp(data)
+        setApp({ ...data, type: appType })
         setLoading(false)
         return
       }
@@ -92,8 +105,8 @@ export default function AppLayout() {
       if (!APP_NAMES[appType]) { navigate('/apps'); return }
 
       const { data: created, error: createError } = await supabase
-        .from('apps')
-        .insert({ type: appType, name: APP_NAMES[appType], icon: APP_ICONS[appType], owner_id: user.id })
+        .from('projects')
+        .insert({ name: APP_NAMES[appType], slug: appType, icon: APP_ICONS[appType], owner_id: user.id })
         .select()
         .single()
 
@@ -106,7 +119,7 @@ export default function AppLayout() {
         return
       }
 
-      setApp(created)
+      setApp({ ...created, type: appType })
       setLoading(false)
     }
 
