@@ -84,9 +84,9 @@ class ErrorBoundary extends React.Component {
 }
 
 const pageVariants = {
-  initial: { opacity: 0, y: 10 },
+  initial: { opacity: 1, y: 8 },
   animate: { opacity: 1, y: 0 },
-  exit:    { opacity: 0, y: -10 },
+  exit:    { opacity: 0, y: -8 },
 }
 
 function getAnimKey(pathname) {
