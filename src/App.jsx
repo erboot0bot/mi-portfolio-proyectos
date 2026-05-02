@@ -32,8 +32,24 @@ const PetDetail            = React.lazy(() => import('./pages/app/modules/mascot
 const MascotasAlimentacion = React.lazy(() => import('./pages/app/modules/mascotas/Alimentacion'))
 const MascotasSalud        = React.lazy(() => import('./pages/app/modules/mascotas/Salud'))
 const MascotasRutinas      = React.lazy(() => import('./pages/app/modules/mascotas/Rutinas'))
-const VehiculoWelcome  = React.lazy(() => import('./pages/app/modules/vehiculo/Welcome'))
-const FinanzasWelcome  = React.lazy(() => import('./pages/app/modules/finanzas/Welcome'))
+// Personal
+const PersonalNotas  = React.lazy(() => import('./pages/app/modules/personal/Notas'))
+const PersonalTareas = React.lazy(() => import('./pages/app/modules/personal/Tareas'))
+const PersonalIdeas  = React.lazy(() => import('./pages/app/modules/personal/Ideas'))
+
+// Vehículo
+const MisVehiculos       = React.lazy(() => import('./pages/app/modules/vehiculo/MisVehiculos'))
+const VehiculoDetail     = React.lazy(() => import('./pages/app/modules/vehiculo/VehiculoDetail'))
+const VehiculoRepostajes = React.lazy(() => import('./pages/app/modules/vehiculo/Repostajes'))
+const VehiculoMant       = React.lazy(() => import('./pages/app/modules/vehiculo/Mantenimiento'))
+const VehiculoGastos     = React.lazy(() => import('./pages/app/modules/vehiculo/VehiculoGastos'))
+const VehiculoStats      = React.lazy(() => import('./pages/app/modules/vehiculo/Estadisticas'))
+
+// Finanzas
+const FinanzasResumen       = React.lazy(() => import('./pages/app/modules/finanzas/Resumen'))
+const FinanzasTransacciones = React.lazy(() => import('./pages/app/modules/finanzas/Transacciones'))
+const FinanzasCategorias    = React.lazy(() => import('./pages/app/modules/finanzas/Categorias'))
+const FinanzasPresupuestos  = React.lazy(() => import('./pages/app/modules/finanzas/Presupuestos'))
 
 class ErrorBoundary extends React.Component {
   state = { hasError: false, error: null }
@@ -146,20 +162,41 @@ export default function App() {
               </Route>
             </Route>
 
+            {/* Personal */}
+            <Route path="/app/personal" element={
+              <ProtectedRoute><AppLayout /></ProtectedRoute>
+            }>
+              <Route index element={<Navigate to="calendar" replace />} />
+              <Route path="calendar" element={<Calendar />} />
+              <Route path="notas"    element={<PersonalNotas />} />
+              <Route path="tareas"   element={<PersonalTareas />} />
+              <Route path="ideas"    element={<PersonalIdeas />} />
+            </Route>
+
             {/* Vehículo */}
             <Route path="/app/vehiculo" element={
               <ProtectedRoute><AppLayout /></ProtectedRoute>
             }>
-              <Route index element={<Navigate to="welcome" replace />} />
-              <Route path="welcome" element={<VehiculoWelcome />} />
+              <Route index element={<Navigate to="mis-vehiculos" replace />} />
+              <Route path="mis-vehiculos" element={<MisVehiculos />} />
+              <Route path="mis-vehiculos/:vehicleId" element={<VehiculoDetail />}>
+                <Route index element={<Navigate to="repostajes" replace />} />
+                <Route path="repostajes"    element={<VehiculoRepostajes />} />
+                <Route path="mantenimiento" element={<VehiculoMant />} />
+                <Route path="gastos"        element={<VehiculoGastos />} />
+                <Route path="estadisticas"  element={<VehiculoStats />} />
+              </Route>
             </Route>
 
             {/* Finanzas */}
             <Route path="/app/finanzas" element={
               <ProtectedRoute><AppLayout /></ProtectedRoute>
             }>
-              <Route index element={<Navigate to="welcome" replace />} />
-              <Route path="welcome" element={<FinanzasWelcome />} />
+              <Route index element={<Navigate to="resumen" replace />} />
+              <Route path="resumen"       element={<FinanzasResumen />} />
+              <Route path="transacciones" element={<FinanzasTransacciones />} />
+              <Route path="categorias"    element={<FinanzasCategorias />} />
+              <Route path="presupuestos"  element={<FinanzasPresupuestos />} />
             </Route>
 
             {/* 404 */}

@@ -42,7 +42,7 @@ function AppCard({ app }) {
     <motion.div
       variants={{ hidden: { opacity: 0, y: 16 }, show: { opacity: 1, y: 0 } }}
       className={`
-        rounded-xl border border-[var(--border)] bg-[var(--bg-card)]
+        h-full rounded-xl border border-[var(--border)] bg-[var(--bg-card)]
         overflow-hidden flex flex-col transition-all duration-200
         ${isActive ? 'hover:border-[var(--accent)] hover:shadow-md' : 'opacity-60'}
       `}
@@ -86,5 +86,5 @@ function AppCard({ app }) {
       </div>
     </motion.div>
   )
-  return isActive ? <Link to={app.href}>{inner}</Link> : <div>{inner}</div>
+  return isActive ? <Link to={app.href} className="h-full block">{inner}</Link> : <div className="h-full">{inner}</div>
 }

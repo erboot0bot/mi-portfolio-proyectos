@@ -7,7 +7,7 @@ export default function FinanzasWelcome() {
       <div className="text-5xl mb-4">{app.icon}</div>
       <h2 className="text-xl font-bold text-[var(--text)] mb-2">{app.name}</h2>
       <p className="text-[var(--text-muted)] text-sm max-w-xs mb-1">
-        Selecciona un módulo en el menú lateral para empezar
+        Esta sección está en construcción.
       </p>
       <p className="text-[var(--text-faint)] text-xs">
         Próximamente más módulos

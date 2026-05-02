@@ -9,6 +9,7 @@ const APP_NAMES = {
   mascotas: 'Mascotas',
   vehiculo: 'Vehículo',
   finanzas: 'Finanzas',
+  personal: 'Personal',
 }
 
 const APP_ICONS = {
@@ -16,6 +17,7 @@ const APP_ICONS = {
   mascotas: '🐾',
   vehiculo: '🚗',
   finanzas: '💰',
+  personal: '🗂️',
 }
 
 const HOGAR_MODULES = [
@@ -32,11 +34,21 @@ const MASCOTAS_MODULES = [
 ]
 
 const VEHICULO_MODULES = [
-  { path: 'welcome', label: 'Inicio', icon: '🚗' },
+  { path: 'mis-vehiculos', label: 'Mis Vehículos', icon: '🚗' },
 ]
 
 const FINANZAS_MODULES = [
-  { path: 'welcome', label: 'Inicio', icon: '💰' },
+  { path: 'resumen',       label: 'Resumen',       icon: '📊' },
+  { path: 'transacciones', label: 'Transacciones', icon: '💳' },
+  { path: 'categorias',    label: 'Categorías',    icon: '🏷️' },
+  { path: 'presupuestos',  label: 'Presupuestos',  icon: '🎯' },
+]
+
+const PERSONAL_MODULES = [
+  { path: 'calendar', label: 'Calendario', icon: '📅' },
+  { path: 'notas',    label: 'Notas',      icon: '📝' },
+  { path: 'tareas',   label: 'Tareas',     icon: '✅' },
+  { path: 'ideas',    label: 'Ideas',      icon: '💡' },
 ]
 
 const MODULE_MAP = {
@@ -44,6 +56,7 @@ const MODULE_MAP = {
   mascotas: MASCOTAS_MODULES,
   vehiculo: VEHICULO_MODULES,
   finanzas: FINANZAS_MODULES,
+  personal: PERSONAL_MODULES,
 }
 
 const FULL_LAYOUT_MODULES = ['calendar', 'shopping', 'menu', 'recipes', 'inventario', 'limpieza']
@@ -54,6 +67,7 @@ export default function AppLayout() {
   const location = useLocation()
   const [app, setApp] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(null)
 
   const appType = location.pathname.split('/').filter(Boolean)[1]
 
@@ -66,18 +80,23 @@ export default function AppLayout() {
 
     async function loadOrCreateApp() {
       const { data, error } = await supabase
-        .from('apps')
+        .from('projects')
         .select('*')
         .eq('owner_id', user.id)
-        .eq('type', appType)
+        .eq('name', APP_NAMES[appType])
         .maybeSingle()
 
       if (cancelled) return
 
-      if (error) { navigate('/apps'); return }
+      if (error) {
+        console.error('[AppLayout] Error cargando app:', error)
+        setLoadError(`Error al cargar la app: ${error.message} (code: ${error.code})`)
+        setLoading(false)
+        return
+      }
 
       if (data) {
-        setApp(data)
+        setApp({ ...data, type: appType })
         setLoading(false)
         return
       }
@@ -86,16 +105,21 @@ export default function AppLayout() {
       if (!APP_NAMES[appType]) { navigate('/apps'); return }
 
       const { data: created, error: createError } = await supabase
-        .from('apps')
-        .insert({ type: appType, name: APP_NAMES[appType], icon: APP_ICONS[appType], owner_id: user.id })
+        .from('projects')
+        .insert({ name: APP_NAMES[appType], slug: appType, icon: APP_ICONS[appType], owner_id: user.id })
         .select()
         .single()
 
       if (cancelled) return
 
-      if (createError || !created) { navigate('/apps'); return }
+      if (createError || !created) {
+        console.error('[AppLayout] Error creando app:', createError)
+        setLoadError(`Error al crear la app: ${createError?.message} (code: ${createError?.code})`)
+        setLoading(false)
+        return
+      }
 
-      setApp(created)
+      setApp({ ...created, type: appType })
       setLoading(false)
     }
 
@@ -108,10 +132,26 @@ export default function AppLayout() {
     return <Navigate to="/apps" replace />
   }
 
-  if (loading) {
+  if (loading && !loadError) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
         <div className="w-6 h-6 border-2 border-[var(--accent)] border-t-transparent rounded-full animate-spin" />
+      </div>
+    )
+  }
+
+  if (loadError) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4 px-6 text-center">
+        <p className="text-4xl">⚠️</p>
+        <p className="font-bold text-[var(--text)]">No se pudo cargar la app</p>
+        <p className="text-sm font-mono text-red-500 bg-red-50 dark:bg-red-500/10 px-4 py-2 rounded-lg max-w-md break-all">
+          {loadError}
+        </p>
+        <button onClick={() => navigate('/apps')}
+          className="text-sm text-[var(--text-muted)] underline underline-offset-4">
+          ← Volver a Apps
+        </button>
       </div>
     )
   }
@@ -134,27 +174,30 @@ export default function AppLayout() {
           <span style={{ fontSize: 36 }}>{app.icon}</span>
           <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', margin: 0 }}>{app.name}</h1>
         </div>
-        <nav style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 16 }}>
-          {modules.map(m => (
-            <NavLink
-              key={m.path}
-              to={m.path}
-              className={({ isActive }) => isActive ? 'module-card active' : 'module-card'}
-              style={({ isActive }) => ({
-                display: 'flex', alignItems: 'center', gap: 12,
-                height: 56, padding: '0 16px', borderRadius: 12,
-                background: 'var(--bg-card)',
-                border: isActive ? '1px solid var(--accent)' : '1px solid var(--border)',
-                borderLeft: isActive ? '3px solid var(--accent)' : '1px solid var(--border)',
-                textDecoration: 'none', transition: 'all var(--transition)',
-              })}
-            >
-              <span style={{ fontSize: 22, flexShrink: 0 }}>{m.icon}</span>
-              <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{m.label}</span>
-              <span style={{ color: 'var(--text-faint)', fontSize: 16 }}>›</span>
-            </NavLink>
-          ))}
-        </nav>
+        {modules.length > 1 && (
+          <nav style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 16 }}>
+            {modules.map(m => (
+              <NavLink
+                key={m.path}
+                to={m.path}
+                className={({ isActive }) => isActive ? 'module-card active' : 'module-card'}
+                style={({ isActive }) => ({
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  height: 56, padding: '0 16px', borderRadius: 12,
+                  background: 'var(--bg-card)',
+                  border: isActive ? '1px solid var(--accent)' : '1px solid var(--border)',
+                  borderLeft: isActive ? '3px solid var(--accent)' : '1px solid var(--border)',
+                  textDecoration: 'none', transition: 'all var(--transition)',
+                })}
+              >
+                <span style={{ fontSize: 22, flexShrink: 0 }}>{m.icon}</span>
+                <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{m.label}</span>
+                <span style={{ color: 'var(--text-faint)', fontSize: 16 }}>›</span>
+              </NavLink>
+            ))}
+          </nav>
+        )}
+        <Outlet context={{ app, modules }} />
       </div>
 
       {/* Desktop layout */}
