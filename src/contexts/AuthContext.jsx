@@ -8,12 +8,13 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    supabase.auth.getSession()
-      .then(({ data: { session } }) => setUser(session?.user ?? null))
-      .finally(() => setLoading(false))
-
+    // onAuthStateChange fires synchronously with the current session on subscription,
+    // including sessions from OAuth hash fragments. Using it as the single source of
+    // truth avoids the race condition where getSession() resolves before the OAuth
+    // hash is processed, briefly setting user=null and triggering a redirect loop.
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null)
+      setLoading(false)
     })
 
     return () => subscription.unsubscribe()
