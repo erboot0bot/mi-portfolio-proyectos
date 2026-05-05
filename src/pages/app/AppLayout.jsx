@@ -79,11 +79,13 @@ export default function AppLayout() {
     let cancelled = false
 
     async function loadOrCreateApp() {
+      // Search by owner_id + name to support both old slugs ('finanzas')
+      // and new per-user slugs ('finanzas-<userId>') without a DB migration
       const { data, error } = await supabase
         .from('projects')
         .select('*')
         .eq('owner_id', user.id)
-        .eq('slug', appType)
+        .eq('name', APP_NAMES[appType])
         .maybeSingle()
 
       if (cancelled) return
@@ -104,9 +106,12 @@ export default function AppLayout() {
       // Auto-create if no app found for this type
       if (!APP_NAMES[appType]) { navigate('/apps'); return }
 
+      // Use a per-user unique slug to avoid the global UNIQUE constraint on slug
+      const uniqueSlug = `${appType}-${user.id}`
+
       const { data: created, error: createError } = await supabase
         .from('projects')
-        .insert({ name: APP_NAMES[appType], slug: appType, icon: APP_ICONS[appType], owner_id: user.id })
+        .insert({ name: APP_NAMES[appType], slug: uniqueSlug, icon: APP_ICONS[appType], owner_id: user.id })
         .select()
         .single()
 
