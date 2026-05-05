@@ -1,10 +1,11 @@
 CREATE TABLE IF NOT EXISTS projects (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
-  slug TEXT UNIQUE NOT NULL,
+  slug TEXT NOT NULL,
   icon TEXT DEFAULT '🏠',
   owner_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-  created_at TIMESTAMPTZ DEFAULT NOW()
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE (slug, owner_id)
 );
 
 CREATE TABLE IF NOT EXISTS project_members (
