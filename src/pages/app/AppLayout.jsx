@@ -83,7 +83,7 @@ export default function AppLayout() {
         .from('projects')
         .select('*')
         .eq('owner_id', user.id)
-        .eq('name', APP_NAMES[appType])
+        .eq('slug', appType)
         .maybeSingle()
 
       if (cancelled) return
