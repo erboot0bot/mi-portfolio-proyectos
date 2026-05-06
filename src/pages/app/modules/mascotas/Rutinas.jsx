@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import { supabase } from '../../../../lib/supabase'
+import { useMode } from '../../../../contexts/ModeContext'
+import { demoRead, demoWrite } from '../../../../data/demo/index.js'
 
 function formatDue(dateStr) {
   const d = new Date(dateStr)
@@ -18,7 +20,7 @@ function formatDue(dateStr) {
 }
 
 // ── Walks mode (perro) ──────────────────────────────────────────────
-function WalksMode({ pet, app }) {
+function WalksMode({ pet, app, mode, appType }) {
   const [walks, setWalks]     = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -29,6 +31,15 @@ function WalksMode({ pet, app }) {
   const weekStart  = new Date(); weekStart.setDate(weekStart.getDate() - 7); weekStart.setHours(0, 0, 0, 0)
 
   useEffect(() => {
+    if (mode === 'demo') {
+      const all = demoRead(appType, 'events')
+      const filtered = all
+        .filter(e => e.event_type === 'walk' && e.metadata?.pet_id === pet.id && new Date(e.start_time) >= weekStart)
+        .sort((a, b) => new Date(b.start_time) - new Date(a.start_time))
+      setWalks(filtered)
+      setLoading(false)
+      return
+    }
     let cancelled = false
     supabase.from('events')
       .select('*')
@@ -44,10 +55,32 @@ function WalksMode({ pet, app }) {
         setLoading(false)
       })
     return () => { cancelled = true }
-  }, [app.id, pet.id]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [app.id, pet.id, mode, appType]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function registerWalk() {
     setWalkError(null)
+    if (mode === 'demo') {
+      const newWalk = {
+        id: crypto.randomUUID(),
+        app_id: app.id,
+        event_type: 'walk',
+        title: 'Paseo',
+        start_time: new Date().toISOString(),
+        all_day: false,
+        metadata: {
+          pet_id: pet.id,
+          duration_minutes: form.duration ? Number(form.duration) : null,
+          notes: form.notes.trim() || null,
+        },
+        created_at: new Date().toISOString(),
+      }
+      const all = demoRead(appType, 'events')
+      demoWrite(appType, 'events', [...all, newWalk])
+      setWalks(p => [newWalk, ...p])
+      setForm({ duration: '', notes: '' })
+      setShowForm(false)
+      return
+    }
     const { data, error } = await supabase.from('events').insert({
       app_id:     app.id,
       event_type: 'walk',
@@ -144,7 +177,7 @@ function WalksMode({ pet, app }) {
 }
 
 // ── Maintenance mode (non-dog species) ─────────────────────────────
-function MaintenanceMode({ pet, app }) {
+function MaintenanceMode({ pet, app, mode, appType }) {
   const [tasks, setTasks]     = useState([])
   const [loading, setLoading] = useState(true)
   const [fetchError, setFetchError] = useState(null)
@@ -156,6 +189,15 @@ function MaintenanceMode({ pet, app }) {
   const todayStr = new Date().toISOString().slice(0, 10)
 
   useEffect(() => {
+    if (mode === 'demo') {
+      const all = demoRead(appType, 'events')
+      const filtered = all
+        .filter(e => e.event_type === 'cage_maintenance' && e.metadata?.pet_id === pet.id)
+        .sort((a, b) => new Date(a.start_time) - new Date(b.start_time))
+      setTasks(filtered)
+      setLoading(false)
+      return
+    }
     let cancelled = false
     supabase.from('events')
       .select('*')
@@ -170,12 +212,34 @@ function MaintenanceMode({ pet, app }) {
         setLoading(false)
       })
     return () => { cancelled = true }
-  }, [app.id, pet.id])
+  }, [app.id, pet.id, mode, appType])
 
   async function handleAdd() {
     if (!form.title.trim() || !form.due) return
     setAddError(null)
     const startTime = new Date(form.due + 'T09:00:00').toISOString()
+    if (mode === 'demo') {
+      const newTask = {
+        id: crypto.randomUUID(),
+        app_id: app.id,
+        event_type: 'cage_maintenance',
+        title: form.title.trim(),
+        start_time: startTime,
+        all_day: true,
+        metadata: {
+          pet_id: pet.id,
+          interval_days: form.interval_days && Number(form.interval_days) > 0 ? Number(form.interval_days) : null,
+          products: form.products.trim() || null,
+        },
+        created_at: new Date().toISOString(),
+      }
+      const all = demoRead(appType, 'events')
+      demoWrite(appType, 'events', [...all, newTask])
+      setTasks(p => [...p, newTask].sort((a, b) => new Date(a.start_time) - new Date(b.start_time)))
+      setForm({ title: '', due: '', interval_days: '', products: '' })
+      setShowAdd(false)
+      return
+    }
     const { data, error } = await supabase.from('events').insert({
       app_id:     app.id,
       event_type: 'cage_maintenance',
@@ -197,6 +261,23 @@ function MaintenanceMode({ pet, app }) {
   }
 
   async function markDone(task) {
+    if (mode === 'demo') {
+      const all = demoRead(appType, 'events')
+      const remaining = all.filter(e => e.id !== task.id)
+      const intervalDays = task.metadata?.interval_days
+      if (intervalDays) {
+        const nextDate = new Date()
+        nextDate.setDate(nextDate.getDate() + Number(intervalDays))
+        nextDate.setHours(9, 0, 0, 0)
+        const nextTask = { ...task, id: crypto.randomUUID(), start_time: nextDate.toISOString(), created_at: new Date().toISOString() }
+        demoWrite(appType, 'events', [...remaining, nextTask])
+        setTasks(p => p.filter(t => t.id !== task.id).concat(nextTask).sort((a, b) => new Date(a.start_time) - new Date(b.start_time)))
+      } else {
+        demoWrite(appType, 'events', remaining)
+        setTasks(p => p.filter(t => t.id !== task.id))
+      }
+      return
+    }
     const { error } = await supabase.from('events').delete().eq('id', task.id)
     if (error) { setMarkError('No se pudo completar la tarea.'); return }
     setTasks(p => p.filter(t => t.id !== task.id))
@@ -222,6 +303,12 @@ function MaintenanceMode({ pet, app }) {
   }
 
   async function removeTask(id) {
+    if (mode === 'demo') {
+      const all = demoRead(appType, 'events')
+      demoWrite(appType, 'events', all.filter(e => e.id !== id))
+      setTasks(p => p.filter(t => t.id !== id))
+      return
+    }
     const { error } = await supabase.from('events').delete().eq('id', id)
     if (error) { setMarkError('No se pudo eliminar la tarea.'); return }
     setTasks(p => p.filter(t => t.id !== id))
@@ -333,6 +420,8 @@ function MaintenanceMode({ pet, app }) {
 // ── Main export ─────────────────────────────────────────────────────
 export default function Rutinas() {
   const { pet, app } = useOutletContext()
-  if (pet.species === 'perro') return <WalksMode pet={pet} app={app} />
-  return <MaintenanceMode pet={pet} app={app} />
+  const { mode } = useMode()
+  const appType = app.id.replace('demo-', '')
+  if (pet.species === 'perro') return <WalksMode pet={pet} app={app} mode={mode} appType={appType} />
+  return <MaintenanceMode pet={pet} app={app} mode={mode} appType={appType} />
 }

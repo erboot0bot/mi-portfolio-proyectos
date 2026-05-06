@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useOutletContext, useNavigate } from 'react-router-dom'
 import { supabase } from '../../../../lib/supabase'
+import { useMode } from '../../../../contexts/ModeContext'
+import { demoRead, demoWrite } from '../../../../data/demo/index.js'
 
 const TYPE_ICONS  = { coche: '🚗', moto: '🏍️' }
 const TYPE_LABELS = { coche: 'Coche', moto: 'Moto' }
@@ -9,6 +11,8 @@ const FUEL_LABELS = { gasolina: 'Gasolina', diesel: 'Diésel', electrico: 'Eléc
 export default function MisVehiculos() {
   const { app }  = useOutletContext()
   const navigate = useNavigate()
+  const { mode } = useMode()
+  const appType = app.id.replace('demo-', '')
   const [vehicles, setVehicles]     = useState([])
   const [loading, setLoading]       = useState(true)
   const [fetchError, setFetchError] = useState(null)
@@ -19,6 +23,11 @@ export default function MisVehiculos() {
   const [addError, setAddError] = useState(null)
 
   useEffect(() => {
+    if (mode === 'demo') {
+      setVehicles(demoRead(appType, 'vehicles'))
+      setLoading(false)
+      return
+    }
     let cancelled = false
     supabase.from('vehicles')
       .select('*')
@@ -31,11 +40,32 @@ export default function MisVehiculos() {
         setLoading(false)
       })
     return () => { cancelled = true }
-  }, [app.id])
+  }, [app.id, mode, appType])
 
   async function handleAdd() {
     if (!form.name.trim()) return
     setAddError(null)
+    if (mode === 'demo') {
+      const newVehicle = {
+        id: crypto.randomUUID(),
+        app_id: app.id,
+        name: form.name.trim(),
+        type: form.type,
+        brand: form.brand.trim() || null,
+        model: form.model.trim() || null,
+        year: form.year ? Number(form.year) : null,
+        plate: form.plate.trim().toUpperCase() || null,
+        fuel_type: form.fuel_type,
+        initial_km: form.initial_km ? Number(form.initial_km) : 0,
+        created_at: new Date().toISOString(),
+      }
+      const all = demoRead(appType, 'vehicles')
+      demoWrite(appType, 'vehicles', [...all, newVehicle])
+      setVehicles(p => [...p, newVehicle])
+      setForm({ name: '', type: 'coche', brand: '', model: '', year: '', plate: '', fuel_type: 'gasolina', initial_km: '' })
+      setShowAdd(false)
+      return
+    }
     const { data, error } = await supabase.from('vehicles')
       .insert({
         app_id:     app.id,

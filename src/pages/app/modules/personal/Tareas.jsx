@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import { supabase } from '../../../../lib/supabase'
+import { useMode } from '../../../../contexts/ModeContext'
+import { demoRead, demoWrite } from '../../../../data/demo/index.js'
 
 const PRIORITY_CONFIG = {
   high:   { color: '#ef4444', label: 'Alta' },
@@ -21,6 +23,8 @@ function formatDue(dateStr) {
 
 export default function Tareas() {
   const { app } = useOutletContext()
+  const { mode } = useMode()
+  const appType = app.id.replace('demo-', '')
   const [tasks, setTasks]       = useState([])
   const [loading, setLoading]   = useState(true)
   const [fetchError, setFetchError] = useState(null)
@@ -29,6 +33,11 @@ export default function Tareas() {
   const [tab, setTab]           = useState('pending') // 'pending' | 'done'
 
   useEffect(() => {
+    if (mode === 'demo') {
+      setTasks(demoRead(appType, 'personal_tasks'))
+      setLoading(false)
+      return
+    }
     let cancelled = false
     supabase.from('personal_tasks')
       .select('*')
@@ -41,20 +50,28 @@ export default function Tareas() {
         setLoading(false)
       })
     return () => { cancelled = true }
-  }, [app.id])
+  }, [app.id, mode, appType])
 
   async function handleAdd() {
     if (!form.title.trim()) return
-    const { data, error } = await supabase.from('personal_tasks')
-      .insert({
-        app_id:      app.id,
-        title:       form.title.trim(),
-        description: form.description.trim() || null,
-        due_date:    form.due_date || null,
-        priority:    form.priority,
-        status:      'pending',
-      })
-      .select().single()
+    const payload = {
+      app_id:      app.id,
+      title:       form.title.trim(),
+      description: form.description.trim() || null,
+      due_date:    form.due_date || null,
+      priority:    form.priority,
+      status:      'pending',
+    }
+    if (mode === 'demo') {
+      const newTask = { ...payload, id: crypto.randomUUID(), completed_at: null, created_at: new Date().toISOString() }
+      const all = demoRead(appType, 'personal_tasks')
+      demoWrite(appType, 'personal_tasks', [newTask, ...all])
+      setTasks(p => [newTask, ...p])
+      setForm({ title: '', description: '', due_date: '', priority: 'medium' })
+      setShowAdd(false)
+      return
+    }
+    const { data, error } = await supabase.from('personal_tasks').insert(payload).select().single()
     if (!error && data) {
       setTasks(p => [data, ...p])
       setForm({ title: '', description: '', due_date: '', priority: 'medium' })
@@ -64,15 +81,24 @@ export default function Tareas() {
 
   async function toggleStatus(task) {
     const done = task.status !== 'done'
-    const { error } = await supabase.from('personal_tasks')
-      .update({ status: done ? 'done' : 'pending', completed_at: done ? new Date().toISOString() : null })
-      .eq('id', task.id)
-    if (!error) setTasks(p => p.map(t => t.id === task.id
-      ? { ...t, status: done ? 'done' : 'pending', completed_at: done ? new Date().toISOString() : null }
-      : t))
+    const changes = { status: done ? 'done' : 'pending', completed_at: done ? new Date().toISOString() : null }
+    if (mode === 'demo') {
+      const all = demoRead(appType, 'personal_tasks')
+      demoWrite(appType, 'personal_tasks', all.map(t => t.id === task.id ? { ...t, ...changes } : t))
+      setTasks(p => p.map(t => t.id === task.id ? { ...t, ...changes } : t))
+      return
+    }
+    const { error } = await supabase.from('personal_tasks').update(changes).eq('id', task.id)
+    if (!error) setTasks(p => p.map(t => t.id === task.id ? { ...t, ...changes } : t))
   }
 
   async function deleteTask(id) {
+    if (mode === 'demo') {
+      const all = demoRead(appType, 'personal_tasks')
+      demoWrite(appType, 'personal_tasks', all.filter(t => t.id !== id))
+      setTasks(p => p.filter(t => t.id !== id))
+      return
+    }
     const { error } = await supabase.from('personal_tasks').delete().eq('id', id)
     if (!error) setTasks(p => p.filter(t => t.id !== id))
   }

@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react'
 import { useOutletContext, useNavigate } from 'react-router-dom'
 import { supabase } from '../../../../lib/supabase'
+import { useMode } from '../../../../contexts/ModeContext'
+import { demoRead, demoWrite } from '../../../../data/demo/index.js'
 
 const SPECIES_ICONS = {
   perro: '🐕', gato: '🐈', pez: '🐠', conejo: '🐇',
@@ -30,6 +32,8 @@ function calcAge(birthDate) {
 export default function MisMascotas() {
   const { app } = useOutletContext()
   const navigate = useNavigate()
+  const { mode } = useMode()
+  const appType = app.id.replace('demo-', '')
   const [pets, setPets]           = useState([])
   const [loading, setLoading]     = useState(true)
   const [fetchError, setFetchError] = useState(null)
@@ -38,6 +42,11 @@ export default function MisMascotas() {
   const [addError, setAddError]   = useState(null)
 
   useEffect(() => {
+    if (mode === 'demo') {
+      setPets(demoRead(appType, 'pets'))
+      setLoading(false)
+      return
+    }
     let cancelled = false
     supabase.from('pets')
       .select('*')
@@ -50,11 +59,30 @@ export default function MisMascotas() {
         setLoading(false)
       })
     return () => { cancelled = true }
-  }, [app.id])
+  }, [app.id, mode, appType])
 
   async function handleAdd() {
     if (!form.name.trim()) return
     setAddError(null)
+    if (mode === 'demo') {
+      const newPet = {
+        id: crypto.randomUUID(),
+        app_id: app.id,
+        name: form.name.trim(),
+        species: form.species,
+        icon: SPECIES_ICONS[form.species],
+        birth_date: form.birth_date || null,
+        notes: form.notes.trim() || null,
+        metadata: {},
+        created_at: new Date().toISOString(),
+      }
+      const all = demoRead(appType, 'pets')
+      demoWrite(appType, 'pets', [...all, newPet])
+      setPets(p => [...p, newPet])
+      setForm({ name: '', species: 'perro', birth_date: '', notes: '' })
+      setShowAdd(false)
+      return
+    }
     const { data, error } = await supabase.from('pets')
       .insert({
         app_id:     app.id,

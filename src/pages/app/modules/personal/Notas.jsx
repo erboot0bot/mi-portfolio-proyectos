@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import { supabase } from '../../../../lib/supabase'
+import { useMode } from '../../../../contexts/ModeContext'
+import { demoRead, demoWrite } from '../../../../data/demo/index.js'
 
 const NOTE_COLORS = [
   { hex: '#f59e0b', label: 'Ámbar' },
@@ -13,6 +15,8 @@ const NOTE_COLORS = [
 
 export default function Notas() {
   const { app } = useOutletContext()
+  const { mode } = useMode()
+  const appType = app.id.replace('demo-', '')
   const [notes, setNotes]       = useState([])
   const [loading, setLoading]   = useState(true)
   const [fetchError, setFetchError] = useState(null)
@@ -20,6 +24,12 @@ export default function Notas() {
   const [saving, setSaving]     = useState(false)
 
   useEffect(() => {
+    if (mode === 'demo') {
+      const all = demoRead(appType, 'personal_notes')
+      setNotes([...all].sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || new Date(b.updated_at) - new Date(a.updated_at)))
+      setLoading(false)
+      return
+    }
     let cancelled = false
     supabase.from('personal_notes')
       .select('*')
@@ -33,20 +43,36 @@ export default function Notas() {
         setLoading(false)
       })
     return () => { cancelled = true }
-  }, [app.id])
+  }, [app.id, mode, appType])
 
   async function handleSave() {
     if (!modal) return
     setSaving(true)
+    const now = new Date().toISOString()
     const payload = {
       app_id:  app.id,
       title:   modal.title.trim() || 'Sin título',
       content: modal.content.trim(),
       color:   modal.color,
     }
+    if (mode === 'demo') {
+      const all = demoRead(appType, 'personal_notes')
+      if (modal.id) {
+        const updated = all.map(n => n.id === modal.id ? { ...n, ...payload, updated_at: now } : n)
+        demoWrite(appType, 'personal_notes', updated)
+        setNotes(p => p.map(n => n.id === modal.id ? { ...n, ...payload, updated_at: now } : n))
+      } else {
+        const newNote = { ...payload, id: crypto.randomUUID(), pinned: false, updated_at: now, created_at: now }
+        demoWrite(appType, 'personal_notes', [newNote, ...all])
+        setNotes(p => [newNote, ...p])
+      }
+      setModal(null)
+      setSaving(false)
+      return
+    }
     if (modal.id) {
       const { error } = await supabase.from('personal_notes')
-        .update({ ...payload, updated_at: new Date().toISOString() })
+        .update({ ...payload, updated_at: now })
         .eq('id', modal.id)
       if (!error) {
         setNotes(p => p.map(n => n.id === modal.id ? { ...n, ...payload } : n))
@@ -62,6 +88,15 @@ export default function Notas() {
 
   async function togglePin(e, note) {
     e.stopPropagation()
+    if (mode === 'demo') {
+      const all = demoRead(appType, 'personal_notes')
+      demoWrite(appType, 'personal_notes', all.map(n => n.id === note.id ? { ...n, pinned: !n.pinned } : n))
+      setNotes(p => {
+        const upd = p.map(n => n.id === note.id ? { ...n, pinned: !n.pinned } : n)
+        return upd.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) || new Date(b.updated_at) - new Date(a.updated_at))
+      })
+      return
+    }
     const { error } = await supabase.from('personal_notes')
       .update({ pinned: !note.pinned }).eq('id', note.id)
     if (!error) {
@@ -76,6 +111,12 @@ export default function Notas() {
   async function deleteNote(e, id) {
     e.stopPropagation()
     if (!window.confirm('¿Eliminar esta nota?')) return
+    if (mode === 'demo') {
+      const all = demoRead(appType, 'personal_notes')
+      demoWrite(appType, 'personal_notes', all.filter(n => n.id !== id))
+      setNotes(p => p.filter(n => n.id !== id))
+      return
+    }
     const { error } = await supabase.from('personal_notes').delete().eq('id', id)
     if (!error) setNotes(p => p.filter(n => n.id !== id))
   }

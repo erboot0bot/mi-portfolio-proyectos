@@ -1,9 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import { supabase } from '../../../../lib/supabase'
+import { useMode } from '../../../../contexts/ModeContext'
+import { demoRead, demoWrite } from '../../../../data/demo/index.js'
 
 export default function Repostajes() {
   const { app, vehicle } = useOutletContext()
+  const { mode } = useMode()
+  const appType = app.id.replace('demo-', '')
   const [logs, setLogs]       = useState([])
   const [loading, setLoading] = useState(true)
   const [showAdd, setShowAdd] = useState(false)
@@ -11,6 +15,12 @@ export default function Repostajes() {
   const [addError, setAddError] = useState(null)
 
   useEffect(() => {
+    if (mode === 'demo') {
+      const all = demoRead(appType, 'fuel_logs')
+      setLogs(all.filter(l => l.vehicle_id === vehicle.id).sort((a, b) => b.date.localeCompare(a.date)))
+      setLoading(false)
+      return
+    }
     let cancelled = false
     supabase.from('fuel_logs')
       .select('*')
@@ -22,7 +32,7 @@ export default function Repostajes() {
         setLoading(false)
       })
     return () => { cancelled = true }
-  }, [vehicle.id])
+  }, [vehicle.id, mode, appType])
 
   const totalCost  = logs.reduce((s, l) => s + (Number(l.total_cost) || 0), 0)
   const avgPerFill = logs.length ? totalCost / logs.length : 0
@@ -41,6 +51,27 @@ export default function Repostajes() {
     const liters = Number(form.liters)
     const ppl    = form.price_per_liter ? Number(form.price_per_liter) : null
     const total  = ppl ? Number((liters * ppl).toFixed(2)) : null
+    if (mode === 'demo') {
+      const newLog = {
+        id: crypto.randomUUID(),
+        vehicle_id: vehicle.id,
+        app_id: app.id,
+        date: form.date,
+        liters,
+        price_per_liter: ppl,
+        total_cost: total,
+        km_at_fill: form.km_at_fill ? Number(form.km_at_fill) : null,
+        full_tank: form.full_tank,
+        notes: form.notes.trim() || null,
+        created_at: new Date().toISOString(),
+      }
+      const all = demoRead(appType, 'fuel_logs')
+      demoWrite(appType, 'fuel_logs', [newLog, ...all])
+      setLogs(p => [newLog, ...p])
+      setForm({ date: new Date().toISOString().slice(0, 10), liters: '', price_per_liter: '', km_at_fill: '', full_tank: true, notes: '' })
+      setShowAdd(false)
+      return
+    }
     const { data, error } = await supabase.from('fuel_logs')
       .insert({
         vehicle_id:      vehicle.id,
@@ -63,6 +94,12 @@ export default function Repostajes() {
   }
 
   async function deleteLog(id) {
+    if (mode === 'demo') {
+      const all = demoRead(appType, 'fuel_logs')
+      demoWrite(appType, 'fuel_logs', all.filter(l => l.id !== id))
+      setLogs(p => p.filter(l => l.id !== id))
+      return
+    }
     const { error } = await supabase.from('fuel_logs').delete().eq('id', id)
     if (!error) setLogs(p => p.filter(l => l.id !== id))
   }
