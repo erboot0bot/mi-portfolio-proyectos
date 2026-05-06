@@ -8,6 +8,8 @@ import { es } from 'date-fns/locale'
 import { supabase } from '../../../lib/supabase'
 import { usePWAManifest } from '../../../hooks/usePWAManifest'
 import { menuEventFromDb, menuEventToDb } from '../../../utils/menuTransformers'
+import { useMode } from '../../../contexts/ModeContext'
+import { demoRead, demoWrite } from '../../../data/demo/index.js'
 
 const MEALS = [
   { key: 'desayuno', label: 'Desayuno', icon: '☀️', hour: 8  },
@@ -20,6 +22,8 @@ const DAYS_SHORT = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
 export default function Menu() {
   usePWAManifest('menu')
   const { app, modules } = useOutletContext()
+  const { mode } = useMode()
+  const appType = app.id.replace('demo-', '')
   const isMobile = window.innerWidth < 768
   const [menu, setMenu]             = useState({})
   const [weekStart, setWeekStart]   = useState(() =>
@@ -40,21 +44,41 @@ export default function Menu() {
   function showToast(msg) { setToast(msg); setTimeout(() => setToast(null), 2500) }
 
   useEffect(() => {
+    if (mode === 'demo') {
+      setRecipes(demoRead(appType, 'recipes').map(r => ({ id: r.id, title: r.title })))
+      return
+    }
     supabase.from('recipes').select('id, title')
       .eq('app_id', app.id)
       .then(({ data }) => { if (data) setRecipes(data) })
-  }, [app.id])
+  }, [app.id, mode, appType])
 
   useEffect(() => {
     const weekEnd = new Date(weekStart + 'T00:00:00Z')
     weekEnd.setUTCDate(weekEnd.getUTCDate() + 6)
     weekEnd.setUTCHours(23, 59, 59, 999)
+    const weekEndStr = weekEnd.toISOString()
+
+    if (mode === 'demo') {
+      const all = demoRead(appType, 'events')
+      const weekEvents = all.filter(e =>
+        e.event_type === 'meal' &&
+        e.start_time >= weekStart + 'T00:00:00Z' &&
+        e.start_time <= weekEndStr
+      )
+      const map = {}
+      weekEvents.map(menuEventFromDb).forEach(e => {
+        map[`${e.day_of_week}-${e.meal_type}`] = e
+      })
+      setMenu(map)
+      return
+    }
 
     supabase.from('events').select('*')
       .eq('app_id', app.id)
       .eq('event_type', 'meal')
       .gte('start_time', weekStart + 'T00:00:00Z')
-      .lte('start_time', weekEnd.toISOString())
+      .lte('start_time', weekEndStr)
       .then(({ data }) => {
         if (data) {
           const map = {}
@@ -64,7 +88,7 @@ export default function Menu() {
           setMenu(map)
         }
       })
-  }, [app.id, weekStart])
+  }, [app.id, weekStart, mode, appType])
 
   function shiftWeek(delta) {
     const d = new Date(weekStart)
@@ -88,6 +112,21 @@ export default function Menu() {
     const existing = menu[key]
     const payload = menuEventToDb(app.id, weekStart, dayIdx, mealKey, value, recipeId || null)
 
+    if (mode === 'demo') {
+      if (existing) {
+        const all = demoRead(appType, 'events')
+        demoWrite(appType, 'events', all.map(e => e.id === existing.id ? { ...e, title: payload.title, metadata: payload.metadata, start_time: payload.start_time } : e))
+        setMenu(p => ({ ...p, [key]: menuEventFromDb({ ...existing, title: payload.title, metadata: payload.metadata, start_time: payload.start_time }) }))
+      } else {
+        const newEvent = { ...payload, id: crypto.randomUUID(), created_at: new Date().toISOString() }
+        const all = demoRead(appType, 'events')
+        demoWrite(appType, 'events', [...all, newEvent])
+        setMenu(p => ({ ...p, [key]: menuEventFromDb(newEvent) }))
+      }
+      setModal(null)
+      return
+    }
+
     if (existing) {
       const { data } = await supabase.from('events')
         .update({ title: payload.title, metadata: payload.metadata, start_time: payload.start_time })
@@ -105,12 +144,19 @@ export default function Menu() {
     e.stopPropagation()
     const existing = menu[key]
     if (existing) {
+      if (mode === 'demo') {
+        const all = demoRead(appType, 'events')
+        demoWrite(appType, 'events', all.filter(ev => ev.id !== existing.id))
+        setMenu(p => { const n = { ...p }; delete n[key]; return n })
+        return
+      }
       await supabase.from('events').delete().eq('id', existing.id)
       setMenu(p => { const n = { ...p }; delete n[key]; return n })
     }
   }
 
   async function addToCalendar() {
+    if (mode === 'demo') { showToast('Esta función requiere una cuenta'); return }
     const entries = Object.values(menu)
     if (!entries.length) { showToast('El menú está vacío'); return }
     const tasks = entries.map(e => {
@@ -134,6 +180,7 @@ export default function Menu() {
   }
 
   async function addIngredientsToList() {
+    if (mode === 'demo') { showToast('Esta función requiere una cuenta'); return }
     const recipeIds = Object.values(menu).filter(e => e.recipe_id).map(e => e.recipe_id)
     if (!recipeIds.length) { showToast('No hay recetas enlazadas en el menú'); return }
     const { data } = await supabase.from('recipes').select('ingredients').in('id', [...new Set(recipeIds)])
@@ -159,6 +206,7 @@ export default function Menu() {
   }
 
   async function generateShoppingList() {
+    if (mode === 'demo') { showToast('Esta función requiere una cuenta'); return }
     if (generating) return
     setGenerating(true)
     try {

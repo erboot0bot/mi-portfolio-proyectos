@@ -4,6 +4,8 @@ import { format, startOfWeek } from 'date-fns'
 import { supabase } from '../../../lib/supabase'
 import { menuEventToDb } from '../../../utils/menuTransformers'
 import { recipeIngredientFromDb } from '../../../utils/recipeTransformers'
+import { useMode } from '../../../contexts/ModeContext'
+import { demoRead, demoWrite } from '../../../data/demo/index.js'
 
 const DAYS = ['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo']
 const MEAL_TYPES = [
@@ -13,7 +15,7 @@ const MEAL_TYPES = [
   { key: 'cena',     label: 'Cena' },
 ]
 
-function AddToMenuModal({ recipe, app, onClose }) {
+function AddToMenuModal({ recipe, app, onClose, mode, appType }) {
   const [day, setDay] = useState(0)
   const [meal, setMeal] = useState('comida')
   const [saving, setSaving] = useState(false)
@@ -23,6 +25,14 @@ function AddToMenuModal({ recipe, app, onClose }) {
     setSaving(true)
     const weekStart = format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd')
     const payload = menuEventToDb(app.id, weekStart, day, meal, recipe.title, recipe.id)
+    if (mode === 'demo') {
+      const newEvent = { ...payload, id: crypto.randomUUID(), created_at: new Date().toISOString() }
+      const all = demoRead(appType, 'events')
+      demoWrite(appType, 'events', [...all, newEvent])
+      setDone(true)
+      setTimeout(onClose, 1000)
+      return
+    }
     await supabase.from('events').insert(payload)
     setDone(true)
     setTimeout(onClose, 1000)
@@ -63,6 +73,8 @@ function AddToMenuModal({ recipe, app, onClose }) {
 export default function RecipeDetail() {
   const { recipeId } = useParams()
   const { app } = useOutletContext()
+  const { mode } = useMode()
+  const appType = app.id.replace('demo-', '')
   const navigate = useNavigate()
   const [recipe, setRecipe] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -73,6 +85,14 @@ export default function RecipeDetail() {
   const [deleteConfirming, setDeleteConfirming] = useState(false)
 
   useEffect(() => {
+    if (mode === 'demo') {
+      const found = demoRead(appType, 'recipes').find(r => r.id === recipeId)
+      if (!found) { navigate('..'); return }
+      setRecipe(found)
+      setNormalizedIngredients(null)
+      setLoading(false)
+      return
+    }
     let cancelled = false
     supabase.from('recipes').select('*').eq('id', recipeId).single()
       .then(async ({ data, error }) => {
@@ -99,7 +119,7 @@ export default function RecipeDetail() {
         }
       })
     return () => { cancelled = true }
-  }, [recipeId, navigate])
+  }, [recipeId, navigate, mode, appType])
 
   if (loading) return (
     <div className="flex items-center justify-center min-h-[30vh]">
@@ -112,6 +132,12 @@ export default function RecipeDetail() {
 
   async function handleDelete() {
     setDeleteConfirming(true)
+    if (mode === 'demo') {
+      const all = demoRead(appType, 'recipes')
+      demoWrite(appType, 'recipes', all.filter(r => r.id !== recipeId))
+      navigate('..')
+      return
+    }
     await supabase.from('recipes').delete().eq('id', recipeId)
     navigate('..')
   }
@@ -132,6 +158,14 @@ export default function RecipeDetail() {
     })).filter(i => i.title)
 
     if (!items.length) return
+    if (mode === 'demo') {
+      const raw = demoRead(appType, 'items_supermercado')
+      const newItems = items.map(item => ({ ...item, id: crypto.randomUUID(), checked: false, checked_at: null }))
+      demoWrite(appType, 'items_supermercado', [...raw, ...newItems])
+      setAddedMsg(`${items.length} ingredientes añadidos`)
+      setTimeout(() => setAddedMsg(null), 3000)
+      return
+    }
     await supabase.from('items').insert(items)
     setAddedMsg(`${items.length} ingredientes añadidos`)
     setTimeout(() => setAddedMsg(null), 3000)
@@ -231,7 +265,7 @@ export default function RecipeDetail() {
         </div>
       )}
 
-      {showMenuPicker && <AddToMenuModal recipe={recipe} app={app} onClose={() => setShowMenuPicker(false)} />}
+      {showMenuPicker && <AddToMenuModal recipe={recipe} app={app} onClose={() => setShowMenuPicker(false)} mode={mode} appType={appType} />}
 
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">

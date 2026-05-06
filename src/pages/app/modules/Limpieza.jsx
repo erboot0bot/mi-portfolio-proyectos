@@ -1,8 +1,8 @@
-// src/pages/app/modules/Limpieza.jsx
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
-import { supabase } from '../../../lib/supabase'
 import ModuleShell from './ModuleShell'
+import { useMode } from '../../../contexts/ModeContext'
+import { useEventsData } from '../../../hooks/data/useEventsData'
 
 function formatDue(dateStr) {
   const d = new Date(dateStr)
@@ -20,87 +20,62 @@ function formatDue(dateStr) {
 
 export default function Limpieza() {
   const { app, modules } = useOutletContext()
-  const [tasks, setTasks]     = useState([])
-  const [loading, setLoading] = useState(true)
+  const { mode } = useMode()
+  const { events, loading, add, remove } = useEventsData({ appId: app.id, mode, eventTypes: ['cleaning'] })
+  const tasks = [...events].sort((a, b) => new Date(a.start_time) - new Date(b.start_time))
   const [showAdd, setShowAdd] = useState(false)
   const [form, setForm]       = useState({ title: '', due: '', interval_days: '', products: '' })
-  const [addError, setAddError]     = useState(null)
-  const [markError, setMarkError]   = useState(null)
-  const [fetchError, setFetchError] = useState(null)
+  const [addError, setAddError]   = useState(null)
+  const [markError, setMarkError] = useState(null)
 
   const today = new Date().toISOString().slice(0, 10)
-
-  useEffect(() => {
-    let cancelled = false
-    supabase.from('events')
-      .select('*')
-      .eq('app_id', app.id)
-      .eq('event_type', 'cleaning')
-      .order('start_time', { ascending: true })
-      .then(({ data, error }) => {
-        if (cancelled) return
-        if (error) { setFetchError(error.message); setLoading(false); return }
-        if (data) setTasks(data)
-        setLoading(false)
-      })
-    return () => { cancelled = true }
-  }, [app.id])
 
   async function handleAdd() {
     if (!form.title.trim() || !form.due) return
     setAddError(null)
     const startTime = new Date(form.due + 'T09:00:00').toISOString()
-    const { data, error } = await supabase.from('events').insert({
-      app_id:     app.id,
-      event_type: 'cleaning',
-      title:      form.title.trim(),
-      start_time: startTime,
-      all_day:    true,
-      metadata: {
-        interval_days: form.interval_days && Number(form.interval_days) > 0 ? Number(form.interval_days) : null,
-        products:      form.products.trim(),
-      },
-    }).select().single()
-
-    if (!error && data) {
-      setTasks(p => [...p, data].sort((a, b) => new Date(a.start_time) - new Date(b.start_time)))
+    try {
+      await add({
+        event_type: 'cleaning',
+        title:      form.title.trim(),
+        start_time: startTime,
+        all_day:    true,
+        metadata: {
+          interval_days: form.interval_days && Number(form.interval_days) > 0 ? Number(form.interval_days) : null,
+          products:      form.products.trim(),
+        },
+      })
       setForm({ title: '', due: '', interval_days: '', products: '' })
       setShowAdd(false)
       setMarkError(null)
-    } else if (error) {
+    } catch {
       setAddError('No se pudo guardar la tarea. Inténtalo de nuevo.')
     }
   }
 
   async function markDone(task) {
-    const { error } = await supabase.from('events').delete().eq('id', task.id)
-    if (error) return
-    setTasks(p => p.filter(t => t.id !== task.id))
-
+    await remove(task.id)
     const intervalDays = task.metadata?.interval_days
     if (intervalDays) {
       const nextDate = new Date()
       nextDate.setDate(nextDate.getDate() + Number(intervalDays))
       nextDate.setHours(9, 0, 0, 0)
-      const { data } = await supabase.from('events').insert({
-        app_id:     app.id,
-        event_type: 'cleaning',
-        title:      task.title,
-        start_time: nextDate.toISOString(),
-        all_day:    true,
-        metadata:   task.metadata,
-      }).select().single()
-      if (data) {
-        setTasks(p => [...p, data].sort((a, b) => new Date(a.start_time) - new Date(b.start_time)))
-      } else {
+      try {
+        await add({
+          event_type: 'cleaning',
+          title:      task.title,
+          start_time: nextDate.toISOString(),
+          all_day:    true,
+          metadata:   task.metadata,
+        })
+      } catch {
         setMarkError('La tarea se completó pero no se pudo programar la siguiente. Créala manualmente.')
       }
     }
   }
 
   async function removeTask(id) {
-    const { error } = await supabase.from('events').delete().eq('id', id)
-    if (!error) setTasks(p => p.filter(t => t.id !== id))
+    await remove(id)
   }
 
   const overdueCount = tasks.filter(t => formatDue(t.start_time).overdue).length

@@ -6,6 +6,8 @@ import ModuleTopNav from '../../../components/ModuleTopNav'
 import { usePWAManifest } from '../../../hooks/usePWAManifest'
 import { itemFromDb, itemToDb } from '../../../utils/itemTransformers'
 import { computeConsumptionUpdate } from '../../../utils/consumptionUtils'
+import { useMode } from '../../../contexts/ModeContext'
+import { demoRead, demoWrite } from '../../../data/demo/index.js'
 
 const CATEGORIES = [
   { id: 'frutas',   label: 'Frutas & Verduras', icon: '🥦' },
@@ -288,6 +290,8 @@ function SugerenciasSection({ suggestions, editingFreqId, setEditingFreqId, addS
 export default function ShoppingList() {
   usePWAManifest('shopping')
   const { app, modules } = useOutletContext()
+  const { mode } = useMode()
+  const appType = app.id.replace('demo-', '')
   const [items, setItems]               = useState([])
   const [deletedItems, setDeletedItems] = useState([])
   const [showTrash, setShowTrash]       = useState(false)
@@ -313,6 +317,10 @@ export default function ShoppingList() {
   }, [])
 
   useEffect(() => {
+    if (mode === 'demo') {
+      setItems(demoRead(appType, 'items_supermercado').map(itemFromDb))
+      return
+    }
     let cancelled = false
     supabase.from('items')
       .select('*')
@@ -339,7 +347,7 @@ export default function ShoppingList() {
       })
 
     return () => { cancelled = true }
-  }, [app.id])
+  }, [app.id, mode, appType])
 
   async function loadSuggestions() {
     const horizon = new Date()
@@ -430,6 +438,12 @@ export default function ShoppingList() {
     if (!item) return
     const checked = !item.checked
     const checked_at = checked ? new Date().toISOString() : null
+    if (mode === 'demo') {
+      const raw = demoRead(appType, 'items_supermercado')
+      demoWrite(appType, 'items_supermercado', raw.map(r => r.id === id ? { ...r, checked, checked_at } : r))
+      setItems(p => p.map(i => i.id === id ? { ...i, checked, checked_at } : i))
+      return
+    }
     await supabase.from('items').update({ checked, checked_at }).eq('id', id)
     setItems(p => p.map(i => i.id === id ? { ...i, checked, checked_at } : i))
   }
@@ -449,6 +463,13 @@ export default function ShoppingList() {
   async function emptyTrash() {
     const ids = deletedItems.map(i => i.id)
     if (!ids.length) return
+    if (mode === 'demo') {
+      const raw = demoRead(appType, 'items_supermercado')
+      demoWrite(appType, 'items_supermercado', raw.filter(r => !ids.includes(r.id)))
+      setDeletedItems([])
+      showToast('Papelera vaciada')
+      return
+    }
     await supabase.from('items').delete().in('id', ids)
     setDeletedItems([])
     showToast('Papelera vaciada')
@@ -493,6 +514,16 @@ export default function ShoppingList() {
     if (!cartItems.length) return
 
     const dateStr = new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })
+
+    if (mode === 'demo') {
+      const ids = cartItems.map(i => i.id)
+      const raw = demoRead(appType, 'items_supermercado')
+      demoWrite(appType, 'items_supermercado', raw.map(r => ids.includes(r.id) ? { ...r, checked: false, checked_at: null } : r))
+      setItems(p => p.map(i => ids.includes(i.id) ? { ...i, checked: false, checked_at: null } : i))
+      showToast(`✅ Compra guardada — ${activeStore} · ${dateStr} · ${cartItems.length} productos`)
+      return
+    }
+
     const itemsPayload = cartItems.map(i => ({
       name: i.name,
       category: i.category ?? null,
@@ -529,6 +560,15 @@ export default function ShoppingList() {
     if (e) e.preventDefault()
     if (!newName.trim()) return
     const payload = itemToDb(app.id, newName.trim(), newQty ? Number(newQty) : null, newUnit || '', newCat, activeStore)
+    if (mode === 'demo') {
+      const newRow = { ...payload, id: crypto.randomUUID(), checked: false, checked_at: null }
+      const raw = demoRead(appType, 'items_supermercado')
+      demoWrite(appType, 'items_supermercado', [...raw, newRow])
+      setItems(p => [...p, itemFromDb(newRow)])
+      setNewName(''); setNewQty(''); setNewUnit('')
+      showToast('Añadido ✓')
+      return
+    }
     const { data, error } = await supabase.from('items').insert(payload).select().single()
     if (!error && data) {
       setItems(p => [...p, itemFromDb(data)])
