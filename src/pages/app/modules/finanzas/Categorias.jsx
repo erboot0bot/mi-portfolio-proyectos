@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useOutletContext } from 'react-router-dom'
-import { supabase } from '../../../../lib/supabase'
+import { useMode } from '../../../../contexts/ModeContext'
+import { useFinCategoriasData } from '../../../../hooks/data/useFinCategoriasData'
 
 const DEFAULT_CATEGORIES = [
   // Gastos
@@ -19,59 +20,40 @@ const DEFAULT_CATEGORIES = [
 
 export default function Categorias({ onRefresh }) {
   const { app } = useOutletContext()
-  const [cats, setCats]       = useState([])
-  const [loading, setLoading] = useState(true)
+  const { mode } = useMode()
+  const { cats, loading, add, update, remove } = useFinCategoriasData({ appId: app.id, mode })
+  const [seeded, setSeeded] = useState(false)
   const [showAdd, setShowAdd] = useState(false)
   const [form, setForm]       = useState({ name: '', type: 'expense', color: '#6366f1', icon: '💰' })
   const [editId, setEditId]   = useState(null)
   const [editForm, setEditForm] = useState(null)
 
-  async function load() {
-    const { data } = await supabase.from('fin_categories')
-      .select('*').eq('app_id', app.id).order('type').order('name')
-    const cats = data ?? []
-    // Seed defaults if no categories yet
+  useEffect(() => {
+    if (loading || seeded || mode === 'demo') return
     if (cats.length === 0) {
-      const { data: seeded } = await supabase.from('fin_categories')
-        .insert(DEFAULT_CATEGORIES.map(c => ({ ...c, app_id: app.id })))
-        .select()
-      setCats(seeded ?? [])
-    } else {
-      setCats(cats)
+      setSeeded(true)
+      Promise.all(DEFAULT_CATEGORIES.map(c => add(c)))
     }
-    setLoading(false)
-  }
-
-  useEffect(() => { load() }, [app.id])
+  }, [loading, cats.length, seeded, mode])
 
   async function handleAdd() {
     if (!form.name.trim()) return
-    const { data, error } = await supabase.from('fin_categories')
-      .insert({ app_id: app.id, name: form.name.trim(), type: form.type, color: form.color, icon: form.icon.trim() || '💰' })
-      .select().single()
-    if (!error && data) {
-      setCats(p => [...p, data].sort((a, b) => a.type.localeCompare(b.type) || a.name.localeCompare(b.name)))
-      setForm({ name: '', type: 'expense', color: '#6366f1', icon: '💰' })
-      setShowAdd(false)
-      onRefresh?.()
-    }
+    await add({ name: form.name.trim(), type: form.type, color: form.color, icon: form.icon.trim() || '💰' })
+    setForm({ name: '', type: 'expense', color: '#6366f1', icon: '💰' })
+    setShowAdd(false)
+    onRefresh?.()
   }
 
   async function handleEdit(id) {
     if (!editForm?.name?.trim()) return
-    const { error } = await supabase.from('fin_categories')
-      .update({ name: editForm.name.trim(), color: editForm.color, icon: editForm.icon || '💰' })
-      .eq('id', id)
-    if (!error) {
-      setCats(p => p.map(c => c.id === id ? { ...c, ...editForm } : c))
-      setEditId(null); setEditForm(null)
-      onRefresh?.()
-    }
+    await update(id, { name: editForm.name.trim(), color: editForm.color, icon: editForm.icon || '💰' })
+    setEditId(null); setEditForm(null)
+    onRefresh?.()
   }
 
   async function handleDelete(id) {
-    const { error } = await supabase.from('fin_categories').delete().eq('id', id)
-    if (!error) { setCats(p => p.filter(c => c.id !== id)); onRefresh?.() }
+    await remove(id)
+    onRefresh?.()
   }
 
   const expenses = cats.filter(c => c.type === 'expense')

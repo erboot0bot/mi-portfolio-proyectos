@@ -1,50 +1,31 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
-import { supabase } from '../../../../lib/supabase'
+import { useMode } from '../../../../contexts/ModeContext'
+import { useFinCategoriasData } from '../../../../hooks/data/useFinCategoriasData'
+import { useFinPresupuestosData } from '../../../../hooks/data/useFinPresupuestosData'
 
 export default function Presupuestos() {
   const { app } = useOutletContext()
-  const [cats, setCats]         = useState([])   // expense categories
-  const [budgets, setBudgets]   = useState([])
-  const [loading, setLoading]   = useState(true)
-  const [editing, setEditing]   = useState({})   // { [category_id]: draft }
+  const { mode } = useMode()
+  const { cats,    loading: loadingCats }    = useFinCategoriasData({ appId: app.id, mode })
+  const { budgets, loading: loadingBudgets, upsert, remove } = useFinPresupuestosData({ appId: app.id, mode })
 
-  useEffect(() => {
-    let cancelled = false
-    Promise.all([
-      supabase.from('fin_categories').select('*').eq('app_id', app.id).eq('type', 'expense').order('name'),
-      supabase.from('fin_budgets').select('*').eq('app_id', app.id),
-    ]).then(([c, b]) => {
-      if (cancelled) return
-      setCats(c.data ?? [])
-      setBudgets(b.data ?? [])
-      setLoading(false)
-    })
-    return () => { cancelled = true }
-  }, [app.id])
+  const loading = loadingCats || loadingBudgets
+  const [editing, setEditing] = useState({})
 
   async function handleSave(catId) {
     const draft = editing[catId]
     if (!draft || isNaN(Number(draft)) || Number(draft) <= 0) return
     const limit = Number(draft)
-    const existing = budgets.find(b => b.category_id === catId)
-    if (existing) {
-      const { error } = await supabase.from('fin_budgets').update({ monthly_limit: limit }).eq('id', existing.id)
-      if (!error) setBudgets(p => p.map(b => b.id === existing.id ? { ...b, monthly_limit: limit } : b))
-    } else {
-      const { data, error } = await supabase.from('fin_budgets')
-        .insert({ app_id: app.id, category_id: catId, monthly_limit: limit })
-        .select().single()
-      if (!error && data) setBudgets(p => [...p, data])
-    }
+    const cat   = cats.find(c => c.id === catId)
+    await upsert({ category_id: catId, monthly_limit: limit }, cat)
     setEditing(p => { const n = { ...p }; delete n[catId]; return n })
   }
 
   async function handleDelete(catId) {
     const b = budgets.find(bud => bud.category_id === catId)
     if (!b) return
-    const { error } = await supabase.from('fin_budgets').delete().eq('id', b.id)
-    if (!error) setBudgets(p => p.filter(bud => bud.id !== b.id))
+    await remove(b.id)
   }
 
   if (loading) return (
@@ -53,7 +34,9 @@ export default function Presupuestos() {
     </div>
   )
 
-  if (cats.length === 0) return (
+  const expenseCats = cats.filter(c => c.type === 'expense')
+
+  if (expenseCats.length === 0) return (
     <div style={{ textAlign: 'center', padding: '60px 20px' }}>
       <p style={{ fontSize: 40, margin: '0 0 8px' }}>🎯</p>
       <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', margin: '0 0 4px' }}>Sin categorías de gasto</p>
@@ -69,7 +52,7 @@ export default function Presupuestos() {
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {cats.map(cat => {
+        {expenseCats.map(cat => {
           const budget  = budgets.find(b => b.category_id === cat.id)
           const isEdit  = cat.id in editing
           const limit   = budget?.monthly_limit ?? null
