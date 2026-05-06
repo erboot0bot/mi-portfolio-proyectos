@@ -1,7 +1,9 @@
 // src/pages/app/modules/mascotas/PetDetail.jsx
 import { useState, useEffect } from 'react'
-import { useParams, useOutletContext, Navigate, Outlet, NavLink, useNavigate } from 'react-router-dom'
+import { useParams, useOutletContext, Navigate, Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../../../../lib/supabase'
+import { useMode } from '../../../../contexts/ModeContext'
+import { demoRead, demoWrite } from '../../../../data/demo/index.js'
 
 const SPECIES_MODULES = {
   perro:  ['alimentacion', 'salud', 'rutinas'],
@@ -28,6 +30,9 @@ export default function PetDetail() {
   const { petId }   = useParams()
   const { app }     = useOutletContext()
   const navigate    = useNavigate()
+  const location    = useLocation()
+  const { mode }    = useMode()
+  const appType     = app.id.replace('demo-', '')
   const [pet, setPet]               = useState(null)
   const [loading, setLoading]       = useState(true)
   const [notFound, setNotFound]     = useState(false)
@@ -35,7 +40,17 @@ export default function PetDetail() {
   const [deleting, setDeleting]     = useState(false)
   const [deleteError, setDeleteError] = useState(null)
 
+  // Derive the list path from the current URL so it works for both /app and /demo
+  const listPath = location.pathname.replace(`/${petId}`, '').replace(/\/(alimentacion|salud|rutinas)$/, '')
+
   useEffect(() => {
+    if (mode === 'demo') {
+      const found = demoRead(appType, 'pets').find(p => p.id === petId)
+      if (!found) { setNotFound(true); setLoading(false); return }
+      setPet(found)
+      setLoading(false)
+      return
+    }
     let cancelled = false
     supabase.from('pets')
       .select('*')
@@ -49,11 +64,18 @@ export default function PetDetail() {
         setLoading(false)
       })
     return () => { cancelled = true }
-  }, [petId, app.id])
+  }, [petId, app.id, mode, appType])
 
   async function handleDelete() {
     setDeleting(true)
     setDeleteError(null)
+    if (mode === 'demo') {
+      const appT = appType
+      demoWrite(appT, 'events', demoRead(appT, 'events').filter(e => e.metadata?.pet_id !== pet.id))
+      demoWrite(appT, 'pets',   demoRead(appT, 'pets').filter(p => p.id !== pet.id))
+      navigate(listPath, { replace: true })
+      return
+    }
     const { error: evErr } = await supabase.from('events')
       .delete()
       .eq('app_id', app.id)
@@ -69,10 +91,10 @@ export default function PetDetail() {
     const { error: petErr } = await supabase.from('pets').delete().eq('id', pet.id)
     if (petErr) { setDeleting(false); setDeleteError('No se pudo eliminar. Inténtalo de nuevo.'); return }
 
-    navigate('/app/mascotas/mis-mascotas', { replace: true })
+    navigate(listPath, { replace: true })
   }
 
-  if (notFound) return <Navigate to="/app/mascotas/mis-mascotas" replace />
+  if (notFound) return <Navigate to={listPath} replace />
 
   if (loading) {
     return (
