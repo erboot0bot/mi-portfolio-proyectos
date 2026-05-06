@@ -3,6 +3,7 @@ import { Navigate, NavLink, Outlet, useNavigate, useLocation } from 'react-route
 import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import { AppProvider } from '../../contexts/AppContext'
+import { useMode } from '../../contexts/ModeContext'
 
 const APP_NAMES = {
   hogar:    'Hogar',
@@ -65,9 +66,12 @@ export default function AppLayout() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
+  const { setMode } = useMode()
   const [app, setApp] = useState(null)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState(null)
+
+  useEffect(() => { setMode('app') }, [setMode])
 
   const appType = location.pathname.split('/').filter(Boolean)[1]
 
