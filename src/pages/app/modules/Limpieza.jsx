@@ -158,8 +158,6 @@ export default function Limpieza() {
           <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}>
             <div style={{ width: 24, height: 24, borderRadius: '50%', border: '2px solid var(--accent)', borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite' }} />
           </div>
-        ) : fetchError ? (
-          <p style={{ fontSize: 13, color: '#ef4444', textAlign: 'center', padding: '20px 0' }}>{fetchError}</p>
         ) : tasks.length === 0 ? (
           <div style={{ textAlign: 'center', padding: '40px 20px' }}>
             <p style={{ fontSize: 40, margin: '0 0 8px' }}>🧹</p>
