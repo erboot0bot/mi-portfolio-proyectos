@@ -7,6 +7,7 @@ export function TelegramLinkCard() {
   const [code, setCode]             = useState(null)      // { code, expires_at, bot_username }
   const [countdown, setCountdown]   = useState(null)
   const [generating, setGenerating] = useState(false)
+  const [generateError, setGenerateError] = useState(null)
   const channelRef = useRef(null)
 
   useEffect(() => {
@@ -62,21 +63,31 @@ export function TelegramLinkCard() {
   }, [code])
 
   async function checkLinkStatus() {
-    const { data } = await supabase
-      .from('user_telegram_links')
-      .select('telegram_username, telegram_first_name')
-      .maybeSingle()
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) { setStatus('unlinked'); return }
 
-    if (data) {
-      setLinkData(data)
-      setStatus('linked')
-    } else {
+      const { data } = await supabase
+        .from('user_telegram_links')
+        .select('telegram_username, telegram_first_name')
+        .eq('user_id', session.user.id)
+        .maybeSingle()
+
+      if (data) {
+        setLinkData(data)
+        setStatus('linked')
+      } else {
+        setStatus('unlinked')
+      }
+    } catch (err) {
+      console.error('checkLinkStatus error:', err)
       setStatus('unlinked')
     }
   }
 
   async function generateCode() {
     setGenerating(true)
+    setGenerateError(null)
     try {
       const { data: { session } } = await supabase.auth.getSession()
       const response = await fetch(
@@ -95,6 +106,7 @@ export function TelegramLinkCard() {
       setCountdown(600)
     } catch (err) {
       console.error('Error generating code:', err)
+      setGenerateError('No se pudo generar el código. Inténtalo de nuevo.')
     } finally {
       setGenerating(false)
     }
@@ -103,10 +115,14 @@ export function TelegramLinkCard() {
   async function unlink() {
     const { data: { session } } = await supabase.auth.getSession()
     if (!session) return
-    await supabase
+    const { error } = await supabase
       .from('user_telegram_links')
       .delete()
       .eq('user_id', session.user.id)
+    if (error) {
+      console.error('unlink error:', error)
+      return
+    }
     setStatus('unlinked')
     setLinkData(null)
     setCode(null)
@@ -160,13 +176,18 @@ export function TelegramLinkCard() {
       </div>
 
       {!code ? (
-        <button
-          onClick={generateCode}
-          disabled={generating}
-          className="w-full py-2 px-4 rounded-lg bg-[var(--accent)] text-white text-sm font-semibold disabled:opacity-50 transition-opacity"
-        >
-          {generating ? 'Generando...' : 'Generar código de vinculación'}
-        </button>
+        <>
+          {generateError && (
+            <p className="text-xs text-red-500">{generateError}</p>
+          )}
+          <button
+            onClick={generateCode}
+            disabled={generating}
+            className="w-full py-2 px-4 rounded-lg bg-[var(--accent)] text-white text-sm font-semibold disabled:opacity-50 transition-opacity"
+          >
+            {generating ? 'Generando...' : 'Generar código de vinculación'}
+          </button>
+        </>
       ) : (
         <div className="space-y-3">
           <div className="bg-[var(--bg)] rounded-lg p-4 text-center space-y-2 border border-[var(--border)]">
