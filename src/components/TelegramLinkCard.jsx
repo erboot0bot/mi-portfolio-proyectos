@@ -399,14 +399,13 @@ export function TelegramLinkCard() {
             </p>
           </div>
 
-          <a
-            href={`https://t.me/${botUsername}?start=link_${code.code}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 w-full py-2 px-4 rounded-lg border border-[var(--border)] text-sm text-[var(--text)] hover:bg-[var(--bg)] transition-colors"
-          >
-            Abrir en Telegram →
-          </a>
+          <div className="rounded-lg bg-[var(--bg)] border border-[var(--border)] px-4 py-3 space-y-1">
+            <p className="text-xs font-semibold text-[var(--text)]">¿Cómo enviarlo?</p>
+            <ol className="space-y-0.5">
+              <li className="text-xs text-[var(--text-muted)]">1. Abre Telegram y busca <span className="font-medium text-[var(--text)]">@{botUsername}</span></li>
+              <li className="text-xs text-[var(--text-muted)]">2. Copia el comando de arriba y envíalo al chat</li>
+            </ol>
+          </div>
 
           <button
             onClick={() => setCode(null)}
