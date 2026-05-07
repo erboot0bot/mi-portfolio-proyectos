@@ -160,8 +160,10 @@ async function handleUnlink(chatId: number, telegramId: number): Promise<void> {
 // ─── Parsear texto libre en items ────────────────────────────
 
 function splitItems(text: string): string[] {
+  // Split on commas, newlines, and the conjunction " y " only.
+  // " o " is intentionally excluded — it appears in too many product names (aceite de oliva, etc.)
   return text
-    .split(/[,\n]|\sy\s|\so\s/)
+    .split(/[,\n]|\sy\s/)
     .map((s) => s.trim().toLowerCase())
     .filter((s) => s.length > 1 && s.length < 80);
 }
@@ -273,25 +275,35 @@ async function handleCheck(chatId: number, ctx: UserContext, itemName: string): 
   // Escape LIKE wildcards to prevent /check % from matching all items
   const safeName = itemName.replace(/[%_\\]/g, "\\$&");
 
-  const { data, error } = await supabase
+  // Find the most recent matching unchecked item
+  const { data: found, error: findError } = await supabase
     .from("items")
-    .update({ checked: true, checked_at: new Date().toISOString() })
+    .select("id, title")
     .eq("app_id", ctx.appId)
     .eq("module", "supermercado")
     .eq("checked", false)
     .ilike("title", `%${safeName}%`)
-    .select("title");
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (findError || !found) {
+    await sendMessage(chatId, `❓ No encontré "<b>${safeName}</b>" en la lista.`);
+    return;
+  }
+
+  const { error } = await supabase
+    .from("items")
+    .update({ checked: true, checked_at: new Date().toISOString() })
+    .eq("id", found.id);
 
   if (error) {
     await sendMessage(chatId, "❌ Error al marcar el item.");
     return;
   }
 
-  if (!data || data.length === 0) {
-    await sendMessage(chatId, `❓ No encontré "<b>${itemName}</b>" en la lista.`);
-  } else {
-    await sendMessage(chatId, `✅ Marcado como comprado: ${data.map((d) => d.title).join(", ")}`);
-  }
+  await sendMessage(chatId, `✅ Marcado como comprado: ${found.title}`);
+  return;
 }
 
 // ─── Comando /help ───────────────────────────────────────────

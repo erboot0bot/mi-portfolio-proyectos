@@ -103,7 +103,7 @@ export function TelegramLinkCard() {
       const data = await response.json()
       if (data.error) throw new Error(data.error)
       setCode(data)
-      setCountdown(600)
+      setCountdown(Math.floor((new Date(data.expires_at) - Date.now()) / 1000))
     } catch (err) {
       console.error('Error generating code:', err)
       setGenerateError('No se pudo generar el código. Inténtalo de nuevo.')
@@ -152,7 +152,11 @@ export function TelegramLinkCard() {
             )}
           </div>
           <button
-            onClick={unlink}
+            onClick={() => {
+              if (window.confirm('¿Desvincular Telegram? Tendrás que volver a vincular para usar el bot.')) {
+                unlink()
+              }
+            }}
             className="text-xs text-red-500 hover:underline"
           >
             Desvincular
