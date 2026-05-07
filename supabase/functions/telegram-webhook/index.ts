@@ -207,10 +207,20 @@ async function handleUnlink(chatId: number, telegramId: number, botToken: string
 
 const FILLER = /\b(a\s+la\s+lista(\s+de\s+la\s+compra)?|en\s+la\s+lista|a\s+mi\s+lista|de\s+la\s+compra|al\s+carrito)\b/gi;
 
+function normalizeItem(s: string): string {
+  return s
+    .trim()
+    .toLowerCase()
+    .replace(/\.{2,}|…/g, "")     // quitar puntos suspensivos (... ó …)
+    .replace(/[.,;!?:]+$/g, "")   // quitar puntuación final
+    .replace(/^[.,;!?:]+/g, "")   // quitar puntuación inicial
+    .trim();
+}
+
 function splitItems(text: string): string[] {
   return text
     .split(/[,\n]|\sy\s/)
-    .map((s) => s.trim().toLowerCase())
+    .map(normalizeItem)
     .filter((s) => s.length > 1 && s.length < 80);
 }
 
