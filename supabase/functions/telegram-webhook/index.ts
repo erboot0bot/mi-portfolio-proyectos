@@ -1,9 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const TELEGRAM_TOKEN  = Deno.env.get("TELEGRAM_BOT_TOKEN")!;
-const WEBHOOK_SECRET  = Deno.env.get("TELEGRAM_WEBHOOK_SECRET")!;
-const TELEGRAM_API    = `https://api.telegram.org/bot${TELEGRAM_TOKEN}`;
-
 // Service-role client: bypasses RLS intentionally.
 // All reads/writes are scoped to the authenticated user via explicit filters.
 const supabase = createClient(
@@ -12,9 +8,11 @@ const supabase = createClient(
 );
 
 // ─── Telegram helpers ────────────────────────────────────────
+// bot_token se pasa explícitamente — cada usuario tiene su propio bot.
 
-async function sendMessage(chatId: number, text: string): Promise<void> {
-  const res = await fetch(`${TELEGRAM_API}/sendMessage`, {
+async function sendMessage(chatId: number, text: string, botToken: string): Promise<void> {
+  const api = `https://api.telegram.org/bot${botToken}`;
+  const res = await fetch(`${api}/sendMessage`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ chat_id: chatId, text, parse_mode: "HTML" }),
@@ -86,7 +84,8 @@ async function handleLink(
   telegramId: number,
   telegramUsername: string | undefined,
   telegramFirstName: string | undefined,
-  code: string
+  code: string,
+  botToken: string
 ): Promise<void> {
   const { data: linkCode } = await supabase
     .from("telegram_link_codes")
@@ -96,13 +95,13 @@ async function handleLink(
     .maybeSingle();
 
   if (!linkCode) {
-    await sendMessage(chatId, "❌ Código inválido o expirado.\nGenera uno nuevo en la app → Hogar → Ajustes → Conectar Telegram.");
+    await sendMessage(chatId, "❌ Código inválido o expirado.\nGenera uno nuevo en la app → Hogar → Ajustes → Conectar Telegram.", botToken);
     return;
   }
 
   if (new Date(linkCode.expires_at) < new Date()) {
     await supabase.from("telegram_link_codes").update({ used: true }).eq("id", linkCode.id);
-    await sendMessage(chatId, "⏰ El código ha expirado (validez 10 min).\nGenera uno nuevo en la app.");
+    await sendMessage(chatId, "⏰ El código ha expirado (validez 10 min).\nGenera uno nuevo en la app.", botToken);
     return;
   }
 
@@ -114,7 +113,7 @@ async function handleLink(
     .maybeSingle();
 
   if (existingLink && existingLink.user_id !== linkCode.user_id) {
-    await sendMessage(chatId, "⚠️ Este Telegram ya está vinculado a otra cuenta.\nDesvincula primero desde la app del otro usuario.");
+    await sendMessage(chatId, "⚠️ Este Telegram ya está vinculado a otra cuenta.\nDesvincula primero desde la app del otro usuario.", botToken);
     return;
   }
 
@@ -130,7 +129,7 @@ async function handleLink(
 
   if (error) {
     console.error("Upsert link error:", error);
-    await sendMessage(chatId, "❌ Error al vincular. Inténtalo de nuevo.");
+    await sendMessage(chatId, "❌ Error al vincular. Inténtalo de nuevo.", botToken);
     return;
   }
 
@@ -138,23 +137,24 @@ async function handleLink(
 
   await sendMessage(
     chatId,
-    `✅ <b>¡Telegram vinculado correctamente!</b>\n\nYa puedes gestionar tu lista de la compra desde aquí.\nEscribe /help para ver los comandos disponibles.`
+    `✅ <b>¡Telegram vinculado correctamente!</b>\n\nYa puedes gestionar tu lista de la compra desde aquí.\nEscribe /help para ver los comandos disponibles.`,
+    botToken
   );
 }
 
 // ─── Comando /unlink ─────────────────────────────────────────
 
-async function handleUnlink(chatId: number, telegramId: number): Promise<void> {
+async function handleUnlink(chatId: number, telegramId: number, botToken: string): Promise<void> {
   const { error } = await supabase
     .from("user_telegram_links")
     .delete()
     .eq("telegram_id", telegramId);
 
   if (error) {
-    await sendMessage(chatId, "❌ Error al desvincular.");
+    await sendMessage(chatId, "❌ Error al desvincular.", botToken);
     return;
   }
-  await sendMessage(chatId, "🔓 Cuenta de Telegram desvinculada correctamente.");
+  await sendMessage(chatId, "🔓 Cuenta de Telegram desvinculada correctamente.", botToken);
 }
 
 // ─── Parsear texto libre en items ────────────────────────────
@@ -176,15 +176,16 @@ async function handleAdd(
   chatId: number,
   ctx: UserContext,
   items: string[],
+  botToken: string,
   forcePrivate?: boolean
 ): Promise<void> {
   if (items.length === 0) {
-    await sendMessage(chatId, "¿Qué quieres añadir?\nEjemplo: <code>leche pan yogur</code> o <code>/add leche</code>");
+    await sendMessage(chatId, "¿Qué quieres añadir?\nEjemplo: <code>leche pan yogur</code> o <code>/add leche</code>", botToken);
     return;
   }
 
   if (!ctx.appId) {
-    await sendMessage(chatId, "❌ No se encontró tu app Hogar. ¿Está creada? Abre la app una vez para inicializarla.");
+    await sendMessage(chatId, "❌ No se encontró tu app Hogar. ¿Está creada? Abre la app una vez para inicializarla.", botToken);
     return;
   }
 
@@ -211,20 +212,20 @@ async function handleAdd(
 
   if (error) {
     console.error("Insert items error:", error);
-    await sendMessage(chatId, "❌ Error al añadir los items.");
+    await sendMessage(chatId, "❌ Error al añadir los items.", botToken);
     return;
   }
 
   const scope = householdId ? "lista del hogar 🏠" : "lista de la compra";
   const list = items.map((i) => `• ${i}`).join("\n");
-  await sendMessage(chatId, `✅ Añadido a la ${scope}:\n${list}`);
+  await sendMessage(chatId, `✅ Añadido a la ${scope}:\n${list}`, botToken);
 }
 
 // ─── Comando /list ───────────────────────────────────────────
 
-async function handleList(chatId: number, ctx: UserContext): Promise<void> {
+async function handleList(chatId: number, ctx: UserContext, botToken: string): Promise<void> {
   if (!ctx.appId) {
-    await sendMessage(chatId, "❌ No se encontró tu app Hogar.");
+    await sendMessage(chatId, "❌ No se encontró tu app Hogar.", botToken);
     return;
   }
 
@@ -238,12 +239,12 @@ async function handleList(chatId: number, ctx: UserContext): Promise<void> {
     .limit(40);
 
   if (error || !data) {
-    await sendMessage(chatId, "❌ Error al leer la lista.");
+    await sendMessage(chatId, "❌ Error al leer la lista.", botToken);
     return;
   }
 
   if (data.length === 0) {
-    await sendMessage(chatId, "📋 La lista está vacía.");
+    await sendMessage(chatId, "📋 La lista está vacía.", botToken);
     return;
   }
 
@@ -261,14 +262,14 @@ async function handleList(chatId: number, ctx: UserContext): Promise<void> {
     msg += privateItems.map((i) => `• ${i.title}`).join("\n");
   }
 
-  await sendMessage(chatId, msg);
+  await sendMessage(chatId, msg, botToken);
 }
 
 // ─── Comando /check ──────────────────────────────────────────
 
-async function handleCheck(chatId: number, ctx: UserContext, itemName: string): Promise<void> {
+async function handleCheck(chatId: number, ctx: UserContext, itemName: string, botToken: string): Promise<void> {
   if (!ctx.appId) {
-    await sendMessage(chatId, "❌ No se encontró tu app Hogar.");
+    await sendMessage(chatId, "❌ No se encontró tu app Hogar.", botToken);
     return;
   }
 
@@ -288,7 +289,7 @@ async function handleCheck(chatId: number, ctx: UserContext, itemName: string): 
     .maybeSingle();
 
   if (findError || !found) {
-    await sendMessage(chatId, `❓ No encontré "<b>${safeName}</b>" en la lista.`);
+    await sendMessage(chatId, `❓ No encontré "<b>${safeName}</b>" en la lista.`, botToken);
     return;
   }
 
@@ -298,17 +299,17 @@ async function handleCheck(chatId: number, ctx: UserContext, itemName: string): 
     .eq("id", found.id);
 
   if (error) {
-    await sendMessage(chatId, "❌ Error al marcar el item.");
+    await sendMessage(chatId, "❌ Error al marcar el item.", botToken);
     return;
   }
 
-  await sendMessage(chatId, `✅ Marcado como comprado: ${found.title}`);
+  await sendMessage(chatId, `✅ Marcado como comprado: ${found.title}`, botToken);
   return;
 }
 
 // ─── Comando /help ───────────────────────────────────────────
 
-async function handleHelp(chatId: number, hasHousehold: boolean): Promise<void> {
+async function handleHelp(chatId: number, hasHousehold: boolean, botToken: string): Promise<void> {
   await sendMessage(
     chatId,
     `🏠 <b>Hogar Bot</b>\n\n` +
@@ -320,7 +321,8 @@ async function handleHelp(chatId: number, hasHousehold: boolean): Promise<void> 
     `/check leche → marcar comprado\n\n` +
     `<b>Cuenta:</b>\n` +
     `/status → ver estado de tu cuenta\n` +
-    `/unlink → desvincular Telegram`
+    `/unlink → desvincular Telegram`,
+    botToken
   );
 }
 
@@ -331,10 +333,25 @@ Deno.serve(async (req: Request) => {
     return new Response("Method not allowed", { status: 405 });
   }
 
+  // Identificar el bot por el webhook_secret enviado por Telegram
   const secretHeader = req.headers.get("X-Telegram-Bot-Api-Secret-Token");
-  if (secretHeader !== WEBHOOK_SECRET) {
+  if (!secretHeader) {
     return new Response("Forbidden", { status: 403 });
   }
+
+  // Buscar la configuración del bot asociada a este webhook_secret
+  const { data: botConfig, error: botConfigError } = await supabase
+    .from("telegram_bot_config")
+    .select("bot_token, user_id")
+    .eq("webhook_secret", secretHeader)
+    .maybeSingle();
+
+  if (botConfigError || !botConfig) {
+    console.error("Bot config lookup failed:", botConfigError);
+    return new Response("Forbidden", { status: 403 });
+  }
+
+  const botToken = botConfig.bot_token;
 
   let body: Record<string, unknown>;
   try {
@@ -358,14 +375,14 @@ Deno.serve(async (req: Request) => {
   // /link <CÓDIGO> — no requiere estar vinculado previamente
   const linkMatch = text.match(/^\/link\s+([A-Z0-9]{6})/i);
   if (linkMatch) {
-    await handleLink(chatId, fromId, telegramUsername, telegramFirstName, linkMatch[1]);
+    await handleLink(chatId, fromId, telegramUsername, telegramFirstName, linkMatch[1], botToken);
     return new Response("OK", { status: 200 });
   }
 
   // /start link_XXXXXX — deep link desde la app
   const startLinkMatch = text.match(/^\/start\s+link_([A-Z0-9]{6})/i);
   if (startLinkMatch) {
-    await handleLink(chatId, fromId, telegramUsername, telegramFirstName, startLinkMatch[1]);
+    await handleLink(chatId, fromId, telegramUsername, telegramFirstName, startLinkMatch[1], botToken);
     return new Response("OK", { status: 200 });
   }
 
@@ -379,33 +396,35 @@ Deno.serve(async (req: Request) => {
       `Para usar el bot, primero vincula tu cuenta:\n` +
       `1. Abre la app Hogar\n` +
       `2. Ve a Hogar → Ajustes → Conectar Telegram\n` +
-      `3. Envía el código aquí con <code>/link XXXXXX</code>`
+      `3. Envía el código aquí con <code>/link XXXXXX</code>`,
+      botToken
     );
     return new Response("OK", { status: 200 });
   }
 
   try {
     if (text === "/help" || text === "/start") {
-      await handleHelp(chatId, !!ctx.householdId);
+      await handleHelp(chatId, !!ctx.householdId, botToken);
     } else if (text === "/list") {
-      await handleList(chatId, ctx);
+      await handleList(chatId, ctx, botToken);
     } else if (text === "/unlink") {
-      await handleUnlink(chatId, fromId);
+      await handleUnlink(chatId, fromId, botToken);
     } else if (/^\/add\s+/i.test(text)) {
       const payload = text.replace(/^\/add\s+/i, "");
-      await handleAdd(chatId, ctx, splitItems(payload));
+      await handleAdd(chatId, ctx, splitItems(payload), botToken);
     } else if (/^\/addprivado\s+/i.test(text)) {
       const payload = text.replace(/^\/addprivado\s+/i, "");
-      await handleAdd(chatId, ctx, splitItems(payload), true);
+      await handleAdd(chatId, ctx, splitItems(payload), botToken, true);
     } else if (/^\/check\s+/i.test(text)) {
       const itemName = text.replace(/^\/check\s+/i, "").trim();
-      await handleCheck(chatId, ctx, itemName);
+      await handleCheck(chatId, ctx, itemName, botToken);
     } else if (text === "/status") {
       await sendMessage(
         chatId,
         `👤 Telegram vinculado ✅\n` +
         `🏠 App Hogar: ${ctx.appId ? "encontrada" : "no encontrada — abre la app una vez"}\n` +
-        `👥 Hogar compartido: ${ctx.householdId ? "configurado" : "sin hogar (lista personal)"}`
+        `👥 Hogar compartido: ${ctx.householdId ? "configurado" : "sin hogar (lista personal)"}`,
+        botToken
       );
     } else {
       // Texto libre → parsear como items de la compra
@@ -420,14 +439,14 @@ Deno.serve(async (req: Request) => {
       }
 
       if (items.length > 0) {
-        await handleAdd(chatId, ctx, items);
+        await handleAdd(chatId, ctx, items, botToken);
       } else {
-        await sendMessage(chatId, `No entendí "<b>${text}</b>"\nEscribe /help para ver los comandos.`);
+        await sendMessage(chatId, `No entendí "<b>${text}</b>"\nEscribe /help para ver los comandos.`, botToken);
       }
     }
   } catch (err) {
     console.error("Handler error:", err);
-    await sendMessage(chatId, "❌ Error interno.");
+    await sendMessage(chatId, "❌ Error interno.", botToken);
   }
 
   return new Response("OK", { status: 200 });

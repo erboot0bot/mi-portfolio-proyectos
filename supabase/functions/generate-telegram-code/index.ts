@@ -93,11 +93,18 @@ Deno.serve(async (req: Request) => {
     });
   }
 
+  // Leer bot_username desde telegram_bot_config del usuario
+  const { data: botConfig } = await supabase
+    .from("telegram_bot_config")
+    .select("bot_username")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
   return new Response(
     JSON.stringify({
       code,
       expires_at: expiresAt,
-      bot_username: Deno.env.get("TELEGRAM_BOT_USERNAME") ?? "tu_hogar_bot",
+      bot_username: botConfig?.bot_username ?? null,
     }),
     {
       status: 200,
