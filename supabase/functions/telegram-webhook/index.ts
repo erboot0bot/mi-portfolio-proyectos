@@ -5,6 +5,8 @@ const supabase = createClient(
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
 );
 
+const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY") ?? "";
+
 // ─── Telegram helpers ────────────────────────────────────────
 
 async function sendMessage(
@@ -15,7 +17,6 @@ async function sendMessage(
 ): Promise<void> {
   const body: Record<string, unknown> = { chat_id: chatId, text, parse_mode: "HTML" };
   if (replyMarkup) body.reply_markup = replyMarkup;
-
   const res = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -30,6 +31,52 @@ async function answerCallbackQuery(id: string, botToken: string, text?: string):
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ callback_query_id: id, text }),
   });
+}
+
+// ─── Transcripción de voz con Groq Whisper ───────────────────
+
+async function transcribeVoice(fileId: string, botToken: string): Promise<string | null> {
+  // 1. Obtener ruta del archivo en Telegram
+  const fileRes = await fetch(
+    `https://api.telegram.org/bot${botToken}/getFile?file_id=${encodeURIComponent(fileId)}`
+  );
+  const fileData = await fileRes.json();
+  if (!fileData.ok) {
+    console.error("getFile failed:", fileData);
+    return null;
+  }
+
+  // 2. Descargar el audio (OGG/Opus)
+  const filePath = fileData.result.file_path as string;
+  const audioRes = await fetch(`https://api.telegram.org/file/bot${botToken}/${filePath}`);
+  if (!audioRes.ok) {
+    console.error("Audio download failed:", audioRes.status);
+    return null;
+  }
+  const audioBuffer = await audioRes.arrayBuffer();
+
+  // 3. Transcribir con Groq Whisper large-v3-turbo (rápido, preciso en español)
+  const formData = new FormData();
+  formData.append("file", new Blob([audioBuffer], { type: "audio/ogg" }), "voice.ogg");
+  formData.append("model", "whisper-large-v3-turbo");
+  formData.append("language", "es");
+  formData.append("response_format", "text");
+
+  const transcribeRes = await fetch(
+    "https://api.groq.com/openai/v1/audio/transcriptions",
+    {
+      method: "POST",
+      headers: { Authorization: `Bearer ${GROQ_API_KEY}` },
+      body: formData,
+    }
+  );
+
+  if (!transcribeRes.ok) {
+    console.error("Groq transcription failed:", transcribeRes.status, await transcribeRes.text());
+    return null;
+  }
+
+  return (await transcribeRes.text()).trim();
 }
 
 // ─── Teclado inline de supermercados ────────────────────────
@@ -156,9 +203,8 @@ async function handleUnlink(chatId: number, telegramId: number, botToken: string
   await sendMessage(chatId, "🔓 Cuenta de Telegram desvinculada correctamente.", botToken);
 }
 
-// ─── Parsear texto libre en items ────────────────────────────
+// ─── Parsear texto en items ──────────────────────────────────
 
-// Frases de relleno que se eliminan tras detectar el verbo de compra
 const FILLER = /\b(a\s+la\s+lista(\s+de\s+la\s+compra)?|en\s+la\s+lista|a\s+mi\s+lista|de\s+la\s+compra|al\s+carrito)\b/gi;
 
 function splitItems(text: string): string[] {
@@ -168,6 +214,26 @@ function splitItems(text: string): string[] {
     .filter((s) => s.length > 1 && s.length < 80);
 }
 
+function parseItems(text: string): string[] {
+  // Cubre conjugaciones: añade/añada/añadir, agrega/agregue, compra/compre, etc.
+  const buyVerbs = /\b(añad[aeiou]r?|agreg[aeo]r?|compr[aeo]r?|pone?|necesit[ao]|falt[ao]n?)\b/i;
+
+  if (buyVerbs.test(text)) {
+    const afterVerb = text
+      .replace(buyVerbs, "")
+      .replace(FILLER, "")
+      .replace(/\b(y|,)\b/g, ",")
+      .trim();
+    return splitItems(afterVerb);
+  }
+
+  if (!text.startsWith("/")) {
+    return splitItems(text);
+  }
+
+  return [];
+}
+
 // ─── Comando /add y texto libre ──────────────────────────────
 
 async function handleAdd(
@@ -175,7 +241,8 @@ async function handleAdd(
   ctx: UserContext,
   items: string[],
   botToken: string,
-  forcePrivate?: boolean
+  forcePrivate?: boolean,
+  transcription?: string  // para mostrar qué entendió del audio
 ): Promise<void> {
   if (items.length === 0) {
     await sendMessage(chatId, "¿Qué quieres añadir?\nEjemplo: <code>leche pan yogur</code> o <code>/add leche</code>", botToken);
@@ -186,8 +253,28 @@ async function handleAdd(
     return;
   }
 
+  // Deduplicar: no añadir items que ya están en la lista sin marcar
+  const { data: existing } = await supabase
+    .from("items")
+    .select("title")
+    .eq("app_id", ctx.appId)
+    .eq("module", "supermercado")
+    .eq("checked", false);
+
+  const existingTitles = new Set((existing ?? []).map((i) => i.title.toLowerCase().trim()));
+  const toAdd      = items.filter((i) => !existingTitles.has(i.toLowerCase().trim()));
+  const duplicates = items.filter((i) =>  existingTitles.has(i.toLowerCase().trim()));
+
+  const prefix = transcription ? `🎙️ <i>"${transcription}"</i>\n\n` : "";
+
+  if (toAdd.length === 0) {
+    const dupList = duplicates.map((i) => `• ${i}`).join("\n");
+    await sendMessage(chatId, `${prefix}⚠️ Ya estaba en la lista:\n${dupList}`, botToken);
+    return;
+  }
+
   const householdId = forcePrivate ? null : ctx.householdId;
-  const rows = items.map((name) => ({
+  const rows = toAdd.map((name) => ({
     title: name,
     app_id: ctx.appId,
     module: "supermercado",
@@ -205,10 +292,14 @@ async function handleAdd(
     return;
   }
 
-  const list = items.map((i) => `• ${i}`).join("\n");
+  const addedList = toAdd.map((i) => `• ${i}`).join("\n");
+  const dupNote   = duplicates.length > 0
+    ? `\n\n⚠️ Ya estaba: ${duplicates.join(", ")}`
+    : "";
+
   await sendMessage(
     chatId,
-    `✅ Añadido a la lista:\n${list}\n\n¿A qué supermercado?`,
+    `${prefix}✅ Añadido:\n${addedList}${dupNote}\n\n¿A qué supermercado?`,
     botToken,
     STORE_KEYBOARD
   );
@@ -220,7 +311,7 @@ async function handleStoreCallback(
   callbackQueryId: string,
   chatId: number,
   telegramId: number,
-  store: string, // "Mercadona" | "Lidl" | "Carrefour" | "La Sirena" | "General"
+  store: string,
   botToken: string
 ): Promise<void> {
   const ctx = await getUserContext(telegramId);
@@ -230,8 +321,6 @@ async function handleStoreCallback(
   }
 
   const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
-
-  // Obtener items recientes de Telegram sin store asignado
   const { data: recentItems } = await supabase
     .from("items")
     .select("id, metadata")
@@ -247,8 +336,6 @@ async function handleStoreCallback(
   }
 
   const storeValue = store === "General" ? null : store;
-
-  // Actualizar cada item con el store seleccionado
   await Promise.all(
     pending.map((item) =>
       supabase.from("items").update({
@@ -258,18 +345,8 @@ async function handleStoreCallback(
   );
 
   const storeLabel = store === "General" ? "General (sin super)" : store;
-  await answerCallbackQuery(callbackQueryId, botToken, `✅ Asignado a ${storeLabel}`);
-
-  // Editar el mensaje original para quitar el teclado y confirmar
-  await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      chat_id: chatId,
-      text: `🛒 Supermercado asignado: <b>${storeLabel}</b>`,
-      parse_mode: "HTML",
-    }),
-  });
+  await answerCallbackQuery(callbackQueryId, botToken, `✅ ${storeLabel}`);
+  await sendMessage(chatId, `🛒 Supermercado asignado: <b>${storeLabel}</b>`, botToken);
 }
 
 // ─── Comando /list ───────────────────────────────────────────
@@ -279,7 +356,7 @@ async function handleList(chatId: number, ctx: UserContext, botToken: string): P
 
   const { data, error } = await supabase
     .from("items")
-    .select("title, checked, household_id, metadata")
+    .select("title, metadata")
     .eq("app_id", ctx.appId)
     .eq("module", "supermercado")
     .eq("checked", false)
@@ -289,7 +366,6 @@ async function handleList(chatId: number, ctx: UserContext, botToken: string): P
   if (error || !data) { await sendMessage(chatId, "❌ Error al leer la lista.", botToken); return; }
   if (data.length === 0) { await sendMessage(chatId, "📋 La lista está vacía.", botToken); return; }
 
-  // Agrupar por supermercado
   const byStore: Record<string, string[]> = {};
   for (const item of data) {
     const store = item.metadata?.store ?? "General";
@@ -299,9 +375,7 @@ async function handleList(chatId: number, ctx: UserContext, botToken: string): P
 
   let msg = "📋 <b>Lista de la compra</b>\n";
   for (const [store, items] of Object.entries(byStore)) {
-    msg += `\n<b>${store}</b>\n`;
-    msg += items.map((i) => `• ${i}`).join("\n");
-    msg += "\n";
+    msg += `\n<b>${store}</b>\n` + items.map((i) => `• ${i}`).join("\n") + "\n";
   }
 
   await sendMessage(chatId, msg.trim(), botToken);
@@ -313,7 +387,7 @@ async function handleCheck(chatId: number, ctx: UserContext, itemName: string, b
   if (!ctx.appId) { await sendMessage(chatId, "❌ No se encontró tu app Hogar.", botToken); return; }
 
   const safeName = itemName.replace(/[%_\\]/g, "\\$&");
-  const { data: found, error: findError } = await supabase
+  const { data: found } = await supabase
     .from("items")
     .select("id, title")
     .eq("app_id", ctx.appId)
@@ -324,10 +398,7 @@ async function handleCheck(chatId: number, ctx: UserContext, itemName: string, b
     .limit(1)
     .maybeSingle();
 
-  if (findError || !found) {
-    await sendMessage(chatId, `❓ No encontré "<b>${safeName}</b>" en la lista.`, botToken);
-    return;
-  }
+  if (!found) { await sendMessage(chatId, `❓ No encontré "<b>${safeName}</b>" en la lista.`, botToken); return; }
 
   const { error } = await supabase
     .from("items")
@@ -345,13 +416,14 @@ async function handleHelp(chatId: number, botToken: string): Promise<void> {
     chatId,
     `🏠 <b>Hogar Bot</b>\n\n` +
     `<b>Lista de la compra:</b>\n` +
-    `leche pan yogur → añade items (pregunta el super)\n` +
-    `/add leche pan → igual\n` +
+    `leche pan yogur → añade items\n` +
+    `🎙️ Nota de voz → transcribe y añade\n` +
+    `/add leche pan → igual que texto\n` +
     `/addprivado leche → solo tuyo\n` +
-    `/list → ver lista pendiente (agrupada por super)\n` +
+    `/list → ver lista (agrupada por super)\n` +
     `/check leche → marcar comprado\n\n` +
     `<b>Cuenta:</b>\n` +
-    `/status → ver estado de tu cuenta\n` +
+    `/status → estado de tu cuenta\n` +
     `/unlink → desvincular Telegram`,
     botToken
   );
@@ -381,26 +453,25 @@ Deno.serve(async (req: Request) => {
   let body: Record<string, unknown>;
   try { body = await req.json(); } catch { return new Response("Bad request", { status: 400 }); }
 
-  // ── Manejar callback_query (botones inline) ──────────────────
+  // ── Callback query (botones de super) ───────────────────────
   const callbackQuery = body?.callback_query as Record<string, unknown> | undefined;
   if (callbackQuery) {
-    const cbId   = callbackQuery.id as string;
-    const cbFrom = callbackQuery.from as Record<string, unknown>;
-    const cbMsg  = callbackQuery.message as Record<string, unknown>;
-    const cbData = callbackQuery.data as string;
-    const cbChatId  = (cbMsg?.chat as Record<string, unknown>)?.id as number;
-    const cbFromId  = cbFrom?.id as number;
+    const cbId    = callbackQuery.id as string;
+    const cbFrom  = callbackQuery.from as Record<string, unknown>;
+    const cbMsg   = callbackQuery.message as Record<string, unknown>;
+    const cbData  = callbackQuery.data as string;
+    const cbChatId = (cbMsg?.chat as Record<string, unknown>)?.id as number;
+    const cbFromId = cbFrom?.id as number;
 
     if (cbData?.startsWith("store:")) {
-      const store = cbData.replace("store:", "");
-      await handleStoreCallback(cbId, cbChatId, cbFromId, store, botToken);
+      await handleStoreCallback(cbId, cbChatId, cbFromId, cbData.replace("store:", ""), botToken);
     } else {
       await answerCallbackQuery(cbId, botToken);
     }
     return new Response("OK", { status: 200 });
   }
 
-  // ── Manejar messages ─────────────────────────────────────────
+  // ── Message ──────────────────────────────────────────────────
   const message = body?.message as Record<string, unknown> | undefined;
   if (!message) return new Response("OK", { status: 200 });
 
@@ -409,11 +480,52 @@ Deno.serve(async (req: Request) => {
   const fromId            = from?.id as number;
   const telegramUsername  = from?.username as string | undefined;
   const telegramFirstName = from?.first_name as string | undefined;
-  const text              = ((message.text as string) ?? "").trim();
 
-  if (!chatId || !fromId || !text) return new Response("OK", { status: 200 });
+  if (!chatId || !fromId) return new Response("OK", { status: 200 });
 
-  // /link y /start link_ no requieren vínculo previo
+  // ── Nota de voz ──────────────────────────────────────────────
+  const voice = message.voice as Record<string, unknown> | undefined;
+  const audio = message.audio as Record<string, unknown> | undefined;
+  const voiceFileId = (voice?.file_id ?? audio?.file_id) as string | undefined;
+
+  if (voiceFileId) {
+    // Requiere vínculo previo
+    const ctx = await getUserContext(fromId);
+    if (!ctx) {
+      await sendMessage(chatId,
+        `👋 Primero vincula tu cuenta:\n` +
+        `Hogar → Ajustes → Conectar Telegram → envía <code>/link XXXXXX</code>`,
+        botToken
+      );
+      return new Response("OK", { status: 200 });
+    }
+
+    await sendMessage(chatId, "🎙️ Transcribiendo...", botToken);
+    const transcription = await transcribeVoice(voiceFileId, botToken);
+
+    if (!transcription) {
+      await sendMessage(chatId, "❌ No pude transcribir el audio. Inténtalo de nuevo.", botToken);
+      return new Response("OK", { status: 200 });
+    }
+
+    const items = parseItems(transcription);
+    if (items.length > 0) {
+      await handleAdd(chatId, ctx, items, botToken, false, transcription);
+    } else {
+      await sendMessage(
+        chatId,
+        `🎙️ Entendí: "<i>${transcription}</i>"\n\nNo detecté productos. Di algo como: "añade leche y pan".`,
+        botToken
+      );
+    }
+    return new Response("OK", { status: 200 });
+  }
+
+  // ── Mensaje de texto ─────────────────────────────────────────
+  const text = ((message.text as string) ?? "").trim();
+  if (!text) return new Response("OK", { status: 200 });
+
+  // /link y /start no requieren vínculo
   const linkMatch = text.match(/^\/link\s+([A-Z0-9]{6})/i);
   if (linkMatch) {
     await handleLink(chatId, fromId, telegramUsername, telegramFirstName, linkMatch[1], botToken);
@@ -447,14 +559,11 @@ Deno.serve(async (req: Request) => {
     } else if (text === "/unlink") {
       await handleUnlink(chatId, fromId, botToken);
     } else if (/^\/add\s+/i.test(text)) {
-      const payload = text.replace(/^\/add\s+/i, "");
-      await handleAdd(chatId, ctx, splitItems(payload), botToken);
+      await handleAdd(chatId, ctx, splitItems(text.replace(/^\/add\s+/i, "")), botToken);
     } else if (/^\/addprivado\s+/i.test(text)) {
-      const payload = text.replace(/^\/addprivado\s+/i, "");
-      await handleAdd(chatId, ctx, splitItems(payload), botToken, true);
+      await handleAdd(chatId, ctx, splitItems(text.replace(/^\/addprivado\s+/i, "")), botToken, true);
     } else if (/^\/check\s+/i.test(text)) {
-      const itemName = text.replace(/^\/check\s+/i, "").trim();
-      await handleCheck(chatId, ctx, itemName, botToken);
+      await handleCheck(chatId, ctx, text.replace(/^\/check\s+/i, "").trim(), botToken);
     } else if (text === "/status") {
       await sendMessage(
         chatId,
@@ -464,22 +573,7 @@ Deno.serve(async (req: Request) => {
         botToken
       );
     } else {
-      // Texto libre → detectar verbo de compra y parsear items
-      // Cubre conjugaciones: añade/añada/añadir, agrega/agregue/agregar, compra/compre, etc.
-      const buyVerbs = /\b(añad[aeiou]r?|agreg[aeo]r?|compr[aeo]r?|pone?|necesit[ao]|falt[ao]n?)\b/i;
-      let items: string[] = [];
-
-      if (buyVerbs.test(text)) {
-        const afterVerb = text
-          .replace(buyVerbs, "")    // quitar verbo
-          .replace(FILLER, "")       // quitar frases de relleno: "a la lista", etc.
-          .replace(/\b(y|,)\b/g, ",")
-          .trim();
-        items = splitItems(afterVerb);
-      } else if (!text.startsWith("/")) {
-        items = splitItems(text);
-      }
-
+      const items = parseItems(text);
       if (items.length > 0) {
         await handleAdd(chatId, ctx, items, botToken);
       } else {
