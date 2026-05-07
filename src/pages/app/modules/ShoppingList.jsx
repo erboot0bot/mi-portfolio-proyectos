@@ -316,6 +316,11 @@ export default function ShoppingList() {
     return () => window.removeEventListener('resize', handler)
   }, [])
 
+  // Persiste el super activo en localStorage para que sobreviva F5
+  useEffect(() => {
+    localStorage.setItem('sl_default_store', activeStore)
+  }, [activeStore])
+
   useEffect(() => {
     if (mode === 'demo') {
       setItems(demoRead(appType, 'items_supermercado').map(itemFromDb))
