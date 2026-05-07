@@ -56,6 +56,9 @@ ALTER TABLE items
   ADD COLUMN IF NOT EXISTS source            TEXT DEFAULT 'web' CHECK (source IN ('web', 'telegram')),
   ADD COLUMN IF NOT EXISTS added_by_telegram BIGINT;
 
+-- NOTE: ON DELETE CASCADE on household_id means items are deleted when a household is deleted.
+-- This is intentional for Phase 1; Phase 2 may reconsider SET NULL to preserve items.
+
 -- ============================================================
 -- 6. FUNCIÓN limpieza automática de códigos expirados
 -- ============================================================
@@ -64,6 +67,9 @@ RETURNS void LANGUAGE sql AS $$
   DELETE FROM telegram_link_codes
   WHERE expires_at < now() AND used = FALSE;
 $$;
+
+-- To schedule automatic cleanup every 10 minutes (requires pg_cron extension enabled in Supabase):
+-- SELECT cron.schedule('cleanup-link-codes', '*/10 * * * *', 'SELECT cleanup_expired_link_codes()');
 
 -- ============================================================
 -- RLS — HOUSEHOLDS
@@ -83,7 +89,8 @@ CREATE POLICY "households_insert" ON households
   FOR INSERT WITH CHECK (created_by = auth.uid());
 
 CREATE POLICY "households_update" ON households
-  FOR UPDATE USING (created_by = auth.uid());
+  FOR UPDATE USING (created_by = auth.uid())
+  WITH CHECK (created_by = auth.uid());
 
 CREATE POLICY "households_delete" ON households
   FOR DELETE USING (created_by = auth.uid());
@@ -103,6 +110,9 @@ CREATE POLICY "hm_select" ON household_members
     )
   );
 
+-- NOTE: New members are added by the Telegram bot via service role (bypasses RLS).
+-- The NOT EXISTS branch handles the first admin member (creator bootstrapping).
+-- Client-side invite acceptance is Phase 2 and will require a redesigned policy.
 CREATE POLICY "hm_insert" ON household_members
   FOR INSERT WITH CHECK (
     NOT EXISTS (
@@ -110,10 +120,10 @@ CREATE POLICY "hm_insert" ON household_members
       WHERE household_id = household_members.household_id
     )
     OR EXISTS (
-      SELECT 1 FROM household_members
-      WHERE household_id = household_members.household_id
-        AND user_id = auth.uid()
-        AND role = 'admin'
+      SELECT 1 FROM household_members AS hm_admin
+      WHERE hm_admin.household_id = household_members.household_id
+        AND hm_admin.user_id = auth.uid()
+        AND hm_admin.role = 'admin'
     )
   );
 
@@ -121,10 +131,10 @@ CREATE POLICY "hm_delete" ON household_members
   FOR DELETE USING (
     user_id = auth.uid()
     OR EXISTS (
-      SELECT 1 FROM household_members
-      WHERE household_id = household_members.household_id
-        AND user_id = auth.uid()
-        AND role = 'admin'
+      SELECT 1 FROM household_members AS hm_admin
+      WHERE hm_admin.household_id = household_members.household_id
+        AND hm_admin.user_id = auth.uid()
+        AND hm_admin.role = 'admin'
     )
   );
 
@@ -146,6 +156,8 @@ CREATE POLICY "tg_links_delete" ON user_telegram_links
 -- ============================================================
 ALTER TABLE telegram_link_codes ENABLE ROW LEVEL SECURITY;
 
+-- INSERT is allowed from authenticated JWT (user generates their own codes).
+-- UPDATE (flipping used=TRUE) is done only by the bot via service role, so no UPDATE policy needed.
 CREATE POLICY "tg_codes_select" ON telegram_link_codes
   FOR SELECT USING (user_id = auth.uid());
 
