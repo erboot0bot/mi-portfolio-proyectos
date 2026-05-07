@@ -14,11 +14,14 @@ const supabase = createClient(
 // ─── Telegram helpers ────────────────────────────────────────
 
 async function sendMessage(chatId: number, text: string): Promise<void> {
-  await fetch(`${TELEGRAM_API}/sendMessage`, {
+  const res = await fetch(`${TELEGRAM_API}/sendMessage`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ chat_id: chatId, text, parse_mode: "HTML" }),
   });
+  if (!res.ok) {
+    console.error(`sendMessage failed: ${res.status}`, await res.text());
+  }
 }
 
 // ─── Context de usuario ──────────────────────────────────────
@@ -32,30 +35,42 @@ interface UserContext {
 
 async function getUserContext(telegramId: number): Promise<UserContext | null> {
   // 1. Buscar el user_id vinculado a este telegram_id
-  const { data: link } = await supabase
+  const { data: link, error: linkError } = await supabase
     .from("user_telegram_links")
     .select("user_id")
     .eq("telegram_id", telegramId)
     .maybeSingle();
 
+  if (linkError) {
+    console.error("getUserContext: link lookup error:", linkError);
+    return null;
+  }
   if (!link) return null;
 
   // 2. Encontrar la app Hogar del usuario (tabla 'projects', name='Hogar')
-  const { data: project } = await supabase
+  const { data: project, error: projectError } = await supabase
     .from("projects")
     .select("id")
     .eq("owner_id", link.user_id)
     .eq("name", "Hogar")
     .maybeSingle();
 
+  if (projectError) {
+    console.error("getUserContext: project lookup error:", projectError);
+  }
+
   // 3. Obtener household (Phase 2 — puede ser null)
-  const { data: member } = await supabase
+  const { data: member, error: memberError } = await supabase
     .from("household_members")
     .select("household_id")
     .eq("user_id", link.user_id)
     .order("joined_at", { ascending: true })
     .limit(1)
     .maybeSingle();
+
+  if (memberError) {
+    console.error("getUserContext: member lookup error:", memberError);
+  }
 
   return {
     userId: link.user_id,
@@ -255,13 +270,16 @@ async function handleCheck(chatId: number, ctx: UserContext, itemName: string): 
     return;
   }
 
+  // Escape LIKE wildcards to prevent /check % from matching all items
+  const safeName = itemName.replace(/[%_\\]/g, "\\$&");
+
   const { data, error } = await supabase
     .from("items")
     .update({ checked: true, checked_at: new Date().toISOString() })
     .eq("app_id", ctx.appId)
     .eq("module", "supermercado")
     .eq("checked", false)
-    .ilike("title", `%${itemName}%`)
+    .ilike("title", `%${safeName}%`)
     .select("title");
 
   if (error) {
