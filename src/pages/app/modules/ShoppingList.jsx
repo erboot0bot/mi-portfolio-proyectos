@@ -81,23 +81,23 @@ function DefaultStoreModal({ current, onSelect, onClose }) {
 
 // ── Desktop active item ───────────────────────────────────────────
 function DesktopItem({ item, onToggle, onDelete }) {
-  const delRef = useRef(null)
   return (
-    <div
-      onClick={() => onToggle(item.id)}
-      onMouseEnter={() => delRef.current && (delRef.current.style.opacity = '1')}
-      onMouseLeave={() => delRef.current && (delRef.current.style.opacity = '0')}
-      style={{
-        display: 'flex', alignItems: 'center', gap: 10,
-        padding: '10px 14px', borderRadius: 10, border: '1px solid var(--border)',
-        background: 'var(--bg-card)', marginBottom: 5, cursor: 'pointer', transition: 'all .15s',
-      }}
-    >
-      <div style={{
-        width: 20, height: 20, borderRadius: '50%', flexShrink: 0,
-        border: '2px solid var(--border)', background: 'transparent',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }} />
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 10,
+      padding: '10px 14px', borderRadius: 10, border: '1px solid var(--border)',
+      background: 'var(--bg-card)', marginBottom: 5, transition: 'all .15s',
+    }}>
+      {/* Círculo: único elemento que marca como comprado */}
+      <div
+        onClick={() => onToggle(item.id)}
+        title="Marcar como comprado"
+        style={{
+          width: 20, height: 20, borderRadius: '50%', flexShrink: 0,
+          border: '2px solid var(--border)', background: 'transparent',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          cursor: 'pointer',
+        }}
+      />
       <span style={{ flex: 1, fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>{item.name}</span>
       {item.quantity && (
         <span style={{ fontSize: 11, color: 'var(--text-faint)', fontFamily: 'monospace' }}>
@@ -105,9 +105,9 @@ function DesktopItem({ item, onToggle, onDelete }) {
         </span>
       )}
       <button
-        ref={delRef}
-        onClick={e => { e.stopPropagation(); onDelete(item.id) }}
-        style={{ background: 'none', border: 'none', color: 'var(--text-faint)', cursor: 'pointer', fontSize: 16, padding: '0 2px', opacity: 0, transition: 'opacity .15s' }}
+        onClick={() => onDelete(item.id)}
+        title="Eliminar"
+        style={{ background: 'none', border: 'none', color: 'var(--text-faint)', cursor: 'pointer', fontSize: 16, padding: '0 4px', transition: 'color .15s' }}
         onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
         onMouseLeave={e => e.currentTarget.style.color = 'var(--text-faint)'}
       >×</button>
@@ -117,20 +117,15 @@ function DesktopItem({ item, onToggle, onDelete }) {
 
 // ── Desktop cart item (checked) ───────────────────────────────────
 function CartItem({ item, onUncheck, onDelete }) {
-  const delRef = useRef(null)
   return (
-    <div
-      onMouseEnter={() => delRef.current && (delRef.current.style.opacity = '1')}
-      onMouseLeave={() => delRef.current && (delRef.current.style.opacity = '0')}
-      style={{
-        display: 'flex', alignItems: 'center', gap: 10,
-        padding: '10px 14px', borderRadius: 10, border: '1px solid rgba(255,255,255,.06)',
-        marginBottom: 3, opacity: 0.7,
-      }}
-    >
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 10,
+      padding: '10px 14px', borderRadius: 10, border: '1px solid rgba(255,255,255,.06)',
+      marginBottom: 3, opacity: 0.7,
+    }}>
       <button
         onClick={() => onUncheck(item.id)}
-        title="Quitar del carro"
+        title="Devolver a la lista"
         style={{ background: 'none', border: 'none', color: 'var(--text-faint)', cursor: 'pointer', fontSize: 14, padding: 0, flexShrink: 0 }}
       >↩</button>
       <span style={{ flex: 1, fontSize: 13, fontWeight: 500, textDecoration: 'line-through', color: 'var(--text-faint)' }}>{item.name}</span>
@@ -140,9 +135,9 @@ function CartItem({ item, onUncheck, onDelete }) {
         </span>
       )}
       <button
-        ref={delRef}
         onClick={() => onDelete(item.id)}
-        style={{ background: 'none', border: 'none', color: 'var(--text-faint)', cursor: 'pointer', fontSize: 16, padding: '0 2px', opacity: 0, transition: 'opacity .15s' }}
+        title="Eliminar"
+        style={{ background: 'none', border: 'none', color: 'var(--text-faint)', cursor: 'pointer', fontSize: 16, padding: '0 4px', transition: 'color .15s' }}
         onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
         onMouseLeave={e => e.currentTarget.style.color = 'var(--text-faint)'}
       >×</button>
