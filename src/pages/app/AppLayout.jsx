@@ -28,6 +28,7 @@ const HOGAR_MODULES = [
   { path: 'recipes',    label: 'Recetas',     icon: '👨‍🍳' },
   { path: 'inventario', label: 'Inventario',  icon: '📦' },
   { path: 'limpieza',   label: 'Limpieza',    icon: '🧹' },
+  { path: 'ajustes',    label: 'Ajustes',     icon: '⚙️' },
 ]
 
 const MASCOTAS_MODULES = [
@@ -179,7 +180,14 @@ export default function AppLayout() {
     <AppProvider app={app}>
       {/* Mobile layout */}
       <div className="flex flex-col md:hidden min-h-[70vh] px-4 py-0">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '20px 0 8px' }}>
+        <NavLink to="/apps" style={{
+          display: 'inline-flex', alignItems: 'center', gap: 4,
+          fontSize: 13, color: 'var(--text-muted)', textDecoration: 'none',
+          padding: '12px 0 0', lineHeight: 1,
+        }}>
+          ← Mis Apps
+        </NavLink>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0 8px' }}>
           <span style={{ fontSize: 36 }}>{app.icon}</span>
           <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', margin: 0 }}>{app.name}</h1>
         </div>
@@ -213,6 +221,12 @@ export default function AppLayout() {
       <div className="hidden md:block max-w-[1440px] mx-auto px-6 sm:px-10 lg:px-16">
         <div className="flex gap-8 py-8 min-h-[70vh]">
           <aside className="w-52 shrink-0">
+            <NavLink
+              to="/apps"
+              className="flex items-center gap-1 text-xs text-[var(--text-muted)] hover:text-[var(--text)] mb-4 transition-colors"
+            >
+              ← Mis Apps
+            </NavLink>
             <div className="mb-6">
               <div className="text-3xl mb-1">{app.icon}</div>
               <h1 className="font-bold text-[var(--text)]">{app.name}</h1>

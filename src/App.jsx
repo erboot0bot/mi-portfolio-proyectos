@@ -27,6 +27,7 @@ const Recipes       = React.lazy(() => import('./pages/app/modules/Recipes'))
 const RecipeDetail  = React.lazy(() => import('./pages/app/modules/RecipeDetail'))
 const Inventario    = React.lazy(() => import('./pages/app/modules/Inventario'))
 const Limpieza      = React.lazy(() => import('./pages/app/modules/Limpieza'))
+const HogarAjustes  = React.lazy(() => import('./pages/app/modules/HogarAjustes'))
 
 const MisMascotas          = React.lazy(() => import('./pages/app/modules/mascotas/MisMascotas'))
 const PetDetail            = React.lazy(() => import('./pages/app/modules/mascotas/PetDetail'))
@@ -147,6 +148,7 @@ export default function App() {
               <Route path="recipes/:recipeId" element={<RecipeDetail />} />
               <Route path="inventario"        element={<Inventario />} />
               <Route path="limpieza"          element={<Limpieza />} />
+              <Route path="ajustes"           element={<HogarAjustes />} />
             </Route>
 
             {/* Mascotas */}
