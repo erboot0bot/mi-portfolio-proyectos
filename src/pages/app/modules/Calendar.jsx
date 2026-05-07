@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import ModuleShell from './ModuleShell'
 import ModuleTopNav from '../../../components/ModuleTopNav'
