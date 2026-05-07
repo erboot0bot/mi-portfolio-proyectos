@@ -1,5 +1,7 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+// Service-role client: bypasses RLS intentionally.
+// All writes include explicit user_id filter to scope to the authenticated user.
 const supabase = createClient(
   Deno.env.get("SUPABASE_URL")!,
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
@@ -27,7 +29,14 @@ Deno.serve(async (req: Request) => {
   }
 
   if (req.method !== "POST") {
-    return new Response("Method not allowed", { status: 405 });
+    return new Response(JSON.stringify({ error: "Method not allowed" }), {
+      status: 405,
+      headers: {
+        "Content-Type": "application/json",
+        "Allow": "POST",
+        "Access-Control-Allow-Origin": "*",
+      },
+    });
   }
 
   const authHeader = req.headers.get("Authorization");
@@ -54,11 +63,19 @@ Deno.serve(async (req: Request) => {
   }
 
   // Invalidar códigos anteriores no usados del mismo usuario
-  await supabase
+  const { error: invalidateError } = await supabase
     .from("telegram_link_codes")
     .update({ used: true })
     .eq("user_id", user.id)
     .eq("used", false);
+
+  if (invalidateError) {
+    console.error("Invalidate codes error:", invalidateError);
+    return new Response(JSON.stringify({ error: "Internal error" }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
 
   // Generar nuevo código
   const code = generateCode();
