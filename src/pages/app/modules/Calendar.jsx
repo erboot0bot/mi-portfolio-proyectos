@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useRef, useMemo } from 'react'
 import { useOutletContext } from 'react-router-dom'
-import { supabase } from '../../../lib/supabase'
 import ModuleShell from './ModuleShell'
 import ModuleTopNav from '../../../components/ModuleTopNav'
 import './Calendar.css'
 import { usePWAManifest } from '../../../hooks/usePWAManifest'
+import { useMode } from '../../../contexts/ModeContext'
+import { useEventsData } from '../../../hooks/data/useEventsData'
 
 // ── Constantes ────────────────────────────────────────────────────
 const HOUR_HEIGHT = 48
@@ -458,57 +459,38 @@ function AgendaView({ days, events, onEventClick }) {
 export default function Calendar() {
   usePWAManifest('calendar')
   const { app, modules } = useOutletContext()
+  const { mode } = useMode()
   const isMobile = window.innerWidth < 768
-  const [events, setEvents]         = useState([])
+  const { events: rawEvents, add: hookAdd, update: hookUpdate, remove: hookRemove } =
+    useEventsData({ appId: app.id, mode, eventTypes: ['task'] })
+  const events = useMemo(() => rawEvents.map(dbToEvent), [rawEvents])
   const [anchor, setAnchor]         = useState(new Date())
   const [view, setView]             = useState(() => isMobile ? 'day' : 'week')
   const [showWeekends, setWeekends] = useState(true)
   const [modal, setModal]           = useState(null)
   const scrollRef = useRef(null)
 
-  useEffect(() => {
-    supabase
-      .from('events')
-      .select('*')
-      .eq('app_id', app.id)
-      .eq('event_type', 'task')
-      .then(({ data }) => { if (data) setEvents(data.map(dbToEvent)) })
-  }, [app.id])
-
   async function handleSave({ title, description, color, allDay, recurrence, startStr, endStr }) {
     const payload = {
-      app_id:      app.id,
-      event_type:  'task',
+      event_type: 'task',
       title,
       description,
       color,
-      all_day:     allDay,
+      all_day:    allDay,
       recurrence,
-      start_time:  startStr ? new Date(startStr).toISOString() : new Date().toISOString(),
-      end_time:    endStr   ? new Date(endStr).toISOString()   : null,
+      start_time: startStr ? new Date(startStr).toISOString() : new Date().toISOString(),
+      end_time:   endStr   ? new Date(endStr).toISOString()   : null,
     }
     if (modal?.ev?.id) {
-      const { error } = await supabase
-        .from('events').update(payload).eq('id', modal.ev.id)
-      if (!error) {
-        setEvents(prev => prev.map(e =>
-          e.id === modal.ev.id
-            ? { ...e, title, description, color, allDay, recurrence,
-                start: payload.start_time, end: payload.end_time }
-            : e
-        ))
-      }
+      await hookUpdate(modal.ev.id, payload)
     } else {
-      const { data, error } = await supabase
-        .from('events').insert(payload).select().single()
-      if (!error && data) setEvents(prev => [...prev, dbToEvent(data)])
+      await hookAdd(payload)
     }
     setModal(null)
   }
 
   async function handleDelete(id) {
-    await supabase.from('events').delete().eq('id', id)
-    setEvents(prev => prev.filter(e => e.id !== id))
+    await hookRemove(id)
     setModal(null)
   }
 

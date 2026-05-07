@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
-import { useParams, useOutletContext, Navigate, Outlet, NavLink, useNavigate } from 'react-router-dom'
+import { useParams, useOutletContext, Navigate, Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../../../../lib/supabase'
+import { useMode } from '../../../../contexts/ModeContext'
+import { demoRead } from '../../../../data/demo/index.js'
 
 const TABS = [
   { path: 'repostajes',    label: 'Repostajes',    icon: '⛽' },
@@ -13,11 +15,23 @@ export default function VehiculoDetail() {
   const { vehicleId } = useParams()
   const { app }       = useOutletContext()
   const navigate      = useNavigate()
+  const location      = useLocation()
+  const { mode }      = useMode()
+  const appType       = app.id.replace('demo-', '')
   const [vehicle, setVehicle]   = useState(null)
   const [loading, setLoading]   = useState(true)
   const [notFound, setNotFound] = useState(false)
 
+  const listPath = location.pathname.replace(`/${vehicleId}`, '').replace(/\/(repostajes|mantenimiento|gastos|estadisticas)$/, '')
+
   useEffect(() => {
+    if (mode === 'demo') {
+      const found = demoRead(appType, 'vehicles').find(v => v.id === vehicleId)
+      if (!found) { setNotFound(true); setLoading(false); return }
+      setVehicle(found)
+      setLoading(false)
+      return
+    }
     let cancelled = false
     supabase.from('vehicles')
       .select('*')
@@ -31,9 +45,9 @@ export default function VehiculoDetail() {
         setLoading(false)
       })
     return () => { cancelled = true }
-  }, [vehicleId, app.id])
+  }, [vehicleId, app.id, mode, appType])
 
-  if (notFound) return <Navigate to="/app/vehiculo/mis-vehiculos" replace />
+  if (notFound) return <Navigate to={listPath} replace />
 
   if (loading) return (
     <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}>
@@ -45,7 +59,7 @@ export default function VehiculoDetail() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
       {/* Vehicle header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 20px 0', borderBottom: '1px solid var(--border)' }}>
-        <button onClick={() => navigate('/app/vehiculo/mis-vehiculos')}
+        <button onClick={() => navigate(listPath)}
           style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-faint)', fontSize: 20, padding: '0 4px' }}>
           ‹
         </button>

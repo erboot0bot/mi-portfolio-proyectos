@@ -2,9 +2,13 @@
 import { useState, useEffect, useRef } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import { supabase } from '../../../../lib/supabase'
+import { useMode } from '../../../../contexts/ModeContext'
+import { demoRead, demoWrite } from '../../../../data/demo/index.js'
 
 export default function Alimentacion() {
   const { pet, app } = useOutletContext()
+  const { mode } = useMode()
+  const appType = app.id.replace('demo-', '')
   const adjusting = useRef(new Set())
 
   // --- Stock state ---
@@ -22,6 +26,10 @@ export default function Alimentacion() {
   const [schedError, setSchedError] = useState(null)
 
   useEffect(() => {
+    if (mode === 'demo') {
+      setInvLoading(false)
+      return
+    }
     let cancelled = false
     supabase.from('inventory')
       .select('*, product:products(*)')
@@ -35,11 +43,28 @@ export default function Alimentacion() {
         setInvLoading(false)
       })
     return () => { cancelled = true }
-  }, [app.id, pet.id])
+  }, [app.id, pet.id, mode, appType])
 
   async function handleAddItem() {
     if (!itemForm.name.trim()) return
     setItemError(null)
+    if (mode === 'demo') {
+      const newItem = {
+        id: crypto.randomUUID(),
+        app_id: app.id,
+        product_id: crypto.randomUUID(),
+        product: { name: itemForm.name.trim() },
+        current_stock: Number(itemForm.current_stock) || 0,
+        min_stock: Number(itemForm.min_stock) || 0,
+        unit: itemForm.unit,
+        metadata: { pet_id: pet.id },
+        created_at: new Date().toISOString(),
+      }
+      setInventory(p => [...p, newItem])
+      setItemForm({ name: '', current_stock: '', min_stock: '', unit: 'g' })
+      setShowAddItem(false)
+      return
+    }
     const { data: existing } = await supabase.from('products')
       .select('id').ilike('name', itemForm.name.trim()).maybeSingle()
     let productId = existing?.id
@@ -77,6 +102,11 @@ export default function Alimentacion() {
     const item = inventory.find(i => i.id === id)
     if (!item) { adjusting.current.delete(id); return }
     const newStock = Math.max(0, (item.current_stock ?? 0) + delta)
+    if (mode === 'demo') {
+      adjusting.current.delete(id)
+      setInventory(p => p.map(i => i.id === id ? { ...i, current_stock: newStock } : i))
+      return
+    }
     const { error } = await supabase.from('inventory')
       .update({ current_stock: newStock, updated_at: new Date().toISOString() })
       .eq('id', id)
@@ -85,6 +115,10 @@ export default function Alimentacion() {
   }
 
   async function removeItem(id) {
+    if (mode === 'demo') {
+      setInventory(p => p.filter(i => i.id !== id))
+      return
+    }
     const { error } = await supabase.from('inventory').delete().eq('id', id)
     if (!error) setInventory(p => p.filter(i => i.id !== id))
   }
@@ -96,6 +130,14 @@ export default function Alimentacion() {
       ...schedule,
       { time: tomaForm.time, amount: tomaForm.amount.trim(), label: tomaForm.label.trim() || tomaForm.time },
     ]
+    if (mode === 'demo') {
+      const allPets = demoRead(appType, 'pets')
+      demoWrite(appType, 'pets', allPets.map(p => p.id === pet.id ? { ...p, metadata: { ...p.metadata, feeding_schedule: newSchedule } } : p))
+      setSchedule(newSchedule)
+      setTomaForm({ time: '08:00', amount: '', label: 'Mañana' })
+      setShowAddToma(false)
+      return
+    }
     const { error } = await supabase.from('pets')
       .update({ metadata: { ...pet.metadata, feeding_schedule: newSchedule } })
       .eq('id', pet.id)
@@ -107,6 +149,12 @@ export default function Alimentacion() {
 
   async function removeToma(idx) {
     const newSchedule = schedule.filter((_, i) => i !== idx)
+    if (mode === 'demo') {
+      const allPets = demoRead(appType, 'pets')
+      demoWrite(appType, 'pets', allPets.map(p => p.id === pet.id ? { ...p, metadata: { ...p.metadata, feeding_schedule: newSchedule } } : p))
+      setSchedule(newSchedule)
+      return
+    }
     const { error } = await supabase.from('pets')
       .update({ metadata: { ...pet.metadata, feeding_schedule: newSchedule } })
       .eq('id', pet.id)

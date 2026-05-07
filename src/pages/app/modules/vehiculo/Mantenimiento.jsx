@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import { supabase } from '../../../../lib/supabase'
+import { useMode } from '../../../../contexts/ModeContext'
+import { demoRead, demoWrite } from '../../../../data/demo/index.js'
 
 const MAINT_TYPES = ['ITV', 'aceite', 'ruedas', 'frenos', 'bateria', 'filtro', 'correa', 'otro']
 const MAINT_ICONS = { ITV: '📋', aceite: '🛢️', ruedas: '🔄', frenos: '⚙️', bateria: '🔋', filtro: '🌀', correa: '⛓️', otro: '🔧' }
@@ -13,6 +15,8 @@ function daysUntil(dateStr) {
 
 export default function Mantenimiento() {
   const { app, vehicle } = useOutletContext()
+  const { mode } = useMode()
+  const appType = app.id.replace('demo-', '')
   const [logs, setLogs]       = useState([])
   const [loading, setLoading] = useState(true)
   const [showAdd, setShowAdd] = useState(false)
@@ -20,6 +24,12 @@ export default function Mantenimiento() {
   const [addError, setAddError] = useState(null)
 
   useEffect(() => {
+    if (mode === 'demo') {
+      const all = demoRead(appType, 'maintenance_logs')
+      setLogs(all.filter(l => l.vehicle_id === vehicle.id).sort((a, b) => b.date.localeCompare(a.date)))
+      setLoading(false)
+      return
+    }
     let cancelled = false
     supabase.from('maintenance_logs')
       .select('*')
@@ -31,11 +41,32 @@ export default function Mantenimiento() {
         setLoading(false)
       })
     return () => { cancelled = true }
-  }, [vehicle.id])
+  }, [vehicle.id, mode, appType])
 
   async function handleAdd() {
     if (!form.type || !form.date) return
     setAddError(null)
+    if (mode === 'demo') {
+      const newLog = {
+        id: crypto.randomUUID(),
+        vehicle_id: vehicle.id,
+        app_id: app.id,
+        type: form.type,
+        date: form.date,
+        km: form.km ? Number(form.km) : null,
+        description: form.description.trim() || null,
+        cost: form.cost ? Number(form.cost) : null,
+        next_km: form.next_km ? Number(form.next_km) : null,
+        next_date: form.next_date || null,
+        created_at: new Date().toISOString(),
+      }
+      const all = demoRead(appType, 'maintenance_logs')
+      demoWrite(appType, 'maintenance_logs', [newLog, ...all])
+      setLogs(p => [newLog, ...p])
+      setForm({ type: 'aceite', date: new Date().toISOString().slice(0, 10), km: '', description: '', cost: '', next_km: '', next_date: '' })
+      setShowAdd(false)
+      return
+    }
     const { data, error } = await supabase.from('maintenance_logs')
       .insert({
         vehicle_id:  vehicle.id,
@@ -58,6 +89,12 @@ export default function Mantenimiento() {
   }
 
   async function deleteLog(id) {
+    if (mode === 'demo') {
+      const all = demoRead(appType, 'maintenance_logs')
+      demoWrite(appType, 'maintenance_logs', all.filter(l => l.id !== id))
+      setLogs(p => p.filter(l => l.id !== id))
+      return
+    }
     const { error } = await supabase.from('maintenance_logs').delete().eq('id', id)
     if (!error) setLogs(p => p.filter(l => l.id !== id))
   }

@@ -1,12 +1,16 @@
 import { useState, useEffect } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import { supabase } from '../../../../lib/supabase'
+import { useMode } from '../../../../contexts/ModeContext'
+import { demoRead, demoWrite } from '../../../../data/demo/index.js'
 
 const EXPENSE_TYPES = ['seguro', 'multa', 'aparcamiento', 'lavado', 'otro']
 const EXPENSE_ICONS = { seguro: '🛡️', multa: '⚠️', aparcamiento: '🅿️', lavado: '🧼', otro: '💶' }
 
 export default function VehiculoGastos() {
   const { app, vehicle } = useOutletContext()
+  const { mode } = useMode()
+  const appType = app.id.replace('demo-', '')
   const [expenses, setExpenses] = useState([])
   const [loading, setLoading]   = useState(true)
   const [showAdd, setShowAdd]   = useState(false)
@@ -14,6 +18,12 @@ export default function VehiculoGastos() {
   const [addError, setAddError] = useState(null)
 
   useEffect(() => {
+    if (mode === 'demo') {
+      const all = demoRead(appType, 'vehicle_expenses') ?? []
+      setExpenses(all.filter(e => e.vehicle_id === vehicle.id).sort((a, b) => b.date.localeCompare(a.date)))
+      setLoading(false)
+      return
+    }
     let cancelled = false
     supabase.from('vehicle_expenses')
       .select('*')
@@ -25,11 +35,29 @@ export default function VehiculoGastos() {
         setLoading(false)
       })
     return () => { cancelled = true }
-  }, [vehicle.id])
+  }, [vehicle.id, mode, appType])
 
   async function handleAdd() {
     if (!form.cost || !form.date) return
     setAddError(null)
+    if (mode === 'demo') {
+      const newExp = {
+        id: crypto.randomUUID(),
+        vehicle_id: vehicle.id,
+        app_id: app.id,
+        type: form.type,
+        date: form.date,
+        description: form.description.trim() || null,
+        cost: Number(form.cost),
+        created_at: new Date().toISOString(),
+      }
+      const all = demoRead(appType, 'vehicle_expenses') ?? []
+      demoWrite(appType, 'vehicle_expenses', [newExp, ...all])
+      setExpenses(p => [newExp, ...p])
+      setForm({ type: 'seguro', date: new Date().toISOString().slice(0, 10), description: '', cost: '' })
+      setShowAdd(false)
+      return
+    }
     const { data, error } = await supabase.from('vehicle_expenses')
       .insert({
         vehicle_id:  vehicle.id,
@@ -49,6 +77,12 @@ export default function VehiculoGastos() {
   }
 
   async function deleteExpense(id) {
+    if (mode === 'demo') {
+      const all = demoRead(appType, 'vehicle_expenses') ?? []
+      demoWrite(appType, 'vehicle_expenses', all.filter(e => e.id !== id))
+      setExpenses(p => p.filter(e => e.id !== id))
+      return
+    }
     const { error } = await supabase.from('vehicle_expenses').delete().eq('id', id)
     if (!error) setExpenses(p => p.filter(e => e.id !== id))
   }

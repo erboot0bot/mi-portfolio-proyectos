@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import { supabase } from '../../../../lib/supabase'
+import { useMode } from '../../../../contexts/ModeContext'
+import { demoRead, demoWrite } from '../../../../data/demo/index.js'
 
 function formatDue(dateStr) {
   const d = new Date(dateStr)
@@ -25,6 +27,8 @@ const EVENT_TYPES = {
 
 export default function Salud() {
   const { pet, app } = useOutletContext()
+  const { mode } = useMode()
+  const appType = app.id.replace('demo-', '')
   const [events, setEvents]         = useState([])
   const [loading, setLoading]       = useState(true)
   const [fetchError, setFetchError] = useState(null)
@@ -36,6 +40,15 @@ export default function Salud() {
   const today = new Date().toISOString().slice(0, 10)
 
   useEffect(() => {
+    if (mode === 'demo') {
+      const all = demoRead(appType, 'events')
+      const filtered = all
+        .filter(e => ['vaccination', 'vet_visit', 'medication'].includes(e.event_type) && e.metadata?.pet_id === pet.id)
+        .sort((a, b) => new Date(a.start_time) - new Date(b.start_time))
+      setEvents(filtered)
+      setLoading(false)
+      return
+    }
     let cancelled = false
     supabase.from('events')
       .select('*')
@@ -50,12 +63,34 @@ export default function Salud() {
         setLoading(false)
       })
     return () => { cancelled = true }
-  }, [app.id, pet.id])
+  }, [app.id, pet.id, mode, appType])
 
   async function handleAdd() {
     if (!form.title.trim() || !form.date) return
     setAddError(null)
     const startTime = new Date(form.date + 'T09:00:00').toISOString()
+    if (mode === 'demo') {
+      const newEvent = {
+        id: crypto.randomUUID(),
+        app_id: app.id,
+        event_type: form.event_type,
+        title: form.title.trim(),
+        start_time: startTime,
+        all_day: true,
+        metadata: {
+          pet_id: pet.id,
+          notes: form.notes.trim() || null,
+          interval_days: form.interval_days && Number(form.interval_days) > 0 ? Number(form.interval_days) : null,
+        },
+        created_at: new Date().toISOString(),
+      }
+      const all = demoRead(appType, 'events')
+      demoWrite(appType, 'events', [...all, newEvent])
+      setEvents(p => [...p, newEvent].sort((a, b) => new Date(a.start_time) - new Date(b.start_time)))
+      setForm({ title: '', event_type: 'vaccination', date: '', notes: '', interval_days: '' })
+      setShowAdd(false)
+      return
+    }
     const { data, error } = await supabase.from('events').insert({
       app_id:     app.id,
       event_type: form.event_type,
@@ -79,6 +114,23 @@ export default function Salud() {
   }
 
   async function markDone(event) {
+    if (mode === 'demo') {
+      const all = demoRead(appType, 'events')
+      const remaining = all.filter(e => e.id !== event.id)
+      const intervalDays = event.metadata?.interval_days
+      if (intervalDays) {
+        const nextDate = new Date()
+        nextDate.setDate(nextDate.getDate() + Number(intervalDays))
+        nextDate.setHours(9, 0, 0, 0)
+        const nextEvent = { ...event, id: crypto.randomUUID(), start_time: nextDate.toISOString(), created_at: new Date().toISOString() }
+        demoWrite(appType, 'events', [...remaining, nextEvent])
+        setEvents(p => p.filter(e => e.id !== event.id).concat(nextEvent).sort((a, b) => new Date(a.start_time) - new Date(b.start_time)))
+      } else {
+        demoWrite(appType, 'events', remaining)
+        setEvents(p => p.filter(e => e.id !== event.id))
+      }
+      return
+    }
     const { error } = await supabase.from('events').delete().eq('id', event.id)
     if (error) { setMarkError('No se pudo completar el evento.'); return }
     setEvents(p => p.filter(e => e.id !== event.id))
@@ -104,6 +156,12 @@ export default function Salud() {
   }
 
   async function removeEvent(id) {
+    if (mode === 'demo') {
+      const all = demoRead(appType, 'events')
+      demoWrite(appType, 'events', all.filter(e => e.id !== id))
+      setEvents(p => p.filter(e => e.id !== id))
+      return
+    }
     const { error } = await supabase.from('events').delete().eq('id', id)
     if (error) { setMarkError('No se pudo eliminar el evento.'); return }
     setEvents(p => p.filter(e => e.id !== id))

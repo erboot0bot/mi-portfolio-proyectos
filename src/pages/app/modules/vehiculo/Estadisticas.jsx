@@ -1,15 +1,29 @@
 import { useState, useEffect } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import { supabase } from '../../../../lib/supabase'
+import { useMode } from '../../../../contexts/ModeContext'
+import { demoRead } from '../../../../data/demo/index.js'
 
 export default function Estadisticas() {
   const { app, vehicle } = useOutletContext()
+  const { mode } = useMode()
+  const appType = app.id.replace('demo-', '')
   const [fuel, setFuel]         = useState([])
   const [maint, setMaint]       = useState([])
   const [expenses, setExpenses] = useState([])
   const [loading, setLoading]   = useState(true)
 
   useEffect(() => {
+    if (mode === 'demo') {
+      const allFuel  = demoRead(appType, 'fuel_logs').filter(l => l.vehicle_id === vehicle.id)
+      const allMaint = demoRead(appType, 'maintenance_logs').filter(l => l.vehicle_id === vehicle.id)
+      const allExp   = (demoRead(appType, 'vehicle_expenses') ?? []).filter(e => e.vehicle_id === vehicle.id)
+      setFuel(allFuel)
+      setMaint(allMaint)
+      setExpenses(allExp)
+      setLoading(false)
+      return
+    }
     let cancelled = false
     Promise.all([
       supabase.from('fuel_logs').select('*').eq('vehicle_id', vehicle.id),
@@ -23,7 +37,7 @@ export default function Estadisticas() {
       setLoading(false)
     })
     return () => { cancelled = true }
-  }, [vehicle.id])
+  }, [vehicle.id, mode, appType])
 
   if (loading) return (
     <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}>

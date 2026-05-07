@@ -1,39 +1,22 @@
-import { useState, useEffect } from 'react'
 import { useOutletContext, useNavigate } from 'react-router-dom'
-import { supabase } from '../../../../lib/supabase'
+import { useMode } from '../../../../contexts/ModeContext'
+import { useFinTransaccionesData } from '../../../../hooks/data/useFinTransaccionesData'
+import { useFinPresupuestosData } from '../../../../hooks/data/useFinPresupuestosData'
 
 export default function Resumen() {
   const { app }  = useOutletContext()
   const navigate = useNavigate()
-  const [txs, setTxs]       = useState([])
-  const [budgets, setBudgets] = useState([])
-  const [cats, setCats]     = useState([])
-  const [loading, setLoading] = useState(true)
+  const { mode } = useMode()
+  const { txs,     loading: loadingTxs }     = useFinTransaccionesData({ appId: app.id, mode })
+  const { budgets, loading: loadingBudgets } = useFinPresupuestosData({ appId: app.id, mode })
 
-  const today = new Date()
-  const year  = today.getFullYear()
-  const month = today.getMonth() + 1
-  // First and last day of current month ISO strings
+  const loading = loadingTxs || loadingBudgets
+
+  const today    = new Date()
+  const year     = today.getFullYear()
+  const month    = today.getMonth() + 1
   const firstDay = `${year}-${String(month).padStart(2, '0')}-01`
   const lastDay  = new Date(year, month, 0).toISOString().slice(0, 10)
-
-  useEffect(() => {
-    let cancelled = false
-    Promise.all([
-      supabase.from('fin_transactions').select('*, fin_categories(name,icon,color,type)')
-        .eq('app_id', app.id)
-        .gte('date', firstDay).lte('date', lastDay),
-      supabase.from('fin_budgets').select('*, fin_categories(name,icon,color)').eq('app_id', app.id),
-      supabase.from('fin_categories').select('*').eq('app_id', app.id),
-    ]).then(([t, b, c]) => {
-      if (cancelled) return
-      setTxs(t.data ?? [])
-      setBudgets(b.data ?? [])
-      setCats(c.data ?? [])
-      setLoading(false)
-    })
-    return () => { cancelled = true }
-  }, [app.id, firstDay, lastDay])
 
   if (loading) return (
     <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}>
@@ -41,14 +24,13 @@ export default function Resumen() {
     </div>
   )
 
-  const income  = txs.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0)
-  const expense = txs.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0)
-  const balance = income - expense
+  const monthTxs = txs.filter(t => t.date >= firstDay && t.date <= lastDay)
+  const income   = monthTxs.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0)
+  const expense  = monthTxs.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0)
+  const balance  = income - expense
 
-  // Spending per category
-  const spendByCat = txs.filter(t => t.type === 'expense' && t.fin_categories).reduce((acc, t) => {
-    const id = t.category_id
-    acc[id] = (acc[id] || 0) + Number(t.amount)
+  const spendByCat = monthTxs.filter(t => t.type === 'expense' && t.category_id).reduce((acc, t) => {
+    acc[t.category_id] = (acc[t.category_id] || 0) + Number(t.amount)
     return acc
   }, {})
 
@@ -119,7 +101,7 @@ export default function Resumen() {
       )}
 
       {/* Empty state if no data */}
-      {txs.length === 0 && budgets.length === 0 && (
+      {monthTxs.length === 0 && budgets.length === 0 && (
         <div style={{ textAlign: 'center', padding: '40px 20px' }}>
           <p style={{ fontSize: 40, margin: '0 0 8px' }}>📊</p>
           <p style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', margin: '0 0 4px' }}>Sin datos este mes</p>

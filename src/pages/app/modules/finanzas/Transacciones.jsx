@@ -1,59 +1,38 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
-import { supabase } from '../../../../lib/supabase'
+import { useMode } from '../../../../contexts/ModeContext'
+import { useFinTransaccionesData } from '../../../../hooks/data/useFinTransaccionesData'
+import { useFinCategoriasData } from '../../../../hooks/data/useFinCategoriasData'
 
 export default function Transacciones() {
   const { app } = useOutletContext()
-  const [txs, setTxs]           = useState([])
-  const [cats, setCats]         = useState([])
-  const [loading, setLoading]   = useState(true)
+  const { mode } = useMode()
+  const { txs, loading: loadingTxs, add, remove } = useFinTransaccionesData({ appId: app.id, mode })
+  const { cats, loading: loadingCats } = useFinCategoriasData({ appId: app.id, mode })
+
+  const loading = loadingTxs || loadingCats
+
   const [showAdd, setShowAdd]   = useState(null) // null | 'expense' | 'income'
   const [form, setForm]         = useState({ type: 'expense', amount: '', category_id: '', description: '', date: new Date().toISOString().slice(0, 10) })
   const [addError, setAddError] = useState(null)
-  // Filters
   const today      = new Date()
-  const [filterType, setFilterType] = useState('all')
-  const [filterYear, setFilterYear]  = useState(today.getFullYear())
+  const [filterType, setFilterType]   = useState('all')
+  const [filterYear, setFilterYear]   = useState(today.getFullYear())
   const [filterMonth, setFilterMonth] = useState(today.getMonth() + 1)
-
-  useEffect(() => {
-    let cancelled = false
-    Promise.all([
-      supabase.from('fin_transactions').select('*, fin_categories(name,icon,color,type)').eq('app_id', app.id).order('date', { ascending: false }),
-      supabase.from('fin_categories').select('*').eq('app_id', app.id).order('type').order('name'),
-    ]).then(([t, c]) => {
-      if (cancelled) return
-      setTxs(t.data ?? [])
-      setCats(c.data ?? [])
-      setLoading(false)
-    })
-    return () => { cancelled = true }
-  }, [app.id])
 
   async function handleAdd() {
     if (!form.amount || !form.date) return
     setAddError(null)
-    const { data, error } = await supabase.from('fin_transactions')
-      .insert({
-        app_id:      app.id,
-        type:        form.type,
-        amount:      Number(form.amount),
-        category_id: form.category_id || null,
-        description: form.description.trim() || null,
-        date:        form.date,
-      })
-      .select('*, fin_categories(name,icon,color,type)').single()
-    if (error) { setAddError('No se pudo guardar.'); return }
-    if (data) {
-      setTxs(p => [data, ...p])
+    try {
+      await add(
+        { type: form.type, amount: Number(form.amount), category_id: form.category_id || null, description: form.description.trim() || null, date: form.date },
+        cats,
+      )
       setForm({ type: form.type, amount: '', category_id: '', description: '', date: new Date().toISOString().slice(0, 10) })
       setShowAdd(null)
+    } catch {
+      setAddError('No se pudo guardar.')
     }
-  }
-
-  async function deleteTx(id) {
-    const { error } = await supabase.from('fin_transactions').delete().eq('id', id)
-    if (!error) setTxs(p => p.filter(t => t.id !== id))
   }
 
   const filtered = txs.filter(tx => {
@@ -67,16 +46,13 @@ export default function Transacciones() {
   const totalInc = filtered.filter(t => t.type === 'income').reduce((s, t) => s + Number(t.amount), 0)
   const totalExp = filtered.filter(t => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0)
 
-  // Month selector options: last 13 months
   const monthOptions = []
   for (let i = 0; i < 13; i++) {
     const d = new Date(today.getFullYear(), today.getMonth() - i, 1)
     monthOptions.push({ year: d.getFullYear(), month: d.getMonth() + 1, label: d.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' }) })
   }
 
-  const expenseCats = cats.filter(c => c.type === 'expense')
-  const incomeCats  = cats.filter(c => c.type === 'income')
-  const relevantCats = (form.type === 'expense' ? expenseCats : incomeCats)
+  const relevantCats = cats.filter(c => c.type === form.type)
 
   if (loading) return (
     <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}>
@@ -212,7 +188,7 @@ export default function Transacciones() {
                 <span style={{ fontSize: 14, fontWeight: 700, color: isIncome ? '#10b981' : '#ef4444', flexShrink: 0 }}>
                   {isIncome ? '+' : '−'}{Number(tx.amount).toFixed(2)} €
                 </span>
-                <button className="del" onClick={() => deleteTx(tx.id)}
+                <button className="del" onClick={() => remove(tx.id)}
                   style={{ background: 'none', border: 'none', color: 'var(--text-faint)', cursor: 'pointer', fontSize: 18, padding: '0 4px', opacity: 0, transition: 'opacity .15s' }}
                   onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
                   onMouseLeave={e => e.currentTarget.style.color = 'var(--text-faint)'}

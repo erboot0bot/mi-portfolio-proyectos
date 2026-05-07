@@ -1,11 +1,12 @@
-// src/pages/app/modules/Inventario.jsx
 import { useState, useEffect, useRef } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import { supabase } from '../../../lib/supabase'
 import ModuleShell from './ModuleShell'
+import { useMode } from '../../../contexts/ModeContext'
 
 export default function Inventario() {
   const { app, modules } = useOutletContext()
+  const { mode } = useMode()
   const [inventory, setInventory] = useState([])
   const [loading, setLoading]     = useState(true)
   const [showAdd, setShowAdd]     = useState(false)
@@ -15,6 +16,7 @@ export default function Inventario() {
   const adjusting                 = useRef(new Set())
 
   useEffect(() => {
+    if (mode === 'demo') { setLoading(false); return }
     let cancelled = false
     supabase.from('inventory')
       .select('*, product:products(*)')
@@ -27,11 +29,27 @@ export default function Inventario() {
         setLoading(false)
       })
     return () => { cancelled = true }
-  }, [app.id])
+  }, [app.id, mode])
 
   async function handleAdd() {
     if (!form.name.trim()) return
     setError(null)
+
+    if (mode === 'demo') {
+      const newItem = {
+        id: crypto.randomUUID(),
+        app_id: app.id,
+        product_id: crypto.randomUUID(),
+        current_stock: Number(form.current_stock) || 0,
+        min_stock: Number(form.min_stock) || 0,
+        unit: form.unit,
+        product: { name: form.name.trim() },
+      }
+      setInventory(p => [...p, newItem])
+      setForm({ name: '', current_stock: '', min_stock: '', unit: 'unidad' })
+      setShowAdd(false)
+      return
+    }
 
     // Buscar o crear producto en catálogo global
     const { data: existing } = await supabase.from('products')
@@ -78,6 +96,11 @@ export default function Inventario() {
     const item = inventory.find(i => i.id === id)
     if (!item) { adjusting.current.delete(id); return }
     const newStock = Math.max(0, (item.current_stock ?? 0) + delta)
+    if (mode === 'demo') {
+      adjusting.current.delete(id)
+      setInventory(p => p.map(i => i.id === id ? { ...i, current_stock: newStock } : i))
+      return
+    }
     const { error } = await supabase.from('inventory')
       .update({ current_stock: newStock, updated_at: new Date().toISOString() })
       .eq('id', id)
@@ -86,6 +109,7 @@ export default function Inventario() {
   }
 
   async function removeItem(id) {
+    if (mode === 'demo') { setInventory(p => p.filter(i => i.id !== id)); return }
     const { error } = await supabase.from('inventory').delete().eq('id', id)
     if (!error) setInventory(p => p.filter(i => i.id !== id))
   }

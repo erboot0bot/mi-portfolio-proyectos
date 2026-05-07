@@ -13,7 +13,8 @@ const ProjectDetail = React.lazy(() => import('./pages/ProjectDetail'))
 const Login         = React.lazy(() => import('./pages/Login'))
 const NotFound      = React.lazy(() => import('./pages/NotFound'))
 const Contact       = React.lazy(() => import('./pages/Contact'))
-const Lab           = React.lazy(() => import('./pages/Lab'))
+const DemoHub        = React.lazy(() => import('./pages/DemoHub'))
+const DemoAppLayout  = React.lazy(() => import('./pages/app/DemoAppLayout'))
 
 const AppsHub       = React.lazy(() => import('./pages/AppsHub'))
 
@@ -26,6 +27,7 @@ const Recipes       = React.lazy(() => import('./pages/app/modules/Recipes'))
 const RecipeDetail  = React.lazy(() => import('./pages/app/modules/RecipeDetail'))
 const Inventario    = React.lazy(() => import('./pages/app/modules/Inventario'))
 const Limpieza      = React.lazy(() => import('./pages/app/modules/Limpieza'))
+const HogarAjustes  = React.lazy(() => import('./pages/app/modules/HogarAjustes'))
 
 const MisMascotas          = React.lazy(() => import('./pages/app/modules/mascotas/MisMascotas'))
 const PetDetail            = React.lazy(() => import('./pages/app/modules/mascotas/PetDetail'))
@@ -90,8 +92,8 @@ const pageVariants = {
 }
 
 function getAnimKey(pathname) {
-  const match = pathname.match(/^\/app\/(\w+)/)
-  if (match) return `/app/${match[1]}`
+  const match = pathname.match(/^\/(app|demo)\/(\w+)/)
+  if (match) return `/${match[1]}/${match[2]}`
   return pathname
 }
 
@@ -126,7 +128,7 @@ export default function App() {
             <Route path="/store"          element={<ComingSoonPage title="Tienda" icon="🛒" waitlistKey="tienda" />} />
             <Route path="/login"          element={<Login />} />
             <Route path="/contact"        element={<Contact />} />
-            <Route path="/lab"            element={<Lab />} />
+            <Route path="/demo"           element={<DemoHub />} />
 
             {/* Hub de apps */}
             <Route path="/apps" element={
@@ -146,6 +148,7 @@ export default function App() {
               <Route path="recipes/:recipeId" element={<RecipeDetail />} />
               <Route path="inventario"        element={<Inventario />} />
               <Route path="limpieza"          element={<Limpieza />} />
+              <Route path="ajustes"           element={<HogarAjustes />} />
             </Route>
 
             {/* Mascotas */}
@@ -197,6 +200,39 @@ export default function App() {
               <Route path="transacciones" element={<FinanzasTransacciones />} />
               <Route path="categorias"    element={<FinanzasCategorias />} />
               <Route path="presupuestos"  element={<FinanzasPresupuestos />} />
+            </Route>
+
+            {/* Demo (público) */}
+            <Route path="/demo/:appType" element={<DemoAppLayout />}>
+              <Route path="calendar"            element={<Calendar />} />
+              <Route path="shopping"            element={<ShoppingList />} />
+              <Route path="menu"                element={<Menu />} />
+              <Route path="recipes"             element={<Recipes />} />
+              <Route path="recipes/:recipeId"   element={<RecipeDetail />} />
+              <Route path="inventario"          element={<Inventario />} />
+              <Route path="limpieza"            element={<Limpieza />} />
+              <Route path="resumen"             element={<FinanzasResumen />} />
+              <Route path="transacciones"       element={<FinanzasTransacciones />} />
+              <Route path="categorias"          element={<FinanzasCategorias />} />
+              <Route path="presupuestos"        element={<FinanzasPresupuestos />} />
+              <Route path="notas"               element={<PersonalNotas />} />
+              <Route path="tareas"              element={<PersonalTareas />} />
+              <Route path="ideas"               element={<PersonalIdeas />} />
+              <Route path="mis-mascotas"        element={<MisMascotas />} />
+              <Route path="mis-mascotas/:petId" element={<PetDetail />}>
+                <Route index element={<Navigate to="alimentacion" replace />} />
+                <Route path="alimentacion" element={<MascotasAlimentacion />} />
+                <Route path="salud"        element={<MascotasSalud />} />
+                <Route path="rutinas"      element={<MascotasRutinas />} />
+              </Route>
+              <Route path="mis-vehiculos"             element={<MisVehiculos />} />
+              <Route path="mis-vehiculos/:vehicleId"  element={<VehiculoDetail />}>
+                <Route index element={<Navigate to="repostajes" replace />} />
+                <Route path="repostajes"    element={<VehiculoRepostajes />} />
+                <Route path="mantenimiento" element={<VehiculoMant />} />
+                <Route path="gastos"        element={<VehiculoGastos />} />
+                <Route path="estadisticas"  element={<VehiculoStats />} />
+              </Route>
             </Route>
 
             {/* 404 */}

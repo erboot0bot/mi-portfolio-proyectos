@@ -6,6 +6,8 @@ import { motion } from 'framer-motion'
 import { supabase } from '../../../lib/supabase'
 import { recipeIngredientToDb } from '../../../utils/recipeTransformers'
 import { usePWAManifest } from '../../../hooks/usePWAManifest'
+import { useMode } from '../../../contexts/ModeContext'
+import { demoRead, demoWrite } from '../../../data/demo/index.js'
 
 async function suggestRecipes({ ingredients, restrictions, timeMinutes, servings }) {
   const { data: { session } } = await supabase.auth.getSession()
@@ -174,7 +176,7 @@ function AIModal({ appId, onSaved, onClose }) {
   )
 }
 
-function ManualModal({ appId, recipe: existingRecipe, onSaved, onClose }) {
+function ManualModal({ appId, recipe: existingRecipe, onSaved, onClose, mode, appType }) {
   const [form, setForm] = useState({
     title: existingRecipe?.title ?? '',
     instructions: existingRecipe?.instructions ?? '',
@@ -227,6 +229,23 @@ function ManualModal({ appId, recipe: existingRecipe, onSaved, onClose }) {
       cook_time: form.cook_time ? Number(form.cook_time) : null,
       servings: form.servings,
       tags,
+    }
+
+    if (mode === 'demo') {
+      if (existingRecipe) {
+        const updated = { ...existingRecipe, ...payload }
+        const all = demoRead(appType, 'recipes')
+        demoWrite(appType, 'recipes', all.map(r => r.id === existingRecipe.id ? updated : r))
+        setSaving(false)
+        onSaved(updated)
+      } else {
+        const newR = { ...payload, id: crypto.randomUUID(), ai_generated: false, created_at: new Date().toISOString() }
+        const all = demoRead(appType, 'recipes')
+        demoWrite(appType, 'recipes', [newR, ...all])
+        setSaving(false)
+        onSaved(newR)
+      }
+      return
     }
 
     let data, err
@@ -358,6 +377,8 @@ function ManualModal({ appId, recipe: existingRecipe, onSaved, onClose }) {
 export default function Recipes() {
   usePWAManifest('recipes')
   const { app, modules } = useOutletContext()
+  const { mode } = useMode()
+  const appType = app.id.replace('demo-', '')
   const navigate = useNavigate()
   const [recipes, setRecipes]           = useState([])
   const [showAI, setShowAI]             = useState(false)
@@ -383,10 +404,14 @@ export default function Recipes() {
   }
 
   useEffect(() => {
+    if (mode === 'demo') {
+      setRecipes(demoRead(appType, 'recipes'))
+      return
+    }
     supabase.from('recipes').select('*').eq('app_id', app.id)
       .order('created_at', { ascending: false })
       .then(({ data }) => { if (data) setRecipes(data) })
-  }, [app.id])
+  }, [app.id, mode, appType])
 
   useEffect(() => {
     if (!menuOpen) return
@@ -401,6 +426,14 @@ export default function Recipes() {
 
   async function handleDelete(recipe) {
     setDeleteConfirming(true)
+    if (mode === 'demo') {
+      const all = demoRead(appType, 'recipes')
+      demoWrite(appType, 'recipes', all.filter(r => r.id !== recipe.id))
+      setRecipes(prev => prev.filter(r => r.id !== recipe.id))
+      setDeleteRecipe(null)
+      setDeleteConfirming(false)
+      return
+    }
     await supabase.from('recipes').delete().eq('id', recipe.id)
     setRecipes(prev => prev.filter(r => r.id !== recipe.id))
     setDeleteRecipe(null)
@@ -625,6 +658,8 @@ export default function Recipes() {
           appId={app.id}
           onSaved={r => { handleSaved(r); setShowManual(false) }}
           onClose={() => setShowManual(false)}
+          mode={mode}
+          appType={appType}
         />
       )}
 
@@ -657,6 +692,8 @@ export default function Recipes() {
           recipe={editRecipe}
           onSaved={handleEdited}
           onClose={() => setEditRecipe(null)}
+          mode={mode}
+          appType={appType}
         />
       )}
     </div>

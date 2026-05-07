@@ -1,9 +1,13 @@
 import { useState, useEffect } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import { supabase } from '../../../../lib/supabase'
+import { useMode } from '../../../../contexts/ModeContext'
+import { demoRead, demoWrite } from '../../../../data/demo/index.js'
 
 export default function Ideas() {
   const { app } = useOutletContext()
+  const { mode } = useMode()
+  const appType = app.id.replace('demo-', '')
   const [ideas, setIdeas]       = useState([])
   const [loading, setLoading]   = useState(true)
   const [fetchError, setFetchError] = useState(null)
@@ -12,6 +16,11 @@ export default function Ideas() {
   const [search, setSearch]     = useState('')
 
   useEffect(() => {
+    if (mode === 'demo') {
+      setIdeas(demoRead(appType, 'personal_ideas'))
+      setLoading(false)
+      return
+    }
     let cancelled = false
     supabase.from('personal_ideas')
       .select('*')
@@ -24,7 +33,7 @@ export default function Ideas() {
         setLoading(false)
       })
     return () => { cancelled = true }
-  }, [app.id])
+  }, [app.id, mode, appType])
 
   async function handleSave() {
     if (!modal || !modal.title.trim()) return
@@ -34,6 +43,20 @@ export default function Ideas() {
       title:       modal.title.trim(),
       description: modal.description.trim(),
       tags:        modal.tags,
+    }
+    if (mode === 'demo') {
+      const all = demoRead(appType, 'personal_ideas')
+      if (modal.id) {
+        demoWrite(appType, 'personal_ideas', all.map(i => i.id === modal.id ? { ...i, ...payload } : i))
+        setIdeas(p => p.map(i => i.id === modal.id ? { ...i, ...payload } : i))
+      } else {
+        const newIdea = { ...payload, id: crypto.randomUUID(), created_at: new Date().toISOString() }
+        demoWrite(appType, 'personal_ideas', [newIdea, ...all])
+        setIdeas(p => [newIdea, ...p])
+      }
+      setModal(null)
+      setSaving(false)
+      return
     }
     if (modal.id) {
       const { error } = await supabase.from('personal_ideas').update(payload).eq('id', modal.id)
@@ -46,6 +69,12 @@ export default function Ideas() {
   }
 
   async function deleteIdea(id) {
+    if (mode === 'demo') {
+      const all = demoRead(appType, 'personal_ideas')
+      demoWrite(appType, 'personal_ideas', all.filter(i => i.id !== id))
+      setIdeas(p => p.filter(i => i.id !== id))
+      return
+    }
     const { error } = await supabase.from('personal_ideas').delete().eq('id', id)
     if (!error) setIdeas(p => p.filter(i => i.id !== id))
   }

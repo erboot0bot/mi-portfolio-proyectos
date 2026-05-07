@@ -136,7 +136,7 @@ export default function Layout({ children }) {
             <NavLink to="/" className={navLinkClass}>Inicio</NavLink>
             <NavLink to="/projects" className={navLinkClass}>{t('documentation')}</NavLink>
             <NavLink to="/apps" className={navLinkClass}>Apps</NavLink>
-            <NavLink to="/lab" className={navLinkClass}>Lab</NavLink>
+            <NavLink to="/demo" className={navLinkClass}>Demo</NavLink>
             <NavLink to="/courses" className={navLinkClass}>Cursos</NavLink>
             <NavLink to="/store" className={navLinkClass}>Tienda</NavLink>
             <NavLink to="/contact" className={navLinkClass}>Contacto</NavLink>
@@ -209,7 +209,7 @@ export default function Layout({ children }) {
             <NavLink to="/" className={navLinkClass}>Inicio</NavLink>
             <NavLink to="/projects" className={navLinkClass}>{t('documentation')}</NavLink>
             <NavLink to="/apps" className={navLinkClass}>Apps</NavLink>
-            <NavLink to="/lab" className={navLinkClass}>Lab</NavLink>
+            <NavLink to="/demo" className={navLinkClass}>Demo</NavLink>
             <NavLink to="/courses" className={navLinkClass}>Cursos</NavLink>
             <NavLink to="/store" className={navLinkClass}>Tienda</NavLink>
             <NavLink to="/contact" className={navLinkClass}>Contacto</NavLink>
