@@ -116,7 +116,7 @@ Deno.serve(async (req: Request) => {
       body: JSON.stringify({
         url:            WEBHOOK_URL,
         secret_token:   webhookSecret,
-        allowed_updates: ["message"],
+        allowed_updates: ["message", "callback_query"],
       }),
     }
   );

@@ -28,7 +28,6 @@ const HOGAR_MODULES = [
   { path: 'recipes',    label: 'Recetas',     icon: '👨‍🍳' },
   { path: 'inventario', label: 'Inventario',  icon: '📦' },
   { path: 'limpieza',   label: 'Limpieza',    icon: '🧹' },
-  { path: 'ajustes',    label: 'Ajustes',     icon: '⚙️' },
 ]
 
 const MASCOTAS_MODULES = [

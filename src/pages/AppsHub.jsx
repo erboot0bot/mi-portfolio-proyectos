@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, NavLink } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useAuth } from '../contexts/AuthContext'
 import { apps } from '../data/apps'
@@ -15,13 +15,22 @@ export default function AppsHub() {
             Bienvenido, <strong>{user?.user_metadata?.full_name ?? user?.email}</strong>
           </p>
         </div>
-        <button
-          onClick={signOut}
-          className="text-sm border border-[var(--border)] px-3 py-1.5 rounded-lg
-            text-[var(--text-faint)] hover:text-[var(--text)] transition-colors"
-        >
-          Cerrar sesión
-        </button>
+        <div className="flex items-center gap-2">
+          <NavLink
+            to="/app/settings"
+            className="text-sm border border-[var(--border)] px-3 py-1.5 rounded-lg
+              text-[var(--text-faint)] hover:text-[var(--text)] transition-colors flex items-center gap-1.5"
+          >
+            <span>⚙️</span> Ajustes
+          </NavLink>
+          <button
+            onClick={signOut}
+            className="text-sm border border-[var(--border)] px-3 py-1.5 rounded-lg
+              text-[var(--text-faint)] hover:text-[var(--text)] transition-colors"
+          >
+            Cerrar sesión
+          </button>
+        </div>
       </header>
 
       <motion.div

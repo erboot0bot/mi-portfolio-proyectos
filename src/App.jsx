@@ -27,7 +27,8 @@ const Recipes       = React.lazy(() => import('./pages/app/modules/Recipes'))
 const RecipeDetail  = React.lazy(() => import('./pages/app/modules/RecipeDetail'))
 const Inventario    = React.lazy(() => import('./pages/app/modules/Inventario'))
 const Limpieza      = React.lazy(() => import('./pages/app/modules/Limpieza'))
-const HogarAjustes  = React.lazy(() => import('./pages/app/modules/HogarAjustes'))
+const HogarAjustes    = React.lazy(() => import('./pages/app/modules/HogarAjustes'))
+const GlobalSettings  = React.lazy(() => import('./pages/app/GlobalSettings'))
 
 const MisMascotas          = React.lazy(() => import('./pages/app/modules/mascotas/MisMascotas'))
 const PetDetail            = React.lazy(() => import('./pages/app/modules/mascotas/PetDetail'))
@@ -135,6 +136,11 @@ export default function App() {
               <ProtectedRoute><AppsHub /></ProtectedRoute>
             } />
 
+            {/* Ajustes globales */}
+            <Route path="/app/settings" element={
+              <ProtectedRoute><GlobalSettings /></ProtectedRoute>
+            } />
+
             {/* Hogar */}
             <Route path="/app/projects/hogar" element={<Navigate to="/app/hogar" replace />} />
             <Route path="/app/hogar" element={
@@ -148,7 +154,7 @@ export default function App() {
               <Route path="recipes/:recipeId" element={<RecipeDetail />} />
               <Route path="inventario"        element={<Inventario />} />
               <Route path="limpieza"          element={<Limpieza />} />
-              <Route path="ajustes"           element={<HogarAjustes />} />
+              <Route path="ajustes"           element={<Navigate to="/app/settings" replace />} />
             </Route>
 
             {/* Mascotas */}
