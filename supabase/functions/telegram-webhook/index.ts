@@ -5,7 +5,51 @@ const supabase = createClient(
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
 );
 
-const GROQ_API_KEY = Deno.env.get("GROQ_API_KEY") ?? "";
+// ─── Descifrado AES-256-GCM (mismo algoritmo que save-api-keys) ──
+
+const ENC_SECRET = Deno.env.get("KEYS_ENCRYPTION_SECRET") ?? "";
+
+async function getEncKey(): Promise<CryptoKey> {
+  const raw = new TextEncoder().encode(ENC_SECRET);
+  const keyMaterial = await crypto.subtle.importKey("raw", raw, "HKDF", false, ["deriveKey"]);
+  return crypto.subtle.deriveKey(
+    { name: "HKDF", hash: "SHA-256", salt: new Uint8Array(0), info: new TextEncoder().encode("user-api-keys-v1") },
+    keyMaterial,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["encrypt", "decrypt"]
+  );
+}
+
+async function decryptKey(encB64: string): Promise<string> {
+  const key  = await getEncKey();
+  const buf  = Uint8Array.from(atob(encB64), c => c.charCodeAt(0));
+  const iv   = buf.slice(0, 12);
+  const ct   = buf.slice(12);
+  const dec  = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ct);
+  return new TextDecoder().decode(dec);
+}
+
+// ─── Keys del usuario desde BD ───────────────────────────────────
+
+interface UserApiKeys {
+  groqKey: string | null;
+  anthropicKey: string | null;
+}
+
+async function getUserApiKeys(userId: string): Promise<UserApiKeys> {
+  if (!ENC_SECRET) return { groqKey: null, anthropicKey: null };
+  const { data } = await supabase
+    .from("user_api_keys")
+    .select("groq_key_enc, anthropic_key_enc")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (!data) return { groqKey: null, anthropicKey: null };
+  return {
+    groqKey:      data.groq_key_enc      ? await decryptKey(data.groq_key_enc)      : null,
+    anthropicKey: data.anthropic_key_enc ? await decryptKey(data.anthropic_key_enc) : null,
+  };
+}
 
 // ─── Telegram helpers ────────────────────────────────────────
 
@@ -35,7 +79,7 @@ async function answerCallbackQuery(id: string, botToken: string, text?: string):
 
 // ─── Transcripción de voz con Groq Whisper ───────────────────
 
-async function transcribeVoice(fileId: string, botToken: string): Promise<string | null> {
+async function transcribeVoice(fileId: string, botToken: string, groqKey: string): Promise<string | null> {
   // 1. Obtener ruta del archivo en Telegram
   const fileRes = await fetch(
     `https://api.telegram.org/bot${botToken}/getFile?file_id=${encodeURIComponent(fileId)}`
@@ -55,7 +99,7 @@ async function transcribeVoice(fileId: string, botToken: string): Promise<string
   }
   const audioBuffer = await audioRes.arrayBuffer();
 
-  // 3. Transcribir con Groq Whisper large-v3-turbo (rápido, preciso en español)
+  // 3. Transcribir con Groq Whisper large-v3-turbo (key del usuario)
   const formData = new FormData();
   formData.append("file", new Blob([audioBuffer], { type: "audio/ogg" }), "voice.ogg");
   formData.append("model", "whisper-large-v3-turbo");
@@ -66,7 +110,7 @@ async function transcribeVoice(fileId: string, botToken: string): Promise<string
     "https://api.groq.com/openai/v1/audio/transcriptions",
     {
       method: "POST",
-      headers: { Authorization: `Bearer ${GROQ_API_KEY}` },
+      headers: { Authorization: `Bearer ${groqKey}` },
       body: formData,
     }
   );
@@ -510,8 +554,21 @@ Deno.serve(async (req: Request) => {
       return new Response("OK", { status: 200 });
     }
 
+    // Verificar que el usuario tiene Groq key configurada
+    const apiKeys = await getUserApiKeys(ctx.userId);
+    if (!apiKeys.groqKey) {
+      await sendMessage(
+        chatId,
+        `🔑 Para usar notas de voz necesitas configurar tu API key de Groq.\n\n` +
+        `Ve a <b>Ajustes → API Keys</b> en la app y añade tu key gratuita de Groq.\n` +
+        `Puedes obtenerla en console.groq.com`,
+        botToken
+      );
+      return new Response("OK", { status: 200 });
+    }
+
     await sendMessage(chatId, "🎙️ Transcribiendo...", botToken);
-    const transcription = await transcribeVoice(voiceFileId, botToken);
+    const transcription = await transcribeVoice(voiceFileId, botToken, apiKeys.groqKey);
 
     if (!transcription) {
       await sendMessage(chatId, "❌ No pude transcribir el audio. Inténtalo de nuevo.", botToken);
