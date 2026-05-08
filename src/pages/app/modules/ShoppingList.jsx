@@ -81,23 +81,23 @@ function DefaultStoreModal({ current, onSelect, onClose }) {
 
 // ── Desktop active item ───────────────────────────────────────────
 function DesktopItem({ item, onToggle, onDelete }) {
-  const delRef = useRef(null)
   return (
-    <div
-      onClick={() => onToggle(item.id)}
-      onMouseEnter={() => delRef.current && (delRef.current.style.opacity = '1')}
-      onMouseLeave={() => delRef.current && (delRef.current.style.opacity = '0')}
-      style={{
-        display: 'flex', alignItems: 'center', gap: 10,
-        padding: '10px 14px', borderRadius: 10, border: '1px solid var(--border)',
-        background: 'var(--bg-card)', marginBottom: 5, cursor: 'pointer', transition: 'all .15s',
-      }}
-    >
-      <div style={{
-        width: 20, height: 20, borderRadius: '50%', flexShrink: 0,
-        border: '2px solid var(--border)', background: 'transparent',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-      }} />
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 10,
+      padding: '10px 14px', borderRadius: 10, border: '1px solid var(--border)',
+      background: 'var(--bg-card)', marginBottom: 5, transition: 'all .15s',
+    }}>
+      {/* Círculo: único elemento que marca como comprado */}
+      <div
+        onClick={() => onToggle(item.id)}
+        title="Marcar como comprado"
+        style={{
+          width: 20, height: 20, borderRadius: '50%', flexShrink: 0,
+          border: '2px solid var(--border)', background: 'transparent',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          cursor: 'pointer',
+        }}
+      />
       <span style={{ flex: 1, fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>{item.name}</span>
       {item.quantity && (
         <span style={{ fontSize: 11, color: 'var(--text-faint)', fontFamily: 'monospace' }}>
@@ -105,9 +105,9 @@ function DesktopItem({ item, onToggle, onDelete }) {
         </span>
       )}
       <button
-        ref={delRef}
-        onClick={e => { e.stopPropagation(); onDelete(item.id) }}
-        style={{ background: 'none', border: 'none', color: 'var(--text-faint)', cursor: 'pointer', fontSize: 16, padding: '0 2px', opacity: 0, transition: 'opacity .15s' }}
+        onClick={() => onDelete(item.id)}
+        title="Eliminar"
+        style={{ background: 'none', border: 'none', color: 'var(--text-faint)', cursor: 'pointer', fontSize: 16, padding: '0 4px', transition: 'color .15s' }}
         onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
         onMouseLeave={e => e.currentTarget.style.color = 'var(--text-faint)'}
       >×</button>
@@ -117,20 +117,15 @@ function DesktopItem({ item, onToggle, onDelete }) {
 
 // ── Desktop cart item (checked) ───────────────────────────────────
 function CartItem({ item, onUncheck, onDelete }) {
-  const delRef = useRef(null)
   return (
-    <div
-      onMouseEnter={() => delRef.current && (delRef.current.style.opacity = '1')}
-      onMouseLeave={() => delRef.current && (delRef.current.style.opacity = '0')}
-      style={{
-        display: 'flex', alignItems: 'center', gap: 10,
-        padding: '10px 14px', borderRadius: 10, border: '1px solid rgba(255,255,255,.06)',
-        marginBottom: 3, opacity: 0.7,
-      }}
-    >
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 10,
+      padding: '10px 14px', borderRadius: 10, border: '1px solid rgba(255,255,255,.06)',
+      marginBottom: 3, opacity: 0.7,
+    }}>
       <button
         onClick={() => onUncheck(item.id)}
-        title="Quitar del carro"
+        title="Devolver a la lista"
         style={{ background: 'none', border: 'none', color: 'var(--text-faint)', cursor: 'pointer', fontSize: 14, padding: 0, flexShrink: 0 }}
       >↩</button>
       <span style={{ flex: 1, fontSize: 13, fontWeight: 500, textDecoration: 'line-through', color: 'var(--text-faint)' }}>{item.name}</span>
@@ -140,9 +135,9 @@ function CartItem({ item, onUncheck, onDelete }) {
         </span>
       )}
       <button
-        ref={delRef}
         onClick={() => onDelete(item.id)}
-        style={{ background: 'none', border: 'none', color: 'var(--text-faint)', cursor: 'pointer', fontSize: 16, padding: '0 2px', opacity: 0, transition: 'opacity .15s' }}
+        title="Eliminar"
+        style={{ background: 'none', border: 'none', color: 'var(--text-faint)', cursor: 'pointer', fontSize: 16, padding: '0 4px', transition: 'color .15s' }}
         onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
         onMouseLeave={e => e.currentTarget.style.color = 'var(--text-faint)'}
       >×</button>
@@ -293,8 +288,6 @@ export default function ShoppingList() {
   const { mode } = useMode()
   const appType = app.id.replace('demo-', '')
   const [items, setItems]               = useState([])
-  const [deletedItems, setDeletedItems] = useState([])
-  const [showTrash, setShowTrash]       = useState(false)
   const [showDefaultModal, setShowDefaultModal] = useState(false)
   const [isMobile, setIsMobile]         = useState(window.innerWidth < 640)
   const [activeCat, setActiveCat]       = useState(null)
@@ -453,31 +446,14 @@ export default function ShoppingList() {
     setItems(p => p.map(i => i.id === id ? { ...i, checked, checked_at } : i))
   }
 
-  function deleteItem(id) {
-    const item = items.find(i => i.id === id)
-    if (!item) return
+  async function deleteItem(id) {
     setItems(p => p.filter(i => i.id !== id))
-    setDeletedItems(p => [item, ...p])
-  }
-
-  function recoverItem(item) {
-    setDeletedItems(p => p.filter(i => i.id !== item.id))
-    setItems(p => [...p, item])
-  }
-
-  async function emptyTrash() {
-    const ids = deletedItems.map(i => i.id)
-    if (!ids.length) return
     if (mode === 'demo') {
       const raw = demoRead(appType, 'items_supermercado')
-      demoWrite(appType, 'items_supermercado', raw.filter(r => !ids.includes(r.id)))
-      setDeletedItems([])
-      showToast('Papelera vaciada')
+      demoWrite(appType, 'items_supermercado', raw.filter(r => r.id !== id))
       return
     }
-    await supabase.from('items').delete().in('id', ids)
-    setDeletedItems([])
-    showToast('Papelera vaciada')
+    await supabase.from('items').delete().eq('id', id)
   }
 
   function handleDefaultStoreSelect(store) {
@@ -588,41 +564,6 @@ export default function ShoppingList() {
   const pct = items.length ? Math.round(inCart.length / items.length * 100) : 0
 
   // ── Shared UI pieces ──────────────────────────────────────────
-  const TrashSection = () => (
-    deletedItems.length > 0 ? (
-      <div style={{ borderRadius: 12, border: '1px solid var(--border)', overflow: 'hidden' }}>
-        <div
-          onClick={() => setShowTrash(p => !p)}
-          style={{ padding: '10px 16px', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--text-faint)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
-        >
-          <span>🗑 Eliminados ({deletedItems.length})</span>
-          <span style={{ fontSize: 10 }}>{showTrash ? '▲' : '▼'}</span>
-        </div>
-        {showTrash && (
-          <>
-            {deletedItems.map(item => (
-              <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 14px', borderTop: '1px solid var(--border)' }}>
-                <button
-                  onClick={() => recoverItem(item)}
-                  style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-muted)', cursor: 'pointer', fontSize: 11, padding: '3px 8px', flexShrink: 0 }}
-                >↩ Recuperar</button>
-                <span style={{ flex: 1, fontSize: 12, color: 'var(--text-faint)' }}>{item.name}</span>
-                <span style={{ fontSize: 11, color: 'var(--text-faint)', opacity: 0.6 }}>
-                  {[item.store, item.category].filter(Boolean).join(' · ')}
-                </span>
-              </div>
-            ))}
-            <div style={{ padding: '10px 14px', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end' }}>
-              <button
-                onClick={emptyTrash}
-                style={{ padding: '6px 14px', borderRadius: 8, background: 'transparent', color: '#C0392B', border: '1px solid #C0392B', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}
-              >Vaciar papelera</button>
-            </div>
-          </>
-        )}
-      </div>
-    ) : null
-  )
 
   const CartSection = ({ compact }) => (
     inCart.length > 0 ? (
@@ -715,11 +656,6 @@ export default function ShoppingList() {
             </div>
           )}
 
-          {deletedItems.length > 0 && (
-            <div style={{ margin: '8px 10px 0' }}>
-              <TrashSection />
-            </div>
-          )}
 
           <div style={{ height: 80 }} />
         </div>
@@ -837,12 +773,11 @@ export default function ShoppingList() {
             )
           })}
 
-          {filteredPending.length === 0 && inCart.length === 0 && deletedItems.length === 0 && (
+          {filteredPending.length === 0 && inCart.length === 0 && (
             <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-faint)', fontSize: 13 }}>Lista vacía</div>
           )}
 
           <CartSection compact={false} />
-          <TrashSection />
         </div>
       </div>
 
