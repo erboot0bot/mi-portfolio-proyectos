@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS user_onboarding_state (
   step         TEXT NOT NULL DEFAULT 'vivienda_tipo',
   data         JSONB NOT NULL DEFAULT '{}',
   completed_at TIMESTAMPTZ,
-  updated_at   TIMESTAMPTZ DEFAULT NOW()
+  updated_at   TIMESTAMPTZ DEFAULT now()
 );
 
 ALTER TABLE user_onboarding_state ENABLE ROW LEVEL SECURITY;
