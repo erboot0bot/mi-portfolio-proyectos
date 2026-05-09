@@ -735,7 +735,19 @@ async function handleLink(
 
   await supabase.from("telegram_link_codes").update({ used: true }).eq("id", linkCode.id);
   await sendMessage(chatId, `✅ <b>¡Telegram vinculado correctamente!</b>\n\nYa puedes gestionar tu lista de la compra desde aquí.\nEscribe /help para ver los comandos disponibles.`, botToken);
-  await startOnboarding(chatId, linkCode.user_id, botToken);
+  try {
+    const { data: existingOnboarding } = await supabase
+      .from("user_onboarding_state")
+      .select("completed_at")
+      .eq("user_id", linkCode.user_id)
+      .maybeSingle();
+
+    if (!existingOnboarding?.completed_at) {
+      await startOnboarding(chatId, linkCode.user_id, botToken);
+    }
+  } catch (err) {
+    console.error("startOnboarding after link failed:", err);
+  }
 }
 
 // ─── Comando /unlink ─────────────────────────────────────────
@@ -1081,6 +1093,13 @@ Deno.serve(async (req: Request) => {
 
     if (!transcription) {
       await sendMessage(chatId, "❌ No pude transcribir el audio. Inténtalo de nuevo.", botToken);
+      return new Response("OK", { status: 200 });
+    }
+
+    // If user is in onboarding, route transcription there first
+    const voiceObState = await getOnboardingState(ctx.userId);
+    if (voiceObState) {
+      await handleOnboardingText(chatId, ctx.userId, transcription, voiceObState, botToken);
       return new Response("OK", { status: 200 });
     }
 
