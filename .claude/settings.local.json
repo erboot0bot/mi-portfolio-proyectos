@@ -1,6 +1,12 @@
 {
   "permissions": {
     "allow": [
+      "Read(/home/user/mi-portfolio-proyectos/**)",
+      "Read(/home/user/.claude/**)",
+      "Bash(curl -s -X POST *)",
+      "Bash(curl -s -o /dev/null *)",
+      "mcp__Claude_Preview__preview_screenshot",
+      "mcp__Claude_Preview__preview_console_logs",
       "Read(//home/user/.claude/skills/gstack/**)",
       "Bash(~/.bun/bin/bun --version)",
       "Bash(./setup)",
