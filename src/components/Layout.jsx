@@ -291,7 +291,7 @@ export default function Layout({ children }) {
           </div>
 
           {/* Stack */}
-          <div>
+          <div className="hidden md:block">
             <div className="text-[11px] font-semibold uppercase tracking-widest text-[var(--text-faint)] mb-4">Construido con</div>
             <ul className="flex flex-col gap-2.5">
               {['React', 'Vite', 'Tailwind v4', 'Supabase', 'Claude AI', 'Vercel'].map(t => (
