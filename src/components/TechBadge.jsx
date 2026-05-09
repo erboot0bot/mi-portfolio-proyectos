@@ -22,9 +22,7 @@ export default function TechBadge({ tech }) {
   const icon = icons[tech] || null
 
   return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium
-      bg-orange-50 text-orange-700 border border-orange-100
-      dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700">
+    <span className="h3nky-badge">
       {icon}
       {tech}
     </span>
