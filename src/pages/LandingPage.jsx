@@ -144,37 +144,33 @@ function HeroSection() {
   return (
     <section className="relative overflow-hidden" ref={containerRef}>
       <div className="absolute inset-0 hidden dark:block pointer-events-none"
-        style={{ background: 'linear-gradient(to bottom, rgba(249,115,22,0.07) 0%, transparent 60%)' }} />
+        style={{ background: 'linear-gradient(to bottom, rgba(254,112,0,0.07) 0%, transparent 60%)' }} />
       <div className="absolute inset-0 dark:hidden pointer-events-none"
-        style={{ background: 'linear-gradient(135deg, rgba(249,115,22,0.13) 0%, transparent 55%)' }} />
+        style={{ background: 'linear-gradient(135deg, rgba(254,112,0,0.13) 0%, transparent 55%)' }} />
 
       <div className="relative z-10 pt-16 pb-20 px-6 sm:px-10 lg:px-16 max-w-[1440px] mx-auto">
-        <p data-hero-badge style={hiddenUp(12)}
-          className="font-mono text-xs tracking-widest uppercase mb-4
-            text-[var(--text-faint)] dark:text-orange-300/60">
+        <p data-hero-badge style={hiddenUp(12)} className="h3nky-kicker mb-4">
           H3nky · dev
         </p>
-        <h1 data-hero-title style={hiddenUp(24)}
-          className="text-5xl sm:text-6xl font-extrabold tracking-tight leading-none mb-5
-            text-[var(--text)]">
-          {t('heroTitle')}
+        <h1 data-hero-title style={hiddenUp(24)} className="h3nky-hero mb-4">
+          H<span style={{ color: '#21eb3f' }}>3</span>NKY
         </h1>
-        <p data-hero-sub style={hiddenUp(16)}
-          className="text-lg leading-relaxed font-light max-w-xl mb-10
-            text-[var(--text-muted)]">
-          {t('heroSubtitle')}
+        <p data-hero-sub style={hiddenUp(16)} className="h3nky-body-lg max-w-xl mb-10">
+          {t('heroTitle')}
         </p>
         <div data-hero-ctas className="flex flex-wrap gap-3">
-          <Link to="/apps"
-            style={{ ...hiddenUp(12), background: 'var(--accent)' }}
-            className="px-5 py-2.5 rounded-lg font-semibold text-sm text-white
-              transition-all hover:opacity-90 active:scale-95">
+          <Link
+            to="/apps"
+            style={hiddenUp(12)}
+            className="h3nky-btn-primary"
+          >
             Ver mis apps →
           </Link>
-          <Link to="/projects" style={hiddenUp(12)}
-            className="px-5 py-2.5 rounded-lg font-semibold text-sm transition-all
-              border border-[var(--border)] text-[var(--text)]
-              hover:bg-[var(--bg-card)] active:scale-95">
+          <Link
+            to="/projects"
+            style={hiddenUp(12)}
+            className="h3nky-btn-secondary"
+          >
             Ver el portfolio →
           </Link>
         </div>
