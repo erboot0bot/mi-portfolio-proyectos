@@ -292,6 +292,196 @@ async function startOnboarding(chatId: number, userId: string, botToken: string)
   await sendOnboardingQuestion(chatId, "vivienda_tipo", fresh, botToken);
 }
 
+async function handleOnboardingText(
+  chatId: number,
+  userId: string,
+  text: string,
+  state: OnboardingState,
+  botToken: string
+): Promise<void> {
+  const { step, data } = state;
+  const isSkip = text.trim().toLowerCase() === "/skip";
+
+  switch (step) {
+    case "vivienda_importe": {
+      if (isSkip) {
+        const next = { ...data, vivienda_tipo: null, vivienda_importe: null, vivienda_ciudad: null };
+        await saveOnboardingState(userId, "vehiculo_tiene", next);
+        await sendOnboardingQuestion(chatId, "vehiculo_tiene", next, botToken);
+        return;
+      }
+      const raw = text.replace(/[€\s]/g, "").replace(",", ".");
+      const amount = parseFloat(raw);
+      if (isNaN(amount) || amount <= 0) {
+        await sendMessage(chatId, "⚠️ No entendí la cantidad. Escribe solo el número, ej: 850", botToken);
+        return;
+      }
+      const next = { ...data, vivienda_importe: amount };
+      await saveOnboardingState(userId, "vivienda_ciudad", next);
+      await sendOnboardingQuestion(chatId, "vivienda_ciudad", next, botToken);
+      break;
+    }
+
+    case "vivienda_ciudad": {
+      const next = { ...data, vivienda_ciudad: isSkip ? null : text.trim() };
+      await saveOnboardingState(userId, "vehiculo_tiene", next);
+      await sendOnboardingQuestion(chatId, "vehiculo_tiene", next, botToken);
+      break;
+    }
+
+    case "vehiculo_marca_modelo": {
+      if (isSkip) {
+        const next = { ...data, vehiculo_marca: null, vehiculo_modelo: null };
+        await saveOnboardingState(userId, "mascotas_tiene", next);
+        await sendOnboardingQuestion(chatId, "mascotas_tiene", next, botToken);
+        return;
+      }
+      // Split "Volkswagen Golf" → brand="Volkswagen", model="Golf"
+      const parts = text.trim().split(/\s+/);
+      const marca = parts[0] ?? text.trim();
+      const modelo = parts.slice(1).join(" ") || null;
+      const next = { ...data, vehiculo_marca: marca, vehiculo_modelo: modelo };
+      await saveOnboardingState(userId, "mascotas_tiene", next);
+      await sendOnboardingQuestion(chatId, "mascotas_tiene", next, botToken);
+      break;
+    }
+
+    case "mascota_nombre": {
+      if (isSkip) {
+        const next = { ...data, mascota_actual: undefined };
+        await saveOnboardingState(userId, "nombre", next);
+        await sendOnboardingQuestion(chatId, "nombre", next, botToken);
+        return;
+      }
+      const next = { ...data, mascota_actual: { nombre: text.trim() } };
+      await saveOnboardingState(userId, "mascota_especie", next);
+      await sendOnboardingQuestion(chatId, "mascota_especie", next, botToken);
+      break;
+    }
+
+    case "mascota_nacimiento": {
+      const nombre = data.mascota_actual?.nombre ?? "sin nombre";
+      const especie = data.mascota_actual?.especie ?? "otro";
+      const mascota = { nombre, especie, nacimiento: isSkip ? null : text.trim() };
+      const mascotas = [...(data.mascotas ?? []), mascota];
+      const next = { ...data, mascotas, mascota_actual: undefined };
+      await saveOnboardingState(userId, "mascota_mas", next);
+      await sendOnboardingQuestion(chatId, "mascota_mas", next, botToken);
+      break;
+    }
+
+    case "nombre": {
+      const next = { ...data, nombre_preferido: isSkip ? null : text.trim() };
+      await saveOnboardingState(userId, "resumen", next);
+      await sendOnboardingQuestion(chatId, "resumen", next, botToken);
+      break;
+    }
+
+    default:
+      // In button-only steps, unexpected text → re-send the question
+      await sendOnboardingQuestion(chatId, step, data, botToken);
+  }
+}
+
+async function handleOnboardingCallback(
+  cbId: string,
+  chatId: number,
+  userId: string,
+  cbValue: string,  // format: "step:value"
+  botToken: string
+): Promise<void> {
+  await answerCallbackQuery(cbId, botToken);
+
+  const colonIdx = cbValue.indexOf(":");
+  const step  = cbValue.slice(0, colonIdx);
+  const value = cbValue.slice(colonIdx + 1);
+
+  const stateRow = await supabase
+    .from("user_onboarding_state")
+    .select("step, data")
+    .eq("user_id", userId)
+    .maybeSingle();
+  const data: OnboardingData = (stateRow.data?.data as OnboardingData) ?? {};
+
+  switch (step) {
+    case "vivienda_tipo": {
+      if (value === "skip") {
+        const next = { ...data, vivienda_tipo: null, vivienda_importe: null, vivienda_ciudad: null };
+        await saveOnboardingState(userId, "vehiculo_tiene", next);
+        await sendOnboardingQuestion(chatId, "vehiculo_tiene", next, botToken);
+      } else {
+        const next = { ...data, vivienda_tipo: value };
+        await saveOnboardingState(userId, "vivienda_importe", next);
+        await sendOnboardingQuestion(chatId, "vivienda_importe", next, botToken);
+      }
+      break;
+    }
+
+    case "vehiculo_tiene": {
+      if (value === "no") {
+        const next = { ...data, vehiculo_tiene: false };
+        await saveOnboardingState(userId, "mascotas_tiene", next);
+        await sendOnboardingQuestion(chatId, "mascotas_tiene", next, botToken);
+      } else {
+        const next = { ...data, vehiculo_tiene: true };
+        await saveOnboardingState(userId, "vehiculo_combustible", next);
+        await sendOnboardingQuestion(chatId, "vehiculo_combustible", next, botToken);
+      }
+      break;
+    }
+
+    case "vehiculo_combustible": {
+      const next = { ...data, vehiculo_combustible: value };
+      await saveOnboardingState(userId, "vehiculo_marca_modelo", next);
+      await sendOnboardingQuestion(chatId, "vehiculo_marca_modelo", next, botToken);
+      break;
+    }
+
+    case "mascotas_tiene": {
+      if (value === "no") {
+        const next = { ...data };
+        await saveOnboardingState(userId, "nombre", next);
+        await sendOnboardingQuestion(chatId, "nombre", next, botToken);
+      } else {
+        const next = { ...data, mascotas: data.mascotas ?? [] };
+        await saveOnboardingState(userId, "mascota_nombre", next);
+        await sendOnboardingQuestion(chatId, "mascota_nombre", next, botToken);
+      }
+      break;
+    }
+
+    case "mascota_especie": {
+      const next = { ...data, mascota_actual: { ...data.mascota_actual, especie: value } };
+      await saveOnboardingState(userId, "mascota_nacimiento", next);
+      await sendOnboardingQuestion(chatId, "mascota_nacimiento", next, botToken);
+      break;
+    }
+
+    case "mascota_mas": {
+      if (value === "si") {
+        const next = { ...data, mascota_actual: undefined };
+        await saveOnboardingState(userId, "mascota_nombre", next);
+        await sendOnboardingQuestion(chatId, "mascota_nombre", next, botToken);
+      } else {
+        const next = { ...data, mascota_actual: undefined };
+        await saveOnboardingState(userId, "nombre", next);
+        await sendOnboardingQuestion(chatId, "nombre", next, botToken);
+      }
+      break;
+    }
+
+    case "resumen": {
+      if (value === "reiniciar") {
+        await saveOnboardingState(userId, "vivienda_tipo", {});
+        await sendOnboardingQuestion(chatId, "vivienda_tipo", {}, botToken);
+      } else {
+        await confirmOnboarding(chatId, userId, data, botToken);
+      }
+      break;
+    }
+  }
+}
+
 // ─── Transcripción de voz con Groq Whisper ───────────────────
 
 async function transcribeVoice(fileId: string, botToken: string, groqKey: string): Promise<string | null> {
