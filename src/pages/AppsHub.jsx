@@ -2,6 +2,7 @@ import { Link, NavLink } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useAuth } from '../contexts/AuthContext'
 import { apps } from '../data/apps'
+import { SetupBanner } from '../components/SetupBanner'
 
 export default function AppsHub() {
   const { user, signOut } = useAuth()
@@ -32,6 +33,8 @@ export default function AppsHub() {
           </button>
         </div>
       </header>
+
+      <SetupBanner />
 
       <motion.div
         className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
