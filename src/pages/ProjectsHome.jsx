@@ -42,7 +42,7 @@ function HeroSection({ sorted }) {
   return (
     <section ref={heroRef} className="relative mb-16 overflow-hidden">
       <div className="absolute inset-0 dark:hidden pointer-events-none"
-        style={{ background: 'linear-gradient(135deg, rgba(253,186,116,0.22) 0%, rgba(249,115,22,0.08) 25%, transparent 60%)' }} />
+        style={{ background: 'linear-gradient(135deg, rgba(254,112,0,0.15) 0%, rgba(254,112,0,0.05) 25%, transparent 60%)' }} />
       <div className="absolute inset-0 hidden dark:block pointer-events-none"
         style={{ background: 'linear-gradient(110deg, #ea580c 0%, #7c2d12 28%, #4c1d95 52%, #0a0a0f 75%)' }} />
       <div className="absolute bottom-0 left-0 right-0 h-20 pointer-events-none"
@@ -61,11 +61,9 @@ function HeroSection({ sorted }) {
           </p>
 
           <h1 data-ph-title
-            style={prefersReducedMotion
-              ? { fontSize: 'clamp(52px, 7vw, 88px)', letterSpacing: '-0.04em' }
-              : { opacity: 0, transform: 'translateY(32px)', fontSize: 'clamp(52px, 7vw, 88px)', letterSpacing: '-0.04em' }}
-            className="font-black leading-none mb-5 text-[var(--text)] dark:text-white">
-            H3nky<span className="text-[var(--accent)]">.</span>
+            style={prefersReducedMotion ? {} : { opacity: 0, transform: 'translateY(32px)' }}
+            className="h3nky-display mb-5">
+            PROYECTOS
           </h1>
 
           <p data-ph-sub
@@ -93,10 +91,7 @@ function HeroSection({ sorted }) {
           <div className="flex items-center gap-3 flex-wrap">
             <a data-ph-cta href="#proyectos"
               style={prefersReducedMotion ? {} : { opacity: 0, transform: 'translateY(12px)' }}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl
-                bg-[var(--accent)] text-white text-sm font-semibold
-                hover:opacity-90 hover:-translate-y-px transition-all duration-150
-                shadow-[0_4px_16px_rgba(249,115,22,0.3)]">
+              className="h3nky-btn-primary">
               Ver proyectos →
             </a>
             <a data-ph-cta href="https://github.com/H3nky" target="_blank" rel="noreferrer"
@@ -118,7 +113,7 @@ function HeroSection({ sorted }) {
               className="flex items-center gap-4 p-4 rounded-xl
                 border border-[var(--border)] bg-[var(--bg-card)]
                 hover:border-orange-200 dark:hover:border-orange-500/30
-                hover:shadow-[0_2px_12px_rgba(249,115,22,0.08)]
+                hover:shadow-[0_2px_12px_rgba(254,112,0,0.08)]
                 transition-all duration-150 group">
               <div className="w-9 h-9 rounded-lg flex-shrink-0"
                 style={{ background: `linear-gradient(135deg, ${p.gradientFrom}, ${p.gradientTo})` }} />
