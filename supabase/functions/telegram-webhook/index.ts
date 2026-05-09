@@ -490,6 +490,91 @@ async function handleOnboardingCallback(
   }
 }
 
+async function confirmOnboarding(
+  chatId: number,
+  userId: string,
+  data: OnboardingData,
+  botToken: string
+): Promise<void> {
+  const writes: Promise<unknown>[] = [];
+
+  // ── Vivienda → fin_transactions ──────────────────────────────
+  if (data.vivienda_tipo && data.vivienda_importe) {
+    const finAppId = await getProjectId(userId, "Finanzas");
+    if (finAppId) {
+      const desc = `${data.vivienda_tipo === "alquiler" ? "Alquiler" : "Hipoteca"}${data.vivienda_ciudad ? ` — ${data.vivienda_ciudad}` : ""}`;
+      writes.push(
+        supabase.from("fin_transactions").insert({
+          app_id:      finAppId,
+          type:        "expense",
+          amount:      data.vivienda_importe,
+          description: desc,
+          date:        new Date().toISOString().slice(0, 10),
+        })
+      );
+    }
+  }
+
+  // ── Vehículo → vehicles ──────────────────────────────────────
+  if (data.vehiculo_tiene && data.vehiculo_marca) {
+    const vehiculoAppId = await getProjectId(userId, "Vehículo");
+    if (vehiculoAppId) {
+      const name = `${data.vehiculo_marca} ${data.vehiculo_modelo ?? ""}`.trim();
+      const { data: existing } = await supabase
+        .from("vehicles").select("id")
+        .eq("app_id", vehiculoAppId)
+        .ilike("name", name)
+        .maybeSingle();
+      if (existing) {
+        writes.push(supabase.from("vehicles").update({ fuel_type: data.vehiculo_combustible }).eq("id", existing.id));
+      } else {
+        writes.push(supabase.from("vehicles").insert({
+          app_id:    vehiculoAppId,
+          name,
+          type:      "coche",
+          brand:     data.vehiculo_marca,
+          model:     data.vehiculo_modelo ?? "",
+          fuel_type: data.vehiculo_combustible ?? "gasolina",
+        }));
+      }
+    }
+  }
+
+  // ── Mascotas → pets ──────────────────────────────────────────
+  if (data.mascotas?.length) {
+    const mascotasAppId = await getProjectId(userId, "Mascotas");
+    if (mascotasAppId) {
+      for (const m of data.mascotas) {
+        const { data: existing } = await supabase
+          .from("pets").select("id")
+          .eq("app_id", mascotasAppId)
+          .ilike("name", m.nombre)
+          .maybeSingle();
+        if (existing) {
+          writes.push(supabase.from("pets").update({ species: m.especie, birth_date: m.nacimiento ?? null }).eq("id", existing.id));
+        } else {
+          writes.push(supabase.from("pets").insert({
+            app_id:     mascotasAppId,
+            name:       m.nombre,
+            species:    m.especie,
+            birth_date: m.nacimiento ?? null,
+          }));
+        }
+      }
+    }
+  }
+
+  await Promise.all(writes);
+  await markOnboardingComplete(userId, data);
+
+  const nombre = data.nombre_preferido ? `, ${data.nombre_preferido}` : "";
+  await sendMessage(
+    chatId,
+    `✅ <b>¡Todo guardado${nombre}!</b>\n\nTus datos ya están en la app. Puedes verlos en cada módulo.\n\nEscribe /help para ver todo lo que puedo hacer.`,
+    botToken
+  );
+}
+
 // ─── Transcripción de voz con Groq Whisper ───────────────────
 
 async function transcribeVoice(fileId: string, botToken: string, groqKey: string): Promise<string | null> {
