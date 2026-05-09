@@ -305,7 +305,7 @@ async function handleOnboardingText(
   switch (step) {
     case "vivienda_importe": {
       if (isSkip) {
-        const next = { ...data, vivienda_tipo: null, vivienda_importe: null, vivienda_ciudad: null };
+        const next = { ...data, vivienda_importe: null, vivienda_ciudad: null };
         await saveOnboardingState(userId, "vehiculo_tiene", next);
         await sendOnboardingQuestion(chatId, "vehiculo_tiene", next, botToken);
         return;
@@ -393,6 +393,10 @@ async function handleOnboardingCallback(
   await answerCallbackQuery(cbId, botToken);
 
   const colonIdx = cbValue.indexOf(":");
+  if (colonIdx === -1) {
+    console.warn(`Malformed onboarding callback: ${cbValue}`);
+    return;
+  }
   const step  = cbValue.slice(0, colonIdx);
   const value = cbValue.slice(colonIdx + 1);
 
@@ -401,7 +405,11 @@ async function handleOnboardingCallback(
     .select("step, data")
     .eq("user_id", userId)
     .maybeSingle();
-  const data: OnboardingData = (stateRow.data?.data as OnboardingData) ?? {};
+  if (!stateRow.data) {
+    console.error(`No onboarding state for user ${userId} during callback`);
+    return;
+  }
+  const data: OnboardingData = (stateRow.data.data as OnboardingData) ?? {};
 
   switch (step) {
     case "vivienda_tipo": {
@@ -451,7 +459,7 @@ async function handleOnboardingCallback(
     }
 
     case "mascota_especie": {
-      const next = { ...data, mascota_actual: { ...data.mascota_actual, especie: value } };
+      const next = { ...data, mascota_actual: { nombre: data.mascota_actual?.nombre ?? "", especie: value } };
       await saveOnboardingState(userId, "mascota_nacimiento", next);
       await sendOnboardingQuestion(chatId, "mascota_nacimiento", next, botToken);
       break;
