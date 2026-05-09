@@ -128,9 +128,12 @@ export default function Layout({ children }) {
         <div className="max-w-[1440px] mx-auto px-6 sm:px-10 lg:px-16 h-16 flex items-center justify-between">
           <Link
             to="/"
-            className="font-bold text-lg tracking-tight text-[var(--text)] hover:text-[var(--accent)] transition-colors"
+            className="hover:opacity-80 transition-opacity"
+            aria-label="H3nky — inicio"
           >
-            H3nky
+            <span style={{ fontFamily: "'Orbitron', sans-serif", fontWeight: 900, fontSize: '1.25rem', letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--text)' }}>
+              H<span style={{ color: '#21eb3f' }}>3</span>NKY
+            </span>
           </Link>
 
           {/* Desktop nav */}
@@ -248,8 +251,10 @@ export default function Layout({ children }) {
 
           {/* Brand */}
           <div>
-            <div className="text-xl font-black tracking-tight mb-2" style={{letterSpacing: '-0.04em'}}>
-              H3nky<span style={{color: 'var(--accent)'}}>.</span>
+            <div className="mb-2">
+              <span style={{ fontFamily: "'Orbitron', sans-serif", fontWeight: 900, fontSize: '1.25rem', letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--text)' }}>
+                H<span style={{ color: '#21eb3f' }}>3</span>NKY
+              </span><span style={{ color: 'var(--accent)' }}>.</span>
             </div>
             <p className="text-sm text-[var(--text-faint)] leading-relaxed max-w-[260px]">
               Construyendo con IA como copiloto. Documentando cada paso del camino.
