@@ -735,6 +735,7 @@ async function handleLink(
 
   await supabase.from("telegram_link_codes").update({ used: true }).eq("id", linkCode.id);
   await sendMessage(chatId, `✅ <b>¡Telegram vinculado correctamente!</b>\n\nYa puedes gestionar tu lista de la compra desde aquí.\nEscribe /help para ver los comandos disponibles.`, botToken);
+  await startOnboarding(chatId, linkCode.user_id, botToken);
 }
 
 // ─── Comando /unlink ─────────────────────────────────────────
@@ -1015,6 +1016,16 @@ Deno.serve(async (req: Request) => {
     const cbChatId = (cbMsg?.chat as Record<string, unknown>)?.id as number;
     const cbFromId = cbFrom?.id as number;
 
+    if (cbData?.startsWith("ob:")) {
+      const cbCtx = await getUserContext(cbFromId);
+      if (cbCtx) {
+        await handleOnboardingCallback(cbId, cbChatId, cbCtx.userId, cbData.slice(3), botToken);
+      } else {
+        await answerCallbackQuery(cbId, botToken);
+      }
+      return new Response("OK", { status: 200 });
+    }
+
     if (cbData?.startsWith("store:")) {
       await handleStoreCallback(cbId, cbChatId, cbFromId, cbData.replace("store:", ""), botToken);
     } else {
@@ -1117,6 +1128,17 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    if (text === "/onboarding") {
+      await startOnboarding(chatId, ctx.userId, botToken);
+      return new Response("OK", { status: 200 });
+    }
+
+    const obState = await getOnboardingState(ctx.userId);
+    if (obState) {
+      await handleOnboardingText(chatId, ctx.userId, text, obState, botToken);
+      return new Response("OK", { status: 200 });
+    }
+
     if (text === "/help" || text === "/start") {
       await handleHelp(chatId, botToken);
     } else if (text === "/list") {
