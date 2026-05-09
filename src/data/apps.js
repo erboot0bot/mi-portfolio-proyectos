@@ -16,7 +16,7 @@ export const apps = [
     slug: 'personal',
     title: 'Personal',
     description: 'Tu espacio personal: agenda, notas rápidas, tareas pendientes y captura de ideas.',
-    icon: '🗂️',
+    icon: '👤',
     href: '/app/personal',
     status: 'active',
     requiredPlan: 'free',
