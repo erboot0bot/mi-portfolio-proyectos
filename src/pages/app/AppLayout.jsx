@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase'
 import { useAuth } from '../../contexts/AuthContext'
 import { AppProvider } from '../../contexts/AppContext'
 import { useMode } from '../../contexts/ModeContext'
+import BottomNav from '../../components/BottomNav'
 
 const APP_NAMES = {
   hogar:    'Hogar',
@@ -18,7 +19,7 @@ const APP_ICONS = {
   mascotas: '🐾',
   vehiculo: '🚗',
   finanzas: '💰',
-  personal: '🗂️',
+  personal: '👤',
 }
 
 const HOGAR_MODULES = [
@@ -170,7 +171,10 @@ export default function AppLayout() {
   if (isFullLayout) {
     return (
       <AppProvider app={app}>
-        <Outlet context={{ app, modules }} />
+        <div style={{ paddingBottom: 72 }}>
+          <Outlet context={{ app, modules }} />
+        </div>
+        <BottomNav modules={modules} />
       </AppProvider>
     )
   }
