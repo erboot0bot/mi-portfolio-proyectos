@@ -77,6 +77,221 @@ async function answerCallbackQuery(id: string, botToken: string, text?: string):
   });
 }
 
+// ─── Onboarding types & helpers ─────────────────────────────────────
+
+interface OnboardingData {
+  vivienda_tipo?:     string | null;
+  vivienda_importe?:  number | null;
+  vivienda_ciudad?:   string | null;
+  vehiculo_tiene?:    boolean;
+  vehiculo_combustible?: string | null;
+  vehiculo_marca?:    string | null;
+  vehiculo_modelo?:   string | null;
+  mascotas?:          Array<{ nombre: string; especie: string; nacimiento: string | null }>;
+  mascota_actual?:    { nombre?: string; especie?: string };
+  nombre_preferido?:  string | null;
+}
+
+interface OnboardingState {
+  step: string;
+  data: OnboardingData;
+}
+
+async function getOnboardingState(userId: string): Promise<OnboardingState | null> {
+  const { data } = await supabase
+    .from("user_onboarding_state")
+    .select("step, data, completed_at")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (!data || data.completed_at) return null;
+  return { step: data.step, data: data.data as OnboardingData };
+}
+
+async function saveOnboardingState(userId: string, step: string, data: OnboardingData): Promise<void> {
+  await supabase.from("user_onboarding_state").upsert(
+    { user_id: userId, step, data, updated_at: new Date().toISOString() },
+    { onConflict: "user_id" }
+  );
+}
+
+async function markOnboardingComplete(userId: string, data: OnboardingData): Promise<void> {
+  await supabase.from("user_onboarding_state").upsert(
+    { user_id: userId, step: "done", data, completed_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+    { onConflict: "user_id" }
+  );
+}
+
+async function getProjectId(userId: string, projectName: string): Promise<string | null> {
+  const { data } = await supabase
+    .from("projects")
+    .select("id")
+    .eq("owner_id", userId)
+    .eq("name", projectName)
+    .maybeSingle();
+  return data?.id ?? null;
+}
+
+async function sendOnboardingQuestion(
+  chatId: number,
+  step: string,
+  data: OnboardingData,
+  botToken: string
+): Promise<void> {
+  switch (step) {
+    case "vivienda_tipo":
+      await sendMessage(chatId,
+        "🏠 Vamos a configurar tu espacio. Puedes saltar cualquier pregunta con /skip\n\n¿Tienes alquiler o hipoteca?",
+        botToken,
+        { inline_keyboard: [[
+          { text: "Alquiler",  callback_data: "ob:vivienda_tipo:alquiler" },
+          { text: "Hipoteca",  callback_data: "ob:vivienda_tipo:hipoteca" },
+          { text: "No tengo",  callback_data: "ob:vivienda_tipo:skip" },
+        ]]}
+      );
+      break;
+
+    case "vivienda_importe":
+      await sendMessage(chatId,
+        "💶 ¿Cuánto pagas al mes? (escribe solo el número en €, ej: 850)\nPuedes usar también una nota de voz 🎙️",
+        botToken
+      );
+      break;
+
+    case "vivienda_ciudad":
+      await sendMessage(chatId,
+        "📍 ¿En qué ciudad vives? (o /skip para omitir)",
+        botToken
+      );
+      break;
+
+    case "vehiculo_tiene":
+      await sendMessage(chatId,
+        "🚗 ¿Tienes coche?",
+        botToken,
+        { inline_keyboard: [[
+          { text: "Sí", callback_data: "ob:vehiculo_tiene:si" },
+          { text: "No", callback_data: "ob:vehiculo_tiene:no" },
+        ]]}
+      );
+      break;
+
+    case "vehiculo_combustible":
+      await sendMessage(chatId,
+        "⛽ ¿Qué combustible usa?",
+        botToken,
+        { inline_keyboard: [[
+          { text: "Gasolina",  callback_data: "ob:vehiculo_combustible:gasolina" },
+          { text: "Diésel",    callback_data: "ob:vehiculo_combustible:diesel" },
+          { text: "Eléctrico", callback_data: "ob:vehiculo_combustible:electrico" },
+          { text: "Híbrido",   callback_data: "ob:vehiculo_combustible:hibrido" },
+        ]]}
+      );
+      break;
+
+    case "vehiculo_marca_modelo":
+      await sendMessage(chatId,
+        "🔑 ¿Marca y modelo? (ej: Volkswagen Golf)\nPuedes usar una nota de voz 🎙️",
+        botToken
+      );
+      break;
+
+    case "mascotas_tiene":
+      await sendMessage(chatId,
+        "🐾 ¿Tienes mascotas?",
+        botToken,
+        { inline_keyboard: [[
+          { text: "Sí", callback_data: "ob:mascotas_tiene:si" },
+          { text: "No", callback_data: "ob:mascotas_tiene:no" },
+        ]]}
+      );
+      break;
+
+    case "mascota_nombre": {
+      const idx = (data.mascotas?.length ?? 0) + 1;
+      const prefix = idx === 1 ? "¿Cómo se llama tu mascota?" : `¿Y cómo se llama la ${idx}ª mascota?`;
+      await sendMessage(chatId, `🐾 ${prefix}\nPuedes usar una nota de voz 🎙️`, botToken);
+      break;
+    }
+
+    case "mascota_especie":
+      await sendMessage(chatId,
+        `¿Qué es ${data.mascota_actual?.nombre ?? "tu mascota"}?`,
+        botToken,
+        { inline_keyboard: [[
+          { text: "Perro",  callback_data: "ob:mascota_especie:perro" },
+          { text: "Gato",   callback_data: "ob:mascota_especie:gato" },
+          { text: "Conejo", callback_data: "ob:mascota_especie:conejo" },
+          { text: "Otro",   callback_data: "ob:mascota_especie:otro" },
+        ]]}
+      );
+      break;
+
+    case "mascota_nacimiento":
+      await sendMessage(chatId,
+        `¿Cuándo nació ${data.mascota_actual?.nombre ?? "tu mascota"}? (aproximado vale, ej: enero 2020)\nO /skip si no lo sabes`,
+        botToken
+      );
+      break;
+
+    case "mascota_mas":
+      await sendMessage(chatId,
+        "¿Tienes otra mascota?",
+        botToken,
+        { inline_keyboard: [[
+          { text: "Sí, tengo otra",  callback_data: "ob:mascota_mas:si" },
+          { text: "No, terminar",    callback_data: "ob:mascota_mas:no" },
+        ]]}
+      );
+      break;
+
+    case "nombre":
+      await sendMessage(chatId,
+        "👤 ¿Cómo quieres que te llame? (o /skip para omitir)\nPuedes usar una nota de voz 🎙️",
+        botToken
+      );
+      break;
+
+    case "resumen": {
+      const lines: string[] = ["📋 <b>Esto es lo que voy a guardar:</b>\n"];
+      if (data.vivienda_tipo) {
+        const tipo = data.vivienda_tipo === "alquiler" ? "Alquiler" : "Hipoteca";
+        const importe = data.vivienda_importe ? `${data.vivienda_importe}€/mes` : "";
+        const ciudad = data.vivienda_ciudad ? ` — ${data.vivienda_ciudad}` : "";
+        lines.push(`🏠 Vivienda: ${tipo}${importe ? ` — ${importe}` : ""}${ciudad}`);
+      }
+      if (data.vehiculo_tiene && data.vehiculo_marca) {
+        const combustible = data.vehiculo_combustible ?? "";
+        lines.push(`🚗 Vehículo: ${data.vehiculo_marca} ${data.vehiculo_modelo ?? ""} (${combustible})`);
+      }
+      if (data.mascotas?.length) {
+        const mList = data.mascotas.map(m => `${m.nombre} (${m.especie})`).join(", ");
+        lines.push(`🐾 Mascotas: ${mList}`);
+      }
+      if (data.nombre_preferido) lines.push(`👤 Nombre: ${data.nombre_preferido}`);
+      if (lines.length === 1) lines.push("(nada que guardar — todo omitido)");
+      await sendMessage(chatId,
+        lines.join("\n"),
+        botToken,
+        { inline_keyboard: [[
+          { text: "✅ Confirmar y guardar", callback_data: "ob:resumen:confirmar" },
+          { text: "🔄 Empezar de nuevo",   callback_data: "ob:resumen:reiniciar" },
+        ]]}
+      );
+      break;
+    }
+  }
+}
+
+async function startOnboarding(chatId: number, userId: string, botToken: string): Promise<void> {
+  const fresh: OnboardingData = {};
+  await saveOnboardingState(userId, "vivienda_tipo", fresh);
+  await sendMessage(chatId,
+    "👋 ¡Genial! Voy a hacerte unas preguntas rápidas para configurar tu espacio personal.\nTodo es opcional — puedes saltar cualquier paso con /skip.\n",
+    botToken
+  );
+  await sendOnboardingQuestion(chatId, "vivienda_tipo", fresh, botToken);
+}
+
 // ─── Transcripción de voz con Groq Whisper ───────────────────
 
 async function transcribeVoice(fileId: string, botToken: string, groqKey: string): Promise<string | null> {
