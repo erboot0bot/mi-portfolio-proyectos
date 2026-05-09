@@ -13,7 +13,7 @@ html {
 }
 
 :root {
-  --nav-height: 56px;
+  --nav-height: 60px;
   --max-width: 1440px;
   --page-px: clamp(1.5rem, 4vw, 4rem);
 
