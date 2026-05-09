@@ -69,6 +69,8 @@ function UserAvatar({ user, onSignOut }) {
 export default function Layout({ children }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [dark, setDark] = useState(false)
+  const { pathname } = useLocation()
+  const isAppRoute = pathname.startsWith('/app/') || pathname.startsWith('/demo/')
   const location = useLocation()
   const { user, signOut } = useAuth()
   const { lang, setLang, t } = useLang()
@@ -240,7 +242,7 @@ export default function Layout({ children }) {
         {children}
       </main>
 
-      <footer className="border-t border-[var(--border)] bg-[var(--bg-card)]">
+      {!isAppRoute && <footer className="border-t border-[var(--border)] bg-[var(--bg-card)]">
         <div className="max-w-[1440px] mx-auto px-6 sm:px-10 lg:px-16 pt-10 pb-8
           grid grid-cols-1 sm:grid-cols-3 gap-10">
 
@@ -310,7 +312,7 @@ export default function Layout({ children }) {
             <span>mi-portfolio-proyectos-five.vercel.app</span>
           </div>
         </div>
-      </footer>
+      </footer>}
     </div>
   )
 }
