@@ -3,173 +3,127 @@ import { Link } from 'react-router-dom'
 import { useGSAP } from '@gsap/react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
-import { useLang } from '../contexts/LanguageContext'
 
 gsap.registerPlugin(ScrollTrigger)
 
-// Leído una vez al cargar el módulo — no cambia durante la sesión
-const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+const prefersReducedMotion =
+  typeof window !== 'undefined' &&
+  window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
-const SECTIONS = [
-  {
-    key: 'apps',
-    title: 'My Apps',
-    description: 'Herramientas web personales. Accede con tu cuenta de Google y úsalas desde cualquier dispositivo.',
-    icon: '⚡',
-    href: '/apps',
-    status: 'active',
-    cta: 'Abrir la app',
-    accentColor: 'var(--accent)',
-  },
-  {
-    key: 'projects',
-    title: 'Documentación',
-    description: 'Portfolio de todo lo que he construido: apps, scripts, setups y experimentos con IA.',
-    icon: '🛠️',
-    href: '/projects',
-    status: 'active',
-    cta: 'Ver el portfolio',
-    accentColor: '#6366f1',
-  },
-  {
-    key: 'lab',
-    title: 'Lab',
-    description: 'Experimentos, prototipos y cosas en construcción. El proceso sin filtrar.',
-    icon: '🧪',
-    href: '/lab',
-    status: 'active',
-    cta: 'Explorar el lab',
-    accentColor: '#06b6d4',
-  },
-  {
-    key: 'courses',
-    title: 'Cursos',
-    description: 'Formación técnica: IA aplicada, flujos de desarrollo y herramientas que multiplican la productividad.',
-    icon: '📚',
-    href: '/courses',
-    status: 'coming_soon',
-    cta: 'Próximamente',
-    accentColor: '#10b981',
-  },
-  {
-    key: 'store',
-    title: 'Tienda',
-    description: 'Recursos digitales, templates y herramientas. En construcción.',
-    icon: '🛒',
-    href: '/store',
-    status: 'coming_soon',
-    cta: 'Próximamente',
-    accentColor: '#8b5cf6',
-  },
-]
-
-const STATS = [
-  { value: '4+',   label: 'Apps en producción' },
-  { value: '100%', label: 'Código asistido por IA' },
-  { value: '1',    label: 'Desarrollador solo' },
-  { value: 'Open', label: 'Código fuente público' },
-]
-
-function StatsSection() {
-  const containerRef = useRef(null)
-
-  useGSAP(() => {
-    if (prefersReducedMotion) return
-
-    gsap.to('[data-stat-card]', {
-      opacity: 1,
-      y: 0,
-      duration: 0.45,
-      stagger: 0.07,
-      ease: 'power2.out',
-      clearProps: 'transform',
-      scrollTrigger: {
-        trigger: containerRef.current,
-        start: 'top 90%',
-        once: true,
-      },
-    })
-  }, { scope: containerRef })
-
-  return (
-    <section ref={containerRef}
-      aria-label="Métricas"
-      className="px-6 sm:px-10 lg:px-16 max-w-[1440px] mx-auto py-6">
-      <dl className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        {STATS.map(({ value, label }) => (
-          <div key={label} data-stat-card
-            style={prefersReducedMotion ? {} : { opacity: 0, transform: 'translateY(20px)' }}
-            className="rounded-xl border border-[var(--border)] bg-[var(--bg-card)] p-5 text-center">
-            {/* dt = primary identifier (the value), dd = descriptive label */}
-            <dd className="text-2xl font-extrabold text-[var(--text)]">{value}</dd>
-            <dt className="text-xs text-[var(--text-faint)] mt-1">{label}</dt>
-          </div>
-        ))}
-      </dl>
-    </section>
-  )
-}
-
-// Estado inicial oculto — solo si el usuario no prefiere motion reducido
-const hidden = prefersReducedMotion ? {} : { opacity: 0 }
-const hiddenUp = (px) => prefersReducedMotion ? {} : { opacity: 0, transform: `translateY(${px}px)` }
-
-export default function LandingPage() {
-  return (
-    <div>
-      <title>H3nky | Portfolio</title>
-      <HeroSection />
-      <StatsSection />
-      <SectionsGrid />
-      <AboutSection />
-    </div>
-  )
-}
-
+// ── Hero ─────────────────────────────────────────────────────────────────
 function HeroSection() {
-  const { t } = useLang()
   const containerRef = useRef(null)
 
   useGSAP(() => {
     if (prefersReducedMotion) return
-
-    // gsap.to() — el estado inicial ya está en el style prop del JSX
-    const tl = gsap.timeline({ defaults: { ease: 'power3.out' } })
-    tl.to('[data-hero-badge]',    { opacity: 1, y: 0, duration: 0.5 })
-      .to('[data-hero-title]',    { opacity: 1, y: 0, duration: 0.6 }, '-=0.25')
-      .to('[data-hero-sub]',      { opacity: 1, y: 0, duration: 0.5 }, '-=0.3')
-      .to('[data-hero-ctas] > *', { opacity: 1, y: 0, duration: 0.4, stagger: 0.1 }, '-=0.25')
+    const tl = gsap.timeline({ defaults: { ease: 'power2.out' } })
+    tl.fromTo('[data-hero-lockup]',  { opacity: 0, scale: 0.96 }, { opacity: 1, scale: 1, duration: 0.8 })
+      .fromTo('[data-hero-kicker]',  { opacity: 0, y: 12 },       { opacity: 1, y: 0, duration: 0.5 }, '-=0.5')
+      .fromTo('[data-hero-tagline]', { opacity: 0, y: 16 },       { opacity: 1, y: 0, duration: 0.6 }, '-=0.4')
+      .fromTo('[data-hero-ctas] > *',{ opacity: 0, y: 12 },       { opacity: 1, y: 0, duration: 0.4, stagger: 0.1 }, '-=0.35')
   }, { scope: containerRef })
 
-  return (
-    <section className="relative overflow-hidden" ref={containerRef}>
-      <div className="absolute inset-0 hidden dark:block pointer-events-none"
-        style={{ background: 'linear-gradient(to bottom, rgba(254,112,0,0.07) 0%, transparent 60%)' }} />
-      <div className="absolute inset-0 dark:hidden pointer-events-none"
-        style={{ background: 'linear-gradient(135deg, rgba(254,112,0,0.13) 0%, transparent 55%)' }} />
+  const hidden = prefersReducedMotion ? {} : { opacity: 0 }
 
-      <div className="relative z-10 pt-16 pb-20 px-6 sm:px-10 lg:px-16 max-w-[1440px] mx-auto">
-        <p data-hero-badge style={hiddenUp(12)} className="h3nky-kicker mb-4">
-          H3nky · dev
+  return (
+    <section
+      ref={containerRef}
+      className="relative overflow-hidden"
+      style={{
+        padding: 'clamp(60px, 8vw, 100px) var(--page-px) 140px',
+        background: 'linear-gradient(110deg, #ea580c 0%, #7c2d12 28%, #4c1d95 52%, #0a0a0f 78%)',
+      }}
+    >
+      {/* Bottom fade into page bg */}
+      <div
+        className="absolute bottom-0 left-0 right-0 pointer-events-none"
+        style={{ height: '140px', background: 'linear-gradient(to bottom, transparent, var(--bg))' }}
+      />
+
+      <div
+        className="relative flex flex-col items-center text-center"
+        style={{ zIndex: 2, maxWidth: 'var(--max-width)', margin: '0 auto' }}
+      >
+        {/* Kicker */}
+        <p
+          data-hero-kicker
+          style={{
+            ...hidden,
+            fontFamily: 'var(--font-mono)',
+            fontSize: '12px',
+            fontWeight: 700,
+            letterSpacing: '0.28em',
+            textTransform: 'uppercase',
+            color: 'rgba(255,255,255,0.55)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '14px',
+            marginBottom: '36px',
+          }}
+        >
+          <span style={{ width: '32px', height: '1px', background: 'rgba(255,255,255,0.3)', flexShrink: 0 }} />
+          H3NKY · DEV · 2026
+          <span style={{ width: '32px', height: '1px', background: 'rgba(255,255,255,0.3)', flexShrink: 0 }} />
         </p>
-        <h1 data-hero-title style={hiddenUp(24)} className="h3nky-hero mb-4">
-          H<span style={{ color: '#21eb3f' }}>3</span>NKY
-        </h1>
-        <p data-hero-sub style={hiddenUp(16)} className="h3nky-body-lg max-w-xl mb-10">
-          {t('heroTitle')}
+
+        {/* Logo lockup */}
+        <div
+          data-hero-lockup
+          style={{ ...hidden, width: '100%', maxWidth: '760px', margin: '0 auto' }}
+        >
+          <img
+            src="/logo-horizontal.png"
+            alt="H3nky"
+            style={{ width: '100%', height: 'auto', display: 'block', filter: 'drop-shadow(0 12px 50px rgba(0,0,0,0.45))' }}
+          />
+        </div>
+
+        {/* Tagline */}
+        <p
+          data-hero-tagline
+          style={{
+            ...hidden,
+            fontFamily: 'var(--font-body)',
+            fontSize: '19px',
+            fontWeight: 300,
+            color: 'rgba(255,255,255,0.82)',
+            maxWidth: '580px',
+            lineHeight: 1.6,
+            margin: '40px 0 44px',
+          }}
+        >
+          Construyo aplicaciones reales con IA y documento exactamente cómo lo hago.
         </p>
-        <div data-hero-ctas className="flex flex-wrap gap-3">
+
+        {/* CTAs */}
+        <div data-hero-ctas className="flex flex-wrap gap-3 justify-center">
           <Link
             to="/apps"
-            style={hiddenUp(12)}
-            className="h3nky-btn-primary"
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: '8px',
+              padding: '14px 28px', borderRadius: 'var(--radius-md)',
+              background: 'var(--accent)', color: '#fff',
+              fontFamily: 'var(--font-body)', fontSize: '14px', fontWeight: 600,
+              textDecoration: 'none', border: '1px solid transparent',
+              boxShadow: 'var(--shadow-cta)', transition: 'all var(--transition)',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--accent-hover)'; e.currentTarget.style.transform = 'translateY(-1px)' }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'var(--accent)'; e.currentTarget.style.transform = '' }}
           >
             Ver mis apps →
           </Link>
           <Link
             to="/projects"
-            style={hiddenUp(12)}
-            className="h3nky-btn-secondary"
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: '8px',
+              padding: '14px 28px', borderRadius: 'var(--radius-md)',
+              background: 'rgba(255,255,255,0.06)', color: '#fff',
+              fontFamily: 'var(--font-body)', fontSize: '14px', fontWeight: 600,
+              textDecoration: 'none', border: '1px solid rgba(255,255,255,0.18)',
+              backdropFilter: 'blur(8px)', transition: 'all var(--transition)',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.background = 'rgba(255,255,255,0.1)' }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.18)'; e.currentTarget.style.background = 'rgba(255,255,255,0.06)' }}
           >
             Ver el portfolio →
           </Link>
@@ -179,120 +133,364 @@ function HeroSection() {
   )
 }
 
-function SectionsGrid() {
+// ── Stats ─────────────────────────────────────────────────────────────────
+const STATS = [
+  { num: '4',  suffix: '+', label: 'Apps en producción',     color: 'var(--accent)' },
+  { num: '100%',             label: 'Código asistido por IA', color: 'var(--brand-green)' },
+  { num: '1',                label: 'Desarrollador solo',     color: 'var(--text)' },
+  { num: 'Open',             label: 'Código fuente público',  color: 'var(--brand-purple)', small: true },
+]
+
+function StatsSection() {
   const containerRef = useRef(null)
 
   useGSAP(() => {
     if (prefersReducedMotion) return
-
-    gsap.to('[data-section-card]', {
-      opacity: (_, target) => target.dataset.active === 'true' ? 1 : 0.6,
-      y: 0,
-      duration: 0.5,
-      stagger: 0.08,
-      ease: 'power2.out',
-      clearProps: 'transform',
-      scrollTrigger: {
-        trigger: containerRef.current,
-        start: 'top 85%',
-        once: true,
-      },
-    })
+    gsap.fromTo('[data-stat-card]',
+      { y: 40, opacity: 0 },
+      {
+        y: 0, opacity: 1, duration: 0.6, stagger: 0.08, ease: 'power2.out',
+        scrollTrigger: { trigger: containerRef.current, start: 'top 90%', once: true },
+      }
+    )
   }, { scope: containerRef })
 
   return (
-    <section ref={containerRef}
-      className="px-6 sm:px-10 lg:px-16 max-w-[1440px] mx-auto py-12">
-      <h2 className="text-xl font-bold text-[var(--text)] mb-1">Qué hay aquí</h2>
-      <p className="text-sm text-[var(--text-muted)] mb-8">Una plataforma en constante construcción.</p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-        {SECTIONS.map(s => <SectionCard key={s.key} section={s} />)}
+    <section
+      ref={containerRef}
+      style={{
+        maxWidth: 'var(--max-width)', margin: '-68px auto 0',
+        padding: '0 var(--page-px)', position: 'relative', zIndex: 10,
+      }}
+    >
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(4, 1fr)',
+          gap: '16px',
+        }}
+      >
+        {STATS.map(({ num, suffix, label, color, small }) => (
+          <div
+            key={label}
+            data-stat-card
+            style={{
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius-lg)',
+              padding: '32px 24px',
+              boxShadow: 'var(--shadow-card)',
+              transition: 'all var(--transition)',
+              textAlign: 'center',
+              ...(prefersReducedMotion ? {} : { opacity: 0 }),
+            }}
+          >
+            <div style={{
+              fontFamily: 'var(--font-tech)',
+              fontSize: small ? '44px' : '56px',
+              fontWeight: 900,
+              lineHeight: 1,
+              letterSpacing: '-0.02em',
+              color,
+            }}>
+              {num}{suffix && <span style={{ color: 'var(--accent)' }}>{suffix}</span>}
+            </div>
+            <div style={{
+              fontFamily: 'var(--font-tech)',
+              fontSize: '11px',
+              fontWeight: 700,
+              letterSpacing: '0.14em',
+              textTransform: 'uppercase',
+              color: 'var(--text-faint)',
+              marginTop: '14px',
+            }}>
+              {label}
+            </div>
+          </div>
+        ))}
       </div>
     </section>
   )
 }
 
-function SectionCard({ section }) {
-  const isActive = section.status === 'active'
+// ── Pillars ───────────────────────────────────────────────────────────────
+const PILLARS = [
+  {
+    num: '01 / Apps',
+    title: 'My Apps',
+    desc: 'Aplicaciones reales en producción. Hogar, herramientas internas, prototipos funcionando.',
+    accent: 'var(--brand-orange)',
+    iconBg: 'rgba(254,112,0,0.12)',
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--brand-orange)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+      </svg>
+    ),
+    href: '/apps',
+  },
+  {
+    num: '02 / Docs',
+    title: 'Documentación',
+    desc: 'Guías paso a paso, decisiones técnicas, errores. Todo público para que otros aprendan.',
+    accent: 'var(--brand-green)',
+    iconBg: 'rgba(33,235,63,0.12)',
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--brand-green)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+      </svg>
+    ),
+    href: '/projects',
+  },
+  {
+    num: '03 / Lab',
+    title: 'Lab',
+    desc: 'Experimentos, ideas en construcción y exploración técnica sin filtrar.',
+    accent: 'var(--brand-purple)',
+    iconBg: 'rgba(154,78,251,0.12)',
+    icon: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--brand-purple)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M9 2v6l-4 8a4 4 0 0 0 4 6h6a4 4 0 0 0 4-6l-4-8V2" />
+        <path d="M9 2h6" />
+      </svg>
+    ),
+    href: '/lab',
+  },
+]
 
-  const initialStyle = prefersReducedMotion
-    ? {}
-    : { opacity: 0, transform: 'translateY(32px)' }
+function PillarsSection() {
+  const containerRef = useRef(null)
 
-  const inner = (
-    <div
-      data-section-card
-      data-active={String(isActive)}
-      style={initialStyle}
-      className={`
-        rounded-xl border border-[var(--border)] bg-[var(--bg-card)]
-        p-6 flex flex-col gap-3 h-full transition-colors duration-200
-        ${isActive ? 'hover:border-[var(--accent)] hover:shadow-md cursor-pointer' : 'cursor-default'}
-      `}
-    >
-      <span className="text-3xl">{section.icon}</span>
-      <div className="flex items-center gap-2 flex-wrap">
-        <h3 className="font-bold text-[var(--text)]">{section.title}</h3>
-        {!isActive && (
-          <span className="text-xs font-mono px-2 py-0.5 rounded-full bg-[var(--border)] text-[var(--text-faint)]">
-            En desarrollo
-          </span>
-        )}
+  useGSAP(() => {
+    if (prefersReducedMotion) return
+    gsap.fromTo('[data-pillar-card]',
+      { y: 32, opacity: 0 },
+      {
+        y: 0, opacity: 1, duration: 0.6, stagger: 0.1, ease: 'power2.out',
+        scrollTrigger: { trigger: containerRef.current, start: 'top 85%', once: true },
+      }
+    )
+  }, { scope: containerRef })
+
+  return (
+    <section ref={containerRef} style={{ maxWidth: 'var(--max-width)', margin: '0 auto', padding: '112px var(--page-px)' }}>
+      <div style={{ marginBottom: '56px' }}>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.16em', color: 'var(--accent)', marginBottom: '12px', textTransform: 'uppercase' }}>
+          // Plataforma
+        </div>
+        <h2 style={{ fontFamily: 'var(--font-hero)', fontSize: 'clamp(32px, 4vw, 48px)', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', margin: '0 0 14px', color: 'var(--text)' }}>
+          Qué hay aquí
+        </h2>
+        <p style={{ fontFamily: 'var(--font-body)', fontSize: '17px', fontWeight: 300, color: 'var(--text-muted)', maxWidth: '540px', lineHeight: 1.6, margin: 0 }}>
+          Una plataforma en constante construcción.
+        </p>
       </div>
-      <p className="text-sm text-[var(--text-muted)] leading-relaxed flex-1">{section.description}</p>
-      <span className="text-sm font-semibold mt-1"
-        style={{ color: isActive ? section.accentColor : 'var(--text-faint)' }}>
-        {section.cta}{isActive ? ' →' : ''}
-      </span>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px' }}>
+        {PILLARS.map(({ num, title, desc, accent, iconBg, icon, href }) => (
+          <Link
+            key={num}
+            to={href}
+            data-pillar-card
+            style={{
+              ...(prefersReducedMotion ? {} : { opacity: 0 }),
+              display: 'block',
+              background: 'var(--bg-card)',
+              border: `1px solid var(--border)`,
+              borderTop: `3px solid ${accent}`,
+              borderRadius: 'var(--radius-lg)',
+              padding: '36px 32px',
+              boxShadow: 'var(--shadow-card)',
+              transition: 'all var(--transition)',
+              textDecoration: 'none',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = 'var(--shadow-card-hover)' }}
+            onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = 'var(--shadow-card)' }}
+          >
+            <div style={{ width: '48px', height: '48px', borderRadius: 'var(--radius-md)', background: iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '22px' }}>
+              {icon}
+            </div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.14em', color: accent, marginBottom: '10px' }}>
+              {num}
+            </div>
+            <h3 style={{ fontFamily: 'var(--font-hero)', fontSize: '19px', fontWeight: 800, letterSpacing: '0.05em', textTransform: 'uppercase', margin: '0 0 12px', color: 'var(--text)' }}>
+              {title}
+            </h3>
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '14px', fontWeight: 300, color: 'var(--text-muted)', lineHeight: 1.65, margin: 0 }}>
+              {desc}
+            </p>
+          </Link>
+        ))}
+      </div>
+    </section>
+  )
+}
+
+// ── Type Showcase ─────────────────────────────────────────────────────────
+function TypeShowcaseSection() {
+  const rows = [
+    {
+      tag: 'Orbitron',
+      sub: 'Hero · Logo · Titles — weight 900',
+      specimen: (
+        <div style={{ fontFamily: 'var(--font-hero)', fontSize: '56px', fontWeight: 900, letterSpacing: '0.04em', lineHeight: 1, color: 'var(--text)' }}>
+          H<span style={{ background: 'linear-gradient(90deg,var(--brand-orange) 0% 50%,var(--brand-green) 50% 100%)', backgroundClip: 'text', WebkitBackgroundClip: 'text', color: 'transparent', WebkitTextFillColor: 'transparent', padding: '0 2px' }}>3</span>NKY
+        </div>
+      ),
+    },
+    {
+      tag: 'Exo 2',
+      sub: 'Tech docs · Stats · Kickers — weight 700–800',
+      specimen: (
+        <div style={{ fontFamily: 'var(--font-tech)', fontSize: '28px', fontWeight: 700, color: 'var(--text)' }}>
+          Aplicaciones reales con IA
+        </div>
+      ),
+    },
+    {
+      tag: 'Sora',
+      sub: 'Body · Nav · UI — weight 300–600',
+      specimen: (
+        <div style={{ fontFamily: 'var(--font-body)', fontSize: '16px', fontWeight: 400, color: 'var(--text)', lineHeight: 1.6 }}>
+          Construyo aplicaciones reales con IA y documento exactamente cómo lo hago. Cada decisión técnica, cada error, cada flujo — todo público.
+        </div>
+      ),
+    },
+    {
+      tag: 'JetBrains Mono',
+      sub: 'Code · Tokens · Numerics — weight 400–600',
+      specimen: (
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '14px', fontWeight: 400, color: 'var(--accent)' }}>
+          {'const accent = "#fe7000"; // sampled from logo'}
+        </div>
+      ),
+    },
+  ]
+
+  return (
+    <section style={{ maxWidth: 'var(--max-width)', margin: '0 auto', padding: '0 var(--page-px) 112px' }}>
+      <div style={{ marginBottom: '56px' }}>
+        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.16em', color: 'var(--accent)', marginBottom: '12px', textTransform: 'uppercase' }}>
+          // Type System
+        </div>
+        <h2 style={{ fontFamily: 'var(--font-hero)', fontSize: 'clamp(32px, 4vw, 48px)', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', margin: '0 0 14px', color: 'var(--text)' }}>
+          Tipografía
+        </h2>
+        <p style={{ fontFamily: 'var(--font-body)', fontSize: '17px', fontWeight: 300, color: 'var(--text-muted)', maxWidth: '540px', lineHeight: 1.6, margin: 0 }}>
+          Cuatro familias, cada una con un papel claro.
+        </p>
+      </div>
+
+      {rows.map(({ tag, sub, specimen }, i) => (
+        <div
+          key={tag}
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '200px 1fr',
+            gap: '32px',
+            padding: '24px 0',
+            borderBottom: i < rows.length - 1 ? '1px solid var(--border)' : 'none',
+            alignItems: 'center',
+          }}
+        >
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--text-faint)', letterSpacing: '0.06em', paddingTop: '8px' }}>
+            <span style={{ color: 'var(--accent)', fontWeight: 600, display: 'block', marginBottom: '4px', fontSize: '12px' }}>{tag}</span>
+            {sub}
+          </div>
+          {specimen}
+        </div>
+      ))}
+    </section>
+  )
+}
+
+// ── Auth Section ──────────────────────────────────────────────────────────
+function AuthSection() {
+  return (
+    <div style={{ background: 'var(--bg-subtle)', borderTop: '1px solid var(--border)', borderBottom: '1px solid var(--border)' }}>
+      <section style={{ maxWidth: '1100px', margin: '0 auto', padding: '96px var(--page-px)' }}>
+        <div
+          style={{ display: 'grid', gridTemplateColumns: '1fr 460px', gap: '64px', alignItems: 'center' }}
+          className="lg:grid-cols-[1fr_460px] grid-cols-1"
+        >
+          {/* Copy */}
+          <div>
+            <div style={{ fontFamily: 'var(--font-tech)', fontSize: '11px', fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--accent)', marginBottom: '14px' }}>
+              // Acceso
+            </div>
+            <h2 style={{ fontFamily: 'var(--font-hero)', fontSize: 'clamp(28px, 3.4vw, 40px)', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', margin: '0 0 16px', color: 'var(--text)' }}>
+              Entra a tus apps
+            </h2>
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '16px', fontWeight: 300, color: 'var(--text-muted)', lineHeight: 1.65, margin: '0 0 24px' }}>
+              El acceso a las aplicaciones de H3nky es privado. Cada módulo usa el mismo login con Google.
+            </p>
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '13px', color: 'var(--text-faint)', lineHeight: 1.55, margin: 0 }}>
+              Solo se usa para autenticación. No compartimos tus datos con nadie.
+            </p>
+          </div>
+
+          {/* Login card */}
+          <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '32px 28px', boxShadow: 'var(--shadow-card)', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+            {/* Mini logo */}
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', textAlign: 'center' }}>
+              <img src="/logo-horizontal.png" alt="H3nky" style={{ height: '52px', width: 'auto', display: 'block' }} />
+              <div style={{ fontFamily: 'var(--font-tech)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.22em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
+                Creo · Aprendo · Comparto
+              </div>
+            </div>
+
+            {/* Hogar module badge */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '14px', borderRadius: 'var(--radius-md)', background: 'rgba(254,112,0,0.06)', border: '1px solid rgba(254,112,0,0.18)' }}>
+              <div style={{ width: '36px', height: '36px', borderRadius: 'var(--radius-sm)', background: 'rgba(254,112,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)', flexShrink: 0 }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                  <polyline points="9 22 9 12 15 12 15 22" />
+                </svg>
+              </div>
+              <div>
+                <div style={{ fontFamily: 'var(--font-hero)', fontSize: '13px', fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text)' }}>Hogar</div>
+                <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>Calendario, lista de la compra y recetas con IA</div>
+              </div>
+            </div>
+
+            {/* Divider */}
+            <div style={{ height: '1px', background: 'var(--border)' }} />
+
+            {/* Google button — links to /login */}
+            <Link
+              to="/login"
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '14px 20px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', background: 'rgba(255,255,255,0.04)', color: 'var(--text)', fontFamily: 'var(--font-body)', fontSize: '14px', fontWeight: 600, textDecoration: 'none', transition: 'all var(--transition)' }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--border-hover)'; e.currentTarget.style.background = 'rgba(255,255,255,0.06)' }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = 'rgba(255,255,255,0.04)' }}
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24">
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+              </svg>
+              Continuar con Google
+            </Link>
+
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--text-faint)', textAlign: 'center', lineHeight: 1.55, margin: 0 }}>
+              Solo se usa para autenticación.<br />No compartimos tus datos.
+            </p>
+          </div>
+        </div>
+      </section>
     </div>
   )
-  return isActive
-    ? <Link to={section.href} className="h-full block">{inner}</Link>
-    : <div className="h-full">{inner}</div>
 }
 
-function AboutSection() {
-  const containerRef = useRef(null)
-
-  useGSAP(() => {
-    if (prefersReducedMotion) return
-
-    gsap.to('[data-about-content] > *', {
-      opacity: 1,
-      y: 0,
-      duration: 0.5,
-      stagger: 0.1,
-      ease: 'power2.out',
-      clearProps: 'transform',
-      scrollTrigger: {
-        trigger: containerRef.current,
-        start: 'top 88%',
-        once: true,
-      },
-    })
-  }, { scope: containerRef })
-
+// ── Page ──────────────────────────────────────────────────────────────────
+export default function LandingPage() {
   return (
-    <section ref={containerRef}
-      className="px-6 sm:px-10 lg:px-16 max-w-[1440px] mx-auto py-16
-        border-t border-[var(--border)] mt-8">
-      <div data-about-content className="max-w-2xl">
-        <p style={hiddenUp(20)} className="font-mono text-xs tracking-widest uppercase mb-4 text-[var(--text-faint)]">
-          Sobre el creador
-        </p>
-        <h2 style={hiddenUp(20)} className="text-2xl font-extrabold text-[var(--text)] mb-4">Hola, soy H3nky</h2>
-        <p style={hiddenUp(20)} className="text-[var(--text-muted)] leading-relaxed mb-6">
-          Informático apasionado por la IA y las herramientas que multiplican lo que uno solo puede hacer.
-          Construyo esto sin ser "desarrollador profesional" — usando Claude Code, Supabase y el stack
-          moderno de React para demostrar que los límites técnicos ya no son excusa.
-        </p>
-        <a href="https://github.com/H3nky" target="_blank" rel="noreferrer"
-          style={hiddenUp(20)}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold
-            border border-[var(--border)] text-[var(--text)] hover:bg-[var(--bg-card)] transition-colors">
-          GitHub →
-        </a>
-      </div>
-    </section>
+    <div>
+      <title>H3nky | Portfolio</title>
+      <HeroSection />
+      <StatsSection />
+      <PillarsSection />
+      <TypeShowcaseSection />
+      <AuthSection />
+    </div>
   )
 }
