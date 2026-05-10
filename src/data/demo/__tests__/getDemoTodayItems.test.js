@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { getDemoTodayItems, getActiveItem } from '../getDemoTodayItems.js'
 
 vi.mock('../index.js', () => ({
@@ -89,5 +89,16 @@ describe('getActiveItem', () => {
 
   it('retorna null si no hay items activos', () => {
     expect(getActiveItem([])).toBeNull()
+  })
+
+  it('retorna el item más reciente cuando hay varios activos', () => {
+    const now = new Date()
+    const recent = new Date(now.getTime() - 10 * 60 * 1000).toISOString()
+    const older  = new Date(now.getTime() - 90 * 60 * 1000).toISOString()
+    const items = [
+      { id: 'old', time: older,  allDay: false },
+      { id: 'new', time: recent, allDay: false },
+    ]
+    expect(getActiveItem(items)?.id).toBe('new')
   })
 })

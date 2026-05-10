@@ -30,10 +30,11 @@ export function getDemoTodayItems() {
   for (const t of tasks) {
     if (t.status === 'done') continue
     if (!t.due_date) continue
-    if (isToday(new Date(t.due_date + 'T12:00:00'))) {
+    const taskTime = t.due_date + 'T09:00:00'
+    if (isToday(new Date(taskTime))) {
       items.push({
         id:       t.id,
-        time:     t.due_date + 'T09:00:00',
+        time:     taskTime,
         title:    t.title,
         appLabel: 'PERSONAL',
         appColor: '#38bdf8',
@@ -47,7 +48,7 @@ export function getDemoTodayItems() {
 
 export function getActiveItem(items) {
   const now = new Date()
-  return items.find(item => {
+  return items.findLast(item => {
     if (item.allDay) return false
     const diffMin = (now - new Date(item.time)) / (1000 * 60)
     return diffMin >= 0 && diffMin < 120
