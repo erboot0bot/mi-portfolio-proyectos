@@ -8,9 +8,13 @@ export const projects = [
   {
     slug: 'hogar',
     shortTitle: 'Hogar',
+    chapter: 'Apps',
+    chapterIndex: 1,
+    kicker: 'App personal · Supabase + Claude',
     gradientFrom: '#ea580c', gradientVia: '#9a3412', gradientTo: '#7c2d12',
     title: 'Hogar — Apps del día a día',
     description: 'Calendario, lista de la compra, menú semanal y recetas con IA. Autenticación con Google vía Supabase.',
+    blurb: 'Una suite de productividad que vive dentro del mismo portfolio. Cuatro módulos — calendario, compra, menú y recetas — que comparten autenticación, base de datos y proyecto bajo una arquitectura unificada.',
     status: 'wip',
     featured: true,
     technologies: ['React', 'Supabase', 'Claude AI', 'FullCalendar', 'Google OAuth'],
@@ -18,6 +22,12 @@ export const projects = [
     demo: null,
     images: ['/projects/hogar/cover.jpg'],
     date: '2026-04',
+    metrics: [
+      { label: 'LOC', value: '1.957' },
+      { label: 'Tablas', value: '7' },
+      { label: 'Políticas RLS', value: '10' },
+      { label: 'Build', value: '1.62s' },
+    ],
     docs: [
       {
         id: 'descripcion',
@@ -225,9 +235,13 @@ link#pwa-manifest.href = '/icons/icon-calendar-192.png'
   {
     slug: 'portfolio-personal',
     shortTitle: 'Portfolio',
+    chapter: 'Web & Portfolio',
+    chapterIndex: 2,
+    kicker: 'Esta misma web · React 19 + Vite',
     gradientFrom: '#f97316', gradientVia: '#f59e0b', gradientTo: '#d97706',
     title: 'Portfolio Personal',
     description: 'Esta misma web — documentación de proyectos con React, Vite, Tailwind, Framer Motion y GSAP.',
+    blurb: 'Producto y documentación a la vez. SPA con GSAP + Framer Motion en coexistencia deliberada, testing con Vitest, PWA offline y sistema de temas dark/light que respeta las preferencias del sistema.',
     status: 'wip',
     featured: true,
     technologies: ['React', 'Vite', 'Tailwind', 'Framer Motion', 'GSAP', 'Vitest', 'Pollinations.ai'],
@@ -235,6 +249,12 @@ link#pwa-manifest.href = '/icons/icon-calendar-192.png'
     demo: null,
     images: ['/projects/portfolio-personal/cover.jpg'],
     date: '2026-04',
+    metrics: [
+      { label: 'LOC', value: '4.807' },
+      { label: 'Componentes', value: '12' },
+      { label: 'Tests', value: '40+' },
+      { label: 'Build', value: '1.62s' },
+    ],
     documentation: {
       problem: `Las animaciones del portfolio eran todas pasivas: reaccionaban al mount de React pero nunca al scroll. El hero de LandingPage no tenía ninguna animación de entrada. Framer Motion estaba importado con eslint-disable en varios archivos sin usarse en el componente donde se importaba. Sin scroll storytelling, el portfolio se sentía estático.`,
       approach: `Auditoría completa de todos los contextos de animación para decidir dónde Framer Motion es la herramienta correcta (estado React: mount/unmount, hover, gestures) y dónde GSAP aporta más (timelines complejos, scroll-linked animations, secuencias con control fino). Implementar GSAP con el hook oficial useGSAP y ScrollTrigger donde corresponde, manteniendo Framer Motion donde ya funciona bien.`,
@@ -458,9 +478,13 @@ Object.defineProperty(window, 'matchMedia', {
   {
     slug: 'portfolio-config',
     shortTitle: 'Config',
+    chapter: 'Web & Portfolio',
+    chapterIndex: 2,
+    kicker: 'Decisiones técnicas · Code splitting',
     gradientFrom: '#0ea5e9', gradientVia: '#0284c7', gradientTo: '#0369a1',
     title: 'Portfolio con React + Vite + Tailwind v4',
     description: 'Arquitectura y decisiones técnicas detrás de este mismo portfolio.',
+    blurb: 'No es el qué — es el por qué. Cada elección tecnológica, de Vite 8 a Tailwind v4 a la flat config de ESLint, documentada con el código que la respalda.',
     status: 'wip',
     featured: true,
     technologies: ['React', 'Vite', 'Tailwind', 'Framer Motion', 'Vitest', 'Pollinations.ai'],
@@ -468,6 +492,12 @@ Object.defineProperty(window, 'matchMedia', {
     demo: null,
     images: ['/projects/portfolio-config/cover.jpg'],
     date: '2026-04',
+    metrics: [
+      { label: 'Build', value: '1.62s' },
+      { label: 'Bundle vendor', value: '57 kB gz' },
+      { label: 'PWA cache', value: '893 kB' },
+      { label: 'Rutas lazy', value: 'Todas' },
+    ],
     docs: [
       {
         id: 'descripcion',
@@ -632,9 +662,13 @@ export default defineConfig([
   {
     slug: 'ai-dev-setup',
     shortTitle: 'AI Setup',
+    chapter: 'IA & Workflow',
+    chapterIndex: 3,
+    kicker: 'Claude Code · gstack',
     gradientFrom: '#7c3aed', gradientVia: '#5b21b6', gradientTo: '#4c1d95',
     title: 'Setup de Desarrollo con IA',
     description: 'Configuración completa de Claude Code + gstack para desarrollar como un equipo de 20.',
+    blurb: 'Sistema de desarrollo con IA que reemplaza a un equipo completo siendo uno solo. Claude Code actúa, no sugiere: lee el codebase, edita archivos reales y corre tests.',
     status: 'completed',
     featured: true,
     technologies: ['Claude Code', 'gstack', 'AI', 'Prompt Engineering'],
@@ -642,6 +676,12 @@ export default defineConfig([
     demo: null,
     images: ['/projects/ai-dev-setup/cover.jpg'],
     date: '2026-04',
+    metrics: [
+      { label: 'Commits', value: '65' },
+      { label: 'LOC generado', value: '4.807' },
+      { label: 'Roles IA', value: '4' },
+      { label: 'Autores', value: '1' },
+    ],
     docs: [
       {
         id: 'descripcion',
@@ -752,9 +792,13 @@ Entrega:
   {
     slug: 'vercel-deploy',
     shortTitle: 'CI/CD',
+    chapter: 'Infraestructura',
+    chapterIndex: 4,
+    kicker: 'Vercel · GitHub · DNS',
     gradientFrom: '#18181b', gradientVia: '#27272a', gradientTo: '#3f3f46',
     title: 'Deploy y CI/CD con Vercel',
     description: 'De localhost a producción: sincronización con GitHub y deploy automático.',
+    blurb: 'Pipeline completo zero-to-prod sin servidores, sin nginx, sin Dockerfiles. Cada push a main es un deploy. Cada PR, un preview con URL única. Build en 1.62s, en producción en 90s.',
     status: 'completed',
     featured: false,
     technologies: ['Vercel', 'GitHub', 'CI/CD', 'DNS'],
@@ -762,6 +806,12 @@ Entrega:
     demo: null,
     images: ['/projects/vercel-deploy/cover.jpg'],
     date: '2026-04',
+    metrics: [
+      { label: 'Build', value: '1.62s' },
+      { label: 'Deploy total', value: '~90s' },
+      { label: 'Cache assets', value: '1 año' },
+      { label: 'Headers seg.', value: '3' },
+    ],
     docs: [
       {
         id: 'descripcion',
@@ -860,4 +910,270 @@ SUPABASE_ANON_KEY              # Inyectada automáticamente por Supabase`,
       },
     ],
   },
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // MASCOTAS
+  // ─────────────────────────────────────────────────────────────────────────────
+  {
+    slug: 'mascotas',
+    shortTitle: 'Mascotas',
+    chapter: 'Apps',
+    chapterIndex: 1,
+    kicker: 'App personal · React + Supabase',
+    gradientFrom: '#f59e0b', gradientVia: '#d97706', gradientTo: '#92400e',
+    title: 'Mascotas — Gestión de animales de compañía',
+    description: 'Ficha de mascotas, historial de alimentación, salud y rutinas. Datos en Supabase con RLS.',
+    blurb: 'Seguimiento completo de cada mascota: alimentación diaria, historial de salud, vacunas y rutinas. Cada registro vinculado al animal y al usuario mediante Row-Level Security en Postgres.',
+    status: 'wip',
+    featured: true,
+    primary: true,
+    technologies: ['React', 'Supabase', 'Google OAuth'],
+    github: null,
+    demo: null,
+    images: ['/projects/mascotas/cover.jpg'],
+    date: '2026-04',
+    metrics: [
+      { label: 'Módulos', value: '4' },
+      { label: 'Tablas', value: '3+' },
+      { label: 'Políticas RLS', value: '6+' },
+      { label: 'Status', value: 'WIP' },
+    ],
+    docs: [
+      {
+        id: 'descripcion',
+        title: 'Descripción',
+        content: `Módulo de gestión de mascotas integrado en la plataforma H3nky. Permite registrar cada animal con su ficha completa (nombre, especie, raza, fecha de nacimiento), y llevar un registro detallado de alimentación diaria, historial de salud y vacunas, y rutinas personalizadas.\n\nTodos los datos están en Supabase Postgres con Row-Level Security, garantizando que cada usuario solo accede a sus propias mascotas. La autenticación es compartida con el resto de la plataforma (Google OAuth vía Supabase Auth).`,
+      },
+      {
+        id: 'modulos',
+        title: 'Módulos',
+        content: `**Mis Mascotas** — Lista de animales registrados con acceso a la ficha de cada uno. Cada mascota tiene una vista de detalle con pestañas.\n\n**Alimentación** — Registro diario de tomas, cantidades y tipo de alimento. Historial cronológico por mascota.\n\n**Salud** — Historial de visitas veterinarias, vacunas, medicamentos y observaciones. Fechas de próximas citas.\n\n**Rutinas** — Actividades recurrentes: paseos, cepillado, baño, juego. Con frecuencia configurable y registro de último cumplimiento.`,
+      },
+    ],
+    documentation: {
+      problem: 'Necesitaba un lugar centralizado para llevar el historial de salud y rutinas de mis mascotas, integrado en la misma plataforma.',
+      approach: 'Módulo separado dentro de la plataforma H3nky, con Supabase como backend y RLS para aislamiento de datos por usuario.',
+      decisions: [
+        'Estructura de pestañas por mascota (alimentación, salud, rutinas) para mantener el contexto del animal',
+        'Tablas separadas por tipo de dato (health, feeding, routines) para flexibilidad de consulta',
+        'Compartir AuthContext con el resto de la plataforma — sin duplicar lógica de autenticación',
+      ],
+      result: 'Módulo funcional con ficha de mascotas, alimentación y seguimiento de salud. Rutinas en desarrollo activo.',
+    },
+    meta: {
+      status: 'En desarrollo activo.',
+      limitations: ['Requiere cuenta Google', 'Sin notificaciones push para recordatorios de rutinas aún'],
+      aiProcess: 'Desarrollado con Claude Code. Estructura de datos y componentes generados con prompts, refinados iterativamente.',
+    },
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // VEHÍCULO
+  // ─────────────────────────────────────────────────────────────────────────────
+  {
+    slug: 'vehiculo',
+    shortTitle: 'Vehículo',
+    chapter: 'Apps',
+    chapterIndex: 1,
+    kicker: 'App personal · React + Supabase',
+    gradientFrom: '#0ea5e9', gradientVia: '#0284c7', gradientTo: '#1e3a5f',
+    title: 'Vehículo — Gestión de flotas personales',
+    description: 'Control de repostajes, mantenimiento, gastos y estadísticas. Multi-vehículo con datos en Supabase.',
+    blurb: 'Control total del vehículo personal: repostajes con precio y litros, mantenimientos programados, registro de gastos y estadísticas de consumo. Arquitectura multi-vehículo preparada para gestionar más de un coche.',
+    status: 'wip',
+    featured: true,
+    primary: true,
+    technologies: ['React', 'Supabase', 'Google OAuth'],
+    github: null,
+    demo: null,
+    images: ['/projects/vehiculo/cover.jpg'],
+    date: '2026-04',
+    metrics: [
+      { label: 'Módulos', value: '5' },
+      { label: 'Tablas', value: '4+' },
+      { label: 'Gráficas', value: 'Sí' },
+      { label: 'Multi-v.', value: 'Sí' },
+    ],
+    docs: [
+      {
+        id: 'descripcion',
+        title: 'Descripción',
+        content: `Módulo de gestión de vehículos con arquitectura multi-vehículo. El usuario puede registrar varios vehículos y llevar un historial completo de cada uno: repostajes (fecha, litros, precio/litro, km), mantenimientos (revisiones, cambios de aceite, ITV), gastos varios y estadísticas calculadas de consumo.\n\nLos datos están en Supabase con Row-Level Security. Cada vehículo pertenece al proyecto del usuario, garantizando aislamiento total de datos.`,
+      },
+      {
+        id: 'modulos',
+        title: 'Módulos',
+        content: `**Mis Vehículos** — Lista de vehículos registrados con acceso a la vista de detalle de cada uno.\n\n**Repostajes** — Registro histórico de repostajes con fecha, km, litros, precio total y precio/litro. Gráfica de evolución del precio del combustible.\n\n**Mantenimiento** — Historial de mantenimientos con tipo, fecha, km, descripción y coste. Alertas por km o fecha.\n\n**Gastos** — Registro de gastos varios (parkings, multas, seguros, ITV). Categorizable.\n\n**Estadísticas** — Consumo medio calculado, coste por km, resumen mensual y anual.`,
+      },
+    ],
+    documentation: {
+      problem: 'Quería llevar un registro detallado del consumo, mantenimientos y gastos de mi vehículo en un lugar propio, sin apps de terceros.',
+      approach: 'Módulo integrado en la plataforma H3nky con Supabase para persistencia y cálculos de estadísticas en cliente.',
+      decisions: [
+        'Arquitectura multi-vehículo desde el inicio — tabla vehicles con FK a projects',
+        'Estadísticas calculadas en cliente para reducir consultas — los datos raw se traen completos y se procesan localmente',
+        'Módulo VehiculoDetail como layout con outlet — las sub-rutas (repostajes, mantenimiento...) renderizan dentro del mismo layout',
+      ],
+      result: 'App con repostajes, mantenimiento, gastos y estadísticas operativos. Multi-vehículo funcional.',
+    },
+    meta: {
+      status: 'En desarrollo activo.',
+      limitations: ['Requiere cuenta Google', 'Sin exportación de datos aún', 'Gráficas básicas — sin librería dedicada'],
+      aiProcess: 'Desarrollado con Claude Code. Estructura multi-vehículo y cálculo de estadísticas diseñados mediante prompts estructurados.',
+    },
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // FINANZAS
+  // ─────────────────────────────────────────────────────────────────────────────
+  {
+    slug: 'finanzas',
+    shortTitle: 'Finanzas',
+    chapter: 'Apps',
+    chapterIndex: 1,
+    kicker: 'App personal · React + Supabase',
+    gradientFrom: '#16a34a', gradientVia: '#15803d', gradientTo: '#14532d',
+    title: 'Finanzas — Control de gastos personales',
+    description: 'Transacciones, categorías, presupuestos y resumen mensual. Control financiero personal con Supabase.',
+    blurb: 'Control financiero personal completo: registro de transacciones con categoría, seguimiento de presupuestos mensuales y resumen visual del estado económico. Sin conexión bancaria — datos introducidos manualmente para privacidad total.',
+    status: 'wip',
+    featured: true,
+    primary: true,
+    technologies: ['React', 'Supabase', 'Google OAuth'],
+    github: null,
+    demo: null,
+    images: ['/projects/finanzas/cover.jpg'],
+    date: '2026-04',
+    metrics: [
+      { label: 'Módulos', value: '4' },
+      { label: 'Tablas', value: '3+' },
+      { label: 'Presupuestos', value: 'Sí' },
+      { label: 'Status', value: 'WIP' },
+    ],
+    docs: [
+      {
+        id: 'descripcion',
+        title: 'Descripción',
+        content: `Módulo de finanzas personales sin conexión bancaria. El usuario registra manualmente sus transacciones (ingresos y gastos) con categoría, fecha e importe. El sistema calcula el balance mensual, el estado de cada presupuesto y genera un resumen visual.\n\nLa privacidad es el eje central: sin APIs de terceros, sin acceso a cuentas bancarias, datos propios en Supabase con RLS. El usuario controla completamente sus datos financieros.`,
+      },
+      {
+        id: 'modulos',
+        title: 'Módulos',
+        content: `**Resumen** — Vista principal con balance del mes, gastos por categoría y comparativa con meses anteriores.\n\n**Transacciones** — Lista de todas las transacciones con filtro por categoría, fecha y tipo (ingreso/gasto). CRUD completo.\n\n**Categorías** — Gestión de categorías personalizadas con icono y color. Usadas en transacciones y presupuestos.\n\n**Presupuestos** — Límites de gasto mensual por categoría. Indicadores visuales de progreso y alerta cuando se acerca al límite.`,
+      },
+    ],
+    documentation: {
+      problem: 'Quería control financiero personal sin ceder el acceso a mis cuentas bancarias a apps de terceros.',
+      approach: 'Módulo manual dentro de la plataforma H3nky: el usuario introduce sus propias transacciones, con análisis y presupuestos calculados en cliente.',
+      decisions: [
+        'Sin Open Banking — privacidad por diseño, no por limitación técnica',
+        'Categorías como entidad propia — permiten personalización total y son la FK de transacciones y presupuestos',
+        'Presupuestos calculados en cliente con los datos traídos de Supabase — sin funciones SQL para reducir latencia',
+      ],
+      result: 'App funcional con registro de transacciones, gestión de categorías, presupuestos y resumen mensual.',
+    },
+    meta: {
+      status: 'En desarrollo activo.',
+      limitations: ['Requiere cuenta Google', 'Sin exportación CSV/Excel aún', 'Sin importación automática de extractos bancarios'],
+      aiProcess: 'Desarrollado con Claude Code. Arquitectura de categorías y presupuestos diseñada mediante prompts con restricciones explícitas de privacidad.',
+    },
+  },
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // PERSONAL
+  // ─────────────────────────────────────────────────────────────────────────────
+  {
+    slug: 'personal',
+    shortTitle: 'Personal',
+    chapter: 'Apps',
+    chapterIndex: 1,
+    kicker: 'App personal · React + Supabase',
+    gradientFrom: '#7c3aed', gradientVia: '#6d28d9', gradientTo: '#4c1d95',
+    title: 'Personal — Notas, tareas e ideas',
+    description: 'Notas libres, lista de tareas y captura de ideas. Productividad personal con Supabase.',
+    blurb: 'Espacio de productividad personal: notas en texto libre, lista de tareas con estados, y un tablero de ideas para capturar pensamientos antes de que se pierdan. Todo integrado en la misma plataforma con autenticación compartida.',
+    status: 'wip',
+    featured: false,
+    primary: false,
+    technologies: ['React', 'Supabase', 'Google OAuth'],
+    github: null,
+    demo: null,
+    images: ['/projects/personal/cover.jpg'],
+    date: '2026-04',
+    metrics: [
+      { label: 'Módulos', value: '3' },
+      { label: 'Tablas', value: '3' },
+      { label: 'Status', value: 'WIP' },
+      { label: 'Auth', value: 'Google' },
+    ],
+    docs: [
+      {
+        id: 'descripcion',
+        title: 'Descripción',
+        content: `Módulo de productividad personal dentro de la plataforma H3nky. Tres herramientas simples y directas: notas en texto libre sin formato complejo, lista de tareas con estados (pendiente/en progreso/completado), y captura de ideas con posibilidad de elaborarlas después.\n\nLa simplicidad es deliberada — el objetivo es que no haya fricción para capturar información rápidamente, sin configurar etiquetas, carpetas o flujos complejos.`,
+      },
+      {
+        id: 'modulos',
+        title: 'Módulos',
+        content: `**Notas** — Editor de texto libre. Notas con título y contenido, búsqueda, ordenación por fecha. Sin formato markdown complejo.\n\n**Tareas** — Lista de tareas con tres estados: pendiente, en progreso, completado. Ordenación manual y por fecha. Archivado de completadas.\n\n**Ideas** — Captura rápida de ideas (una línea o un párrafo). Sin estructura impuesta. Las ideas pueden marcarse como elaboradas cuando se convierten en notas o tareas.`,
+      },
+    ],
+    documentation: {
+      problem: 'Necesitaba un espacio propio para notas y tareas, integrado en la misma plataforma, sin cambiar de contexto.',
+      approach: 'Módulo minimalista dentro de H3nky — tres herramientas simples con Supabase como backend.',
+      decisions: [
+        'Sin markdown avanzado — simplicidad primero, el contenido importa más que el formato',
+        'Ideas como entidad propia separada de notas — captura diferente, sin estructura impuesta',
+        'Compartir el mismo AuthContext y AppLayout — sin duplicar infraestructura de auth',
+      ],
+      result: 'Módulo funcional con notas, tareas e ideas. Integrado en la plataforma con autenticación compartida.',
+    },
+    meta: {
+      status: 'Funcional. UI en iteración.',
+      limitations: ['Sin búsqueda global entre los tres módulos', 'Sin exportación'],
+      aiProcess: 'Desarrollado con Claude Code. Estructura mínima deliberada — el prompt incluía "sin sobreingeniería, tres módulos simples".',
+    },
+  },
 ]
+
+export const CHAPTERS = [
+  {
+    id: 'apps',
+    label: 'Apps',
+    title: 'Apps',
+    blurb: 'Productos en uso real. Lo que construyo para mí, primero.',
+    color: '#fe7000',
+    iconKind: 'app',
+  },
+  {
+    id: 'web',
+    label: 'Web & Portfolio',
+    title: 'Web & Portfolio',
+    blurb: 'La capa visible: este sitio, su arquitectura y sus decisiones.',
+    color: '#0ea5e9',
+    iconKind: 'web',
+  },
+  {
+    id: 'ia',
+    label: 'IA & Workflow',
+    title: 'IA & Workflow',
+    blurb: 'Cómo desarrollo siendo uno solo: agentes, prompts y procesos.',
+    color: '#9a4efb',
+    iconKind: 'ia',
+  },
+  {
+    id: 'infra',
+    label: 'Infraestructura',
+    title: 'Infraestructura',
+    blurb: 'El plumbing que conecta el código con producción.',
+    color: '#21eb3f',
+    iconKind: 'infra',
+  },
+]
+
+export const CHAPTER_BY_NAME = {
+  'Apps': 'apps',
+  'Web & Portfolio': 'web',
+  'IA & Workflow': 'ia',
+  'Infraestructura': 'infra',
+}
