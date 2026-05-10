@@ -137,7 +137,7 @@ function HeroSection() {
 const STATS = [
   { num: '4',  suffix: '+', label: 'Apps en producción',     color: 'var(--accent)' },
   { num: '100%',             label: 'Código asistido por IA', color: 'var(--brand-green)' },
-  { num: '1',                label: 'Desarrollador solo',     color: 'var(--text)' },
+  { num: '27.5', suffix: 'K', label: 'Líneas de código',       color: 'var(--text)' },
   { num: 'Open',             label: 'Código fuente público',  color: 'var(--brand-purple)', small: true },
 ]
 
@@ -242,8 +242,8 @@ const PILLARS = [
     href: '/projects',
   },
   {
-    num: '03 / Lab',
-    title: 'Lab',
+    num: '03 / Demo',
+    title: 'Demo',
     desc: 'Experimentos, ideas en construcción y exploración técnica sin filtrar.',
     accent: 'var(--brand-purple)',
     iconBg: 'rgba(154,78,251,0.12)',
@@ -253,7 +253,7 @@ const PILLARS = [
         <path d="M9 2h6" />
       </svg>
     ),
-    href: '/lab',
+    href: '/demo',
   },
 ]
 
@@ -325,80 +325,129 @@ function PillarsSection() {
   )
 }
 
-// ── Type Showcase ─────────────────────────────────────────────────────────
-function TypeShowcaseSection() {
-  const rows = [
-    {
-      tag: 'Orbitron',
-      sub: 'Hero · Logo · Titles — weight 900',
-      specimen: (
-        <div style={{ fontFamily: 'var(--font-hero)', fontSize: '56px', fontWeight: 900, letterSpacing: '0.04em', lineHeight: 1, color: 'var(--text)' }}>
-          H<span style={{ background: 'linear-gradient(90deg,var(--brand-orange) 0% 50%,var(--brand-green) 50% 100%)', backgroundClip: 'text', WebkitBackgroundClip: 'text', color: 'transparent', WebkitTextFillColor: 'transparent', padding: '0 2px' }}>3</span>NKY
-        </div>
-      ),
-    },
-    {
-      tag: 'Exo 2',
-      sub: 'Tech docs · Stats · Kickers — weight 700–800',
-      specimen: (
-        <div style={{ fontFamily: 'var(--font-tech)', fontSize: '28px', fontWeight: 700, color: 'var(--text)' }}>
-          Aplicaciones reales con IA
-        </div>
-      ),
-    },
-    {
-      tag: 'Sora',
-      sub: 'Body · Nav · UI — weight 300–600',
-      specimen: (
-        <div style={{ fontFamily: 'var(--font-body)', fontSize: '16px', fontWeight: 400, color: 'var(--text)', lineHeight: 1.6 }}>
-          Construyo aplicaciones reales con IA y documento exactamente cómo lo hago. Cada decisión técnica, cada error, cada flujo — todo público.
-        </div>
-      ),
-    },
-    {
-      tag: 'JetBrains Mono',
-      sub: 'Code · Tokens · Numerics — weight 400–600',
-      specimen: (
-        <div style={{ fontFamily: 'var(--font-mono)', fontSize: '14px', fontWeight: 400, color: 'var(--accent)' }}>
-          {'const accent = "#fe7000"; // sampled from logo'}
-        </div>
-      ),
-    },
-  ]
+// ── Apps Showcase ─────────────────────────────────────────────────────────
+const APPS = [
+  {
+    id: 'hogar',
+    label: '01 / Hogar',
+    title: 'Hogar',
+    desc: 'Calendario familiar, lista de la compra y recetas generadas con IA.',
+    accent: 'var(--accent)',
+    iconBg: 'rgba(254,112,0,0.12)',
+    status: 'Producción',
+    statusColor: 'var(--brand-green)',
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+        <polyline points="9 22 9 12 15 12 15 22" />
+      </svg>
+    ),
+    href: '/apps',
+  },
+  {
+    id: 'finanzas',
+    label: '02 / Finanzas',
+    title: 'Finanzas',
+    desc: 'Control de gastos e ingresos con categorías automáticas y resumen mensual.',
+    accent: 'var(--brand-green)',
+    iconBg: 'rgba(33,235,63,0.12)',
+    status: 'Beta',
+    statusColor: 'var(--brand-orange)',
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--brand-green)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="12" y1="1" x2="12" y2="23" />
+        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+      </svg>
+    ),
+    href: '/apps',
+  },
+  {
+    id: 'mascotas',
+    label: '03 / Mascotas',
+    title: 'Mascotas',
+    desc: 'Seguimiento de vacunas, visitas al veterinario y recordatorios automáticos.',
+    accent: 'var(--brand-purple)',
+    iconBg: 'rgba(154,78,251,0.12)',
+    status: 'En desarrollo',
+    statusColor: 'var(--text-faint)',
+    icon: (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--brand-purple)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+      </svg>
+    ),
+    href: '/apps',
+  },
+]
+
+function AppsShowcaseSection() {
+  const containerRef = useRef(null)
+
+  useGSAP(() => {
+    if (prefersReducedMotion) return
+    gsap.fromTo('[data-app-card]',
+      { y: 32, opacity: 0 },
+      {
+        y: 0, opacity: 1, duration: 0.6, stagger: 0.1, ease: 'power2.out',
+        scrollTrigger: { trigger: containerRef.current, start: 'top 85%', once: true },
+      }
+    )
+  }, { scope: containerRef })
 
   return (
-    <section style={{ maxWidth: 'var(--max-width)', margin: '0 auto', padding: '0 var(--page-px) 112px' }}>
+    <section ref={containerRef} style={{ maxWidth: 'var(--max-width)', margin: '0 auto', padding: '0 var(--page-px) 112px' }}>
       <div style={{ marginBottom: '56px' }}>
         <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.16em', color: 'var(--accent)', marginBottom: '12px', textTransform: 'uppercase' }}>
-          // Type System
+          // Aplicaciones
         </div>
         <h2 style={{ fontFamily: 'var(--font-hero)', fontSize: 'clamp(32px, 4vw, 48px)', fontWeight: 800, letterSpacing: '0.04em', textTransform: 'uppercase', margin: '0 0 14px', color: 'var(--text)' }}>
-          Tipografía
+          Mis Apps
         </h2>
         <p style={{ fontFamily: 'var(--font-body)', fontSize: '17px', fontWeight: 300, color: 'var(--text-muted)', maxWidth: '540px', lineHeight: 1.6, margin: 0 }}>
-          Cuatro familias, cada una con un papel claro.
+          Herramientas reales para el día a día, construidas con IA y código abierto.
         </p>
       </div>
 
-      {rows.map(({ tag, sub, specimen }, i) => (
-        <div
-          key={tag}
-          style={{
-            display: 'grid',
-            gridTemplateColumns: '200px 1fr',
-            gap: '32px',
-            padding: '24px 0',
-            borderBottom: i < rows.length - 1 ? '1px solid var(--border)' : 'none',
-            alignItems: 'center',
-          }}
-        >
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--text-faint)', letterSpacing: '0.06em', paddingTop: '8px' }}>
-            <span style={{ color: 'var(--accent)', fontWeight: 600, display: 'block', marginBottom: '4px', fontSize: '12px' }}>{tag}</span>
-            {sub}
-          </div>
-          {specimen}
-        </div>
-      ))}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '20px' }}>
+        {APPS.map(({ id, label, title, desc, accent, iconBg, icon, status, statusColor, href }) => (
+          <Link
+            key={id}
+            to={href}
+            data-app-card
+            style={{
+              ...(prefersReducedMotion ? {} : { opacity: 0 }),
+              display: 'block',
+              background: 'var(--bg-card)',
+              border: '1px solid var(--border)',
+              borderTop: `3px solid ${accent}`,
+              borderRadius: 'var(--radius-lg)',
+              padding: '36px 32px',
+              boxShadow: 'var(--shadow-card)',
+              transition: 'all var(--transition)',
+              textDecoration: 'none',
+            }}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = 'var(--shadow-card-hover)' }}
+            onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = 'var(--shadow-card)' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '22px' }}>
+              <div style={{ width: '48px', height: '48px', borderRadius: 'var(--radius-md)', background: iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                {icon}
+              </div>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: statusColor, background: `${statusColor}18`, padding: '4px 10px', borderRadius: '99px', border: `1px solid ${statusColor}30` }}>
+                {status}
+              </span>
+            </div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', fontWeight: 600, letterSpacing: '0.14em', color: accent, marginBottom: '10px' }}>
+              {label}
+            </div>
+            <h3 style={{ fontFamily: 'var(--font-hero)', fontSize: '19px', fontWeight: 800, letterSpacing: '0.05em', textTransform: 'uppercase', margin: '0 0 12px', color: 'var(--text)' }}>
+              {title}
+            </h3>
+            <p style={{ fontFamily: 'var(--font-body)', fontSize: '14px', fontWeight: 300, color: 'var(--text-muted)', lineHeight: 1.65, margin: 0 }}>
+              {desc}
+            </p>
+          </Link>
+        ))}
+      </div>
     </section>
   )
 }
@@ -489,7 +538,7 @@ export default function LandingPage() {
       <HeroSection />
       <StatsSection />
       <PillarsSection />
-      <TypeShowcaseSection />
+      <AppsShowcaseSection />
       <AuthSection />
     </div>
   )
