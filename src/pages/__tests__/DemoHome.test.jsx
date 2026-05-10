@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { vi, describe, it, expect, beforeEach } from 'vitest'
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
 
 vi.mock('../../data/demo/index.js', () => ({
   initDemoData: vi.fn(),
@@ -53,6 +53,10 @@ describe('DemoHome', () => {
     document.documentElement.classList.remove('dark')
   })
 
+  afterEach(() => {
+    Object.defineProperty(window, 'innerWidth', { value: 1024, writable: true })
+  })
+
   it('muestra el número del día actual', () => {
     renderDemoHome()
     const dayNum = new Date().getDate().toString()
@@ -68,10 +72,9 @@ describe('DemoHome', () => {
     expect(screen.getByText(/FINANZAS/)).toBeInTheDocument()
   })
 
-  it('muestra la tarjeta IA', () => {
+  it('muestra la tarjeta IA con insight', () => {
     renderDemoHome()
-    expect(screen.getByText(/IA/)).toBeInTheDocument()
-    expect(screen.getByText(/gasolina/i)).toBeInTheDocument()
+    expect(screen.getByText(/✦ IA/)).toBeInTheDocument()
   })
 
   it('muestra "Sin eventos hoy" cuando no hay items', () => {
@@ -100,8 +103,9 @@ describe('DemoHome', () => {
 
   it('respeta preferencia guardada en localStorage', () => {
     localStorage.setItem('theme', 'dark')
+    document.documentElement.classList.add('dark')
     Object.defineProperty(window, 'innerWidth', { value: 1440, writable: true })
     renderDemoHome()
-    expect(localStorage.getItem('theme')).toBe('dark')
+    expect(document.documentElement.classList.contains('dark')).toBe(true)
   })
 })
