@@ -5,6 +5,9 @@ import { es } from 'date-fns/locale'
 import { initDemoData, demoRead } from '../data/demo/index.js'
 import { getDemoTodayItems, getActiveItem } from '../data/demo/getDemoTodayItems.js'
 
+// Initialize all demo data synchronously so stats are available on first render
+;['hogar', 'personal', 'mascotas', 'vehiculo', 'finanzas'].forEach(initDemoData)
+
 const APP_CONFIG = [
   { type: 'hogar',    label: 'HOGAR',    icon: '🏠', color: '#f97316' },
   { type: 'personal', label: 'PERSONAL', icon: '🗂️', color: '#38bdf8' },
@@ -77,11 +80,6 @@ function getAppStats(type) {
 }
 
 export default function DemoHome() {
-  // Inicializar datos de las 5 apps
-  useEffect(() => {
-    ['hogar', 'personal', 'mascotas', 'vehiculo', 'finanzas'].forEach(initDemoData)
-  }, [])
-
   // Tema por defecto según dispositivo (solo si no hay preferencia guardada)
   useEffect(() => {
     if (localStorage.getItem('theme')) return
