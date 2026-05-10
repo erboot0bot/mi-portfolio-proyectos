@@ -92,9 +92,7 @@ function ProjectCover({ project }) {
         aspectRatio: '16 / 11',
         borderRadius: 'var(--radius-md)',
         overflow: 'hidden',
-        background: imgError
-          ? `linear-gradient(135deg, ${project.gradientFrom}, ${project.gradientVia || project.gradientFrom}, ${project.gradientTo})`
-          : undefined,
+        background: `linear-gradient(135deg, ${project.gradientFrom}, ${project.gradientVia || project.gradientFrom}, ${project.gradientTo})`,
         flexShrink: 0,
       }}
     >
@@ -183,13 +181,13 @@ function EntryCard({ project, index }) {
   return (
     <article
       data-anim="fade-up"
+      className="entry-card"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
         opacity: 0,
         transform: 'translateY(28px)',
         display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
         gap: '40px',
         alignItems: 'start',
         padding: '32px',
@@ -444,13 +442,12 @@ function ChapterRail({ chapters, activeChapter, scrollProgress, projectsByChapte
   return (
     <aside
       style={{
-        display: 'none',
         position: 'sticky',
         top: 'calc(var(--nav-height) + 32px)',
         height: 'fit-content',
         paddingRight: '16px',
       }}
-      className="lg:block"
+      className="hidden lg:block"
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
         {chapters.map((ch) => {
@@ -1114,7 +1111,7 @@ export default function Documentacion() {
           margin: '0 auto',
           padding: '80px var(--page-px) 120px',
           display: 'grid',
-          gridTemplateColumns: '200px 1fr',
+          gridTemplateColumns: 'var(--docs-grid-cols, 1fr)',
           gap: '64px',
           alignItems: 'start',
         }}

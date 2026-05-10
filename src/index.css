@@ -419,3 +419,33 @@ body {
   border-color: var(--accent);
   color: var(--accent);
 }
+
+/* ─── Docs page ──────────────────────────────────────────────── */
+.docs-body {
+  --docs-grid-cols: 1fr;
+}
+@media (min-width: 1024px) {
+  .docs-body {
+    --docs-grid-cols: 200px 1fr;
+  }
+}
+
+/* EntryCard: stack on small screens, side-by-side on md+ */
+.entry-card {
+  grid-template-columns: 1fr !important;
+}
+@media (min-width: 768px) {
+  .entry-card {
+    grid-template-columns: 1fr 1fr !important;
+  }
+}
+
+/* Hero: stack on small, side-by-side on md+ */
+.docs-hero-inner {
+  grid-template-columns: 1fr !important;
+}
+@media (min-width: 768px) {
+  .docs-hero-inner {
+    grid-template-columns: 1.4fr 1fr !important;
+  }
+}
