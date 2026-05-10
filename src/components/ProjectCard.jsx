@@ -3,10 +3,10 @@ import { motion } from 'framer-motion'
 import TechBadge from './TechBadge'
 
 const statusLabel = { completed: 'Completado', wip: 'En progreso', archived: 'Archivado' }
-const statusColor = {
-  completed: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/30',
-  wip:       'bg-orange-50 text-orange-700 border-orange-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/30',
-  archived:  'bg-zinc-100 text-zinc-500 border-zinc-200 dark:bg-zinc-700/40 dark:text-zinc-500 dark:border-zinc-600/30',
+const statusStyle = {
+  completed: { background: 'var(--status-done-bg)', color: 'var(--status-done-text)', border: '1px solid var(--status-done-border)' },
+  wip:       { background: 'var(--status-wip-bg)',  color: 'var(--status-wip-text)',  border: '1px solid var(--status-wip-border)' },
+  archived:  { background: 'var(--status-archived-bg)', color: 'var(--status-archived-text)', border: '1px solid var(--status-archived-border)' },
 }
 
 function CardCover({ project }) {
@@ -32,8 +32,8 @@ function CardCover({ project }) {
           style={{ background: `linear-gradient(to top, ${gradientTo}cc, transparent)` }}
         />
         <span
-          className="absolute top-3 right-3 z-10 font-mono text-[10px] tracking-wider"
-          style={{ color: 'rgba(255,255,255,0.35)' }}
+          className="absolute top-3 right-3 z-10"
+          style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', letterSpacing: '0.08em', color: 'rgba(255,255,255,0.3)' }}
         >
           {technologies.slice(0, 2).join(' · ')}
         </span>
@@ -76,19 +76,17 @@ export default function ProjectCard({ project }) {
       transition={{ duration: 0.18, ease: 'easeOut' }}
       className="h-full"
     >
-      <div className="flex flex-col h-full rounded-xl overflow-hidden transition-all duration-200
-        border border-[var(--border)] bg-[var(--bg-card)]
-        hover:border-orange-200 hover:shadow-[0_4px_20px_rgba(249,115,22,0.08)]
-        dark:hover:border-orange-500/30
-        dark:hover:shadow-[0_0_32px_rgba(249,115,22,0.10),0_8px_28px_rgba(0,0,0,0.4)]">
+      <div className="h3nky-card flex flex-col h-full">
 
         {/* Clickable area → project detail */}
         <Link to={`/projects/${project.slug}`} className="block flex-1">
           <CardCover project={project} />
           <div className="p-5">
             <div className="flex items-start justify-between gap-2 mb-2">
-              <h2 className="font-semibold leading-snug text-[var(--text)]">{project.title}</h2>
-              <span className={`shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full border ${statusColor[project.status]}`}>
+              <h2 style={{ fontFamily: "'Orbitron', sans-serif", fontWeight: 700, fontSize: '0.875rem', letterSpacing: '0.03em', textTransform: 'uppercase', color: 'var(--text)', lineHeight: 1.3, margin: 0 }}>
+                {project.title}
+              </h2>
+              <span style={{ ...statusStyle[project.status], flexShrink: 0, fontSize: '0.625rem', fontWeight: 600, padding: '2px 6px', borderRadius: 'var(--radius-full)', fontFamily: 'var(--font-mono)' }}>
                 {statusLabel[project.status]}
               </span>
             </div>

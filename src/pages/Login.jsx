@@ -29,8 +29,11 @@ export default function Login() {
         animate={{ opacity: 1, y: 0 }}
         className="text-center"
       >
-        <div className="text-4xl mb-4">🏠</div>
-        <h1 className="text-3xl font-extrabold text-[var(--text)] mb-3">Hogar</h1>
+        <div className="mb-4">
+          <span style={{ fontFamily: "'Orbitron', sans-serif", fontWeight: 900, fontSize: '4rem', letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--text)' }}>
+            H<span style={{ color: '#21eb3f' }}>3</span>NKY
+          </span>
+        </div>
         <p className="text-[var(--text-muted)] text-sm leading-relaxed">
           Tu espacio personal para el día a día.<br />
           Calendario, lista de la compra y recetas con IA.
@@ -43,9 +46,7 @@ export default function Login() {
         transition={{ delay: 0.1 }}
         whileHover={{ y: -2 }}
         onClick={signInWithGoogle}
-        className="flex items-center gap-3 px-6 py-3 rounded-xl border border-[var(--border)]
-          bg-[var(--bg-card)] text-[var(--text)] font-medium shadow-sm
-          hover:border-[var(--accent)] hover:shadow-md transition-all"
+        className="h3nky-btn-secondary"
       >
         <GoogleIcon />
         Continuar con Google

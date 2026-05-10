@@ -27,7 +27,7 @@ describe('Home', () => {
   it('shows all projects when no filter is active', () => {
     renderHome()
     const allBtn = screen.getByRole('button', { name: /todos/i })
-    expect(allBtn).toHaveClass('bg-[var(--accent)]')
+    expect(allBtn).toHaveClass('active')
   })
 
   it('filters by technology', async () => {
@@ -47,6 +47,6 @@ describe('Home', () => {
     await user.click(reactBtn)
     await user.click(reactBtn)
     const allBtn = screen.getByRole('button', { name: /todos/i })
-    expect(allBtn).toHaveClass('bg-[var(--accent)]')
+    expect(allBtn).toHaveClass('active')
   })
 })
