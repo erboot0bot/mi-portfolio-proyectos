@@ -1,8 +1,12 @@
 // src/pages/app/modules/ModuleShell.jsx
-import { NavLink } from 'react-router-dom'
+import { NavLink, useLocation } from 'react-router-dom'
 import './ModuleShell.css'
 
 export default function ModuleShell({ app, modules, sidebarExtra, children }) {
+  const location = useLocation()
+  const pathParts = location.pathname.split('/').filter(Boolean)
+  const basePath = '/' + pathParts.slice(0, 2).join('/')
+
   return (
     <div className="module-shell">
       <aside className="module-shell-sidebar">
@@ -15,7 +19,7 @@ export default function ModuleShell({ app, modules, sidebarExtra, children }) {
           {(modules ?? []).map(m => (
             <NavLink
               key={m.path}
-              to={`/app/hogar/${m.path}`}
+              to={`${basePath}/${m.path}`}
               className={({ isActive }) =>
                 `module-shell-nav-item${isActive ? ' active' : ''}`
               }

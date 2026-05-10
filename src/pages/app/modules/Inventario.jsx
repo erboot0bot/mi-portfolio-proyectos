@@ -3,6 +3,7 @@ import { useOutletContext } from 'react-router-dom'
 import { supabase } from '../../../lib/supabase'
 import ModuleShell from './ModuleShell'
 import { useMode } from '../../../contexts/ModeContext'
+import { demoRead } from '../../../data/demo/index.js'
 
 export default function Inventario() {
   const { app, modules } = useOutletContext()
@@ -16,7 +17,11 @@ export default function Inventario() {
   const adjusting                 = useRef(new Set())
 
   useEffect(() => {
-    if (mode === 'demo') { setLoading(false); return }
+    if (mode === 'demo') {
+      setInventory(demoRead(app.type ?? 'hogar', 'inventory'))
+      setLoading(false)
+      return
+    }
     let cancelled = false
     supabase.from('inventory')
       .select('*, product:products(*)')

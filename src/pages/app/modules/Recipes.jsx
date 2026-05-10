@@ -405,7 +405,9 @@ export default function Recipes() {
 
   useEffect(() => {
     if (mode === 'demo') {
-      setRecipes(demoRead(appType, 'recipes'))
+      const all = demoRead(appType, 'recipes')
+      setRecipes(all)
+      setFavIds(new Set(['demo-r-1', 'demo-r-2', 'demo-r-4']))
       return
     }
     supabase.from('recipes').select('*').eq('app_id', app.id)
