@@ -632,7 +632,7 @@ function SearchOverlay({ isOpen, onClose, allProjects }) {
       <div
         style={{
           width: '100%',
-          maxWidth: '760px',
+          maxWidth: '920px',
           margin: '0 24px',
           background: 'var(--bg-card)',
           border: '1px solid var(--border)',
