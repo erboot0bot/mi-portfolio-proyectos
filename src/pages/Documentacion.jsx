@@ -572,9 +572,10 @@ function SearchOverlay({ isOpen, onClose, allProjects }) {
       return (
         p.title.toLowerCase().includes(q) ||
         p.description?.toLowerCase().includes(q) ||
-        (meta.blurb || '').toLowerCase().includes(q) ||
+        (p.blurb || meta.blurb || '').toLowerCase().includes(q) ||
         p.technologies.some((t) => t.toLowerCase().includes(q)) ||
-        (meta.kicker || '').toLowerCase().includes(q)
+        (p.kicker || meta.kicker || '').toLowerCase().includes(q) ||
+        (p.chapter || '').toLowerCase().includes(q)
       )
     })
   }, [query, allProjects])
@@ -608,7 +609,7 @@ function SearchOverlay({ isOpen, onClose, allProjects }) {
 
   const grouped = CHAPTERS.map((ch) => ({
     chapter: ch,
-    items: results.filter((p) => ch.slugs.includes(p.slug)),
+    items: results.filter((p) => CHAPTER_BY_NAME[p.chapter] === ch.id),
   })).filter((g) => g.items.length > 0)
 
   let flatIndex = 0
@@ -717,6 +718,8 @@ function SearchOverlay({ isOpen, onClose, allProjects }) {
                 const idx = flatIndex++
                 const isActive = idx === cursor
                 const meta = CHAPTER_META[p.slug] || {}
+                const kicker = p.kicker || meta.kicker || p.chapter || ''
+                const blurb = p.blurb || meta.blurb || p.description || ''
                 return (
                   <Link
                     key={p.slug}
@@ -725,29 +728,41 @@ function SearchOverlay({ isOpen, onClose, allProjects }) {
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '12px',
-                      padding: '12px 20px',
+                      gap: '14px',
+                      padding: '10px 20px',
                       textDecoration: 'none',
                       background: isActive ? 'var(--bg-subtle)' : 'transparent',
                       borderLeft: `3px solid ${isActive ? 'var(--accent)' : 'transparent'}`,
                       transition: 'background 0.1s',
                     }}
                   >
+                    {/* Cover thumbnail */}
                     <div
                       style={{
-                        width: '32px',
-                        height: '32px',
-                        borderRadius: 'var(--radius-sm)',
-                        background: `linear-gradient(135deg, ${p.gradientFrom}, ${p.gradientTo})`,
+                        width: '56px',
+                        height: '40px',
+                        borderRadius: '6px',
+                        background: `linear-gradient(135deg, ${p.gradientFrom}, ${p.gradientVia || p.gradientFrom}, ${p.gradientTo})`,
                         flexShrink: 0,
+                        overflow: 'hidden',
+                        position: 'relative',
                       }}
-                    />
-                    <div>
-                      <div style={{ fontFamily: 'var(--font-tech)', fontSize: '14px', fontWeight: 600, color: 'var(--text)' }}>
+                    >
+                      <img
+                        src={`/projects/${p.slug}/cover.jpg`}
+                        alt=""
+                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                        onError={(e) => { e.currentTarget.style.display = 'none' }}
+                      />
+                    </div>
+                    {/* Text */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontFamily: 'var(--font-tech)', fontSize: '13px', fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {p.shortTitle || p.title}
                       </div>
-                      <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                        {meta.kicker || ''}
+                      <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {kicker && <span style={{ color: chapter.color, fontWeight: 600, marginRight: '6px' }}>{kicker}</span>}
+                        {blurb.slice(0, 60)}{blurb.length > 60 ? '…' : ''}
                       </div>
                     </div>
                   </Link>
