@@ -632,8 +632,8 @@ function SearchOverlay({ isOpen, onClose, allProjects }) {
       <div
         style={{
           width: '100%',
-          maxWidth: '600px',
-          margin: '0 16px',
+          maxWidth: '760px',
+          margin: '0 24px',
           background: 'var(--bg-card)',
           border: '1px solid var(--border)',
           borderRadius: 'var(--radius-lg)',
@@ -688,7 +688,7 @@ function SearchOverlay({ isOpen, onClose, allProjects }) {
         </div>
 
         {/* Results */}
-        <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
+        <div style={{ maxHeight: '520px', overflowY: 'auto' }}>
           {query.trim() === '' && (
             <div style={{ padding: '32px 20px', textAlign: 'center', color: 'var(--text-faint)', fontFamily: 'var(--font-body)', fontSize: '14px' }}>
               Escribe para buscar proyectos
@@ -728,8 +728,8 @@ function SearchOverlay({ isOpen, onClose, allProjects }) {
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '14px',
-                      padding: '10px 20px',
+                      gap: '16px',
+                      padding: '12px 24px',
                       textDecoration: 'none',
                       background: isActive ? 'var(--bg-subtle)' : 'transparent',
                       borderLeft: `3px solid ${isActive ? 'var(--accent)' : 'transparent'}`,
@@ -739,9 +739,9 @@ function SearchOverlay({ isOpen, onClose, allProjects }) {
                     {/* Cover thumbnail */}
                     <div
                       style={{
-                        width: '56px',
-                        height: '40px',
-                        borderRadius: '6px',
+                        width: '72px',
+                        height: '52px',
+                        borderRadius: '8px',
                         background: `linear-gradient(135deg, ${p.gradientFrom}, ${p.gradientVia || p.gradientFrom}, ${p.gradientTo})`,
                         flexShrink: 0,
                         overflow: 'hidden',
@@ -757,12 +757,12 @@ function SearchOverlay({ isOpen, onClose, allProjects }) {
                     </div>
                     {/* Text */}
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontFamily: 'var(--font-tech)', fontSize: '13px', fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <div style={{ fontFamily: 'var(--font-tech)', fontSize: '15px', fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {p.shortTitle || p.title}
                       </div>
-                      <div style={{ fontFamily: 'var(--font-body)', fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <div style={{ fontFamily: 'var(--font-body)', fontSize: '12px', color: 'var(--text-muted)', marginTop: '3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {kicker && <span style={{ color: chapter.color, fontWeight: 600, marginRight: '6px' }}>{kicker}</span>}
-                        {blurb.slice(0, 60)}{blurb.length > 60 ? '…' : ''}
+                        {blurb.slice(0, 80)}{blurb.length > 80 ? '…' : ''}
                       </div>
                     </div>
                   </Link>
