@@ -67,23 +67,35 @@ const CHAPTER_META = {
 }
 
 function buildCoverUrl(project) {
-  const promptParts = [
-    'Cinematic dark tech portfolio cover art.',
-    `Project: ${project.title}.`,
-    `Stack: ${project.technologies.slice(0, 3).join(', ')}.`,
+  // Try local asset first (pre-generated), fall back to Pollinations.ai
+  return `/projects/${project.slug}/cover.jpg`
+}
+
+function buildFallbackUrl(project) {
+  const prompt = [
+    'Cinematic dark tech portfolio cover.',
+    project.title + '.',
+    'Stack: ' + project.technologies.slice(0, 3).join(', ') + '.',
     'Abstract visualization, no text, no logos, dark background, moody lighting.',
-    'Professional, minimal, high quality.',
-  ]
-  const prompt = promptParts.join(' ')
+  ].join(' ')
   const seed = project.slug.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0)
   return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=800&height=550&nologo=true&seed=${seed}`
 }
 
 // ─── ProjectCover ──────────────────────────────────────────────────────────────
 function ProjectCover({ project }) {
-  const [imgError, setImgError] = useState(false)
-  const meta = CHAPTER_META[project.slug] || {}
+  const [src, setSrc] = useState(() => buildCoverUrl(project))
+  const [tried, setTried] = useState(0)
   const isWip = project.status === 'wip'
+
+  function handleError() {
+    if (tried === 0) {
+      setSrc(buildFallbackUrl(project))
+      setTried(1)
+    } else {
+      setSrc(null)
+    }
+  }
 
   return (
     <div
@@ -96,11 +108,11 @@ function ProjectCover({ project }) {
         flexShrink: 0,
       }}
     >
-      {!imgError && (
+      {src && (
         <img
-          src={buildCoverUrl(project)}
+          src={src}
           alt={project.title}
-          onError={() => setImgError(true)}
+          onError={handleError}
           style={{
             width: '100%',
             height: '100%',
