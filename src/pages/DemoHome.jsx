@@ -39,7 +39,18 @@ function getAppStats(type) {
       const months = differenceInMonths(new Date(), new Date(pet.birth_date))
       const yrs = Math.floor(months / 12)
       const age = months < 12 ? `${months} meses` : `${yrs} año${yrs !== 1 ? 's' : ''}`
-      return [`${pet.name} · ${age}`, pet.species]
+      const now2 = new Date()
+      const mascEvents = demoRead('mascotas', 'events') ?? []
+      const todayEvent = mascEvents.find(e => {
+        const d = new Date(e.start_time)
+        return d.getFullYear() === now2.getFullYear()
+          && d.getMonth() === now2.getMonth()
+          && d.getDate() === now2.getDate()
+      })
+      const line2 = todayEvent
+        ? `${todayEvent.title} ${format(new Date(todayEvent.start_time), 'HH:mm')}`
+        : 'Sin eventos hoy'
+      return [`${pet.name} · ${age}`, line2]
     }
     case 'vehiculo': {
       const vehicles = demoRead('vehiculo', 'vehicles')
@@ -148,7 +159,7 @@ export default function DemoHome() {
                   style={{
                     padding: '10px 12px',
                     background: isActive
-                      ? 'color-mix(in srgb, var(--accent) 10%, transparent)'
+                      ? `color-mix(in srgb, ${item.appColor} 10%, transparent)`
                       : 'var(--bg-card)',
                     borderRadius: 8,
                     borderLeft: `3px solid ${item.appColor}`,
