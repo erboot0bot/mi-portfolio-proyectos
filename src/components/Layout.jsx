@@ -140,7 +140,7 @@ export default function Layout({ children }) {
           {/* Desktop nav */}
           <nav className="hidden sm:flex items-center gap-6 text-sm">
             <NavLink to="/" className={navLinkClass}>Inicio</NavLink>
-            <NavLink to="/projects" className={navLinkClass}>{t('documentation')}</NavLink>
+            <NavLink to="/documentacion" className={navLinkClass}>{t('documentation')}</NavLink>
             <NavLink to="/apps" className={navLinkClass}>Apps</NavLink>
             <NavLink to="/demo" className={navLinkClass}>Demo</NavLink>
             <NavLink to="/courses" className={navLinkClass}>Cursos</NavLink>
@@ -213,7 +213,7 @@ export default function Layout({ children }) {
         {menuOpen && (
           <div className="sm:hidden border-t border-[var(--border)] bg-[var(--bg)] px-4 py-4 flex flex-col gap-4 text-sm">
             <NavLink to="/" className={navLinkClass}>Inicio</NavLink>
-            <NavLink to="/projects" className={navLinkClass}>{t('documentation')}</NavLink>
+            <NavLink to="/documentacion" className={navLinkClass}>{t('documentation')}</NavLink>
             <NavLink to="/apps" className={navLinkClass}>Apps</NavLink>
             <NavLink to="/demo" className={navLinkClass}>Demo</NavLink>
             <NavLink to="/courses" className={navLinkClass}>Cursos</NavLink>

@@ -79,7 +79,7 @@ export default function ProjectCard({ project }) {
       <div className="h3nky-card flex flex-col h-full">
 
         {/* Clickable area → project detail */}
-        <Link to={`/projects/${project.slug}`} className="block flex-1">
+        <Link to={`/documentacion/${project.slug}`} className="block flex-1">
           <CardCover project={project} />
           <div className="p-5">
             <div className="flex items-start justify-between gap-2 mb-2">

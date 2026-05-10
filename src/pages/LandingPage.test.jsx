@@ -31,9 +31,9 @@ describe('LandingPage', () => {
     expect(screen.getByText('Apps en producción')).toBeInTheDocument()
   })
 
-  it('renders the pillars section with Lab pillar', () => {
+  it('renders the pillars section with Demo pillar', () => {
     renderLanding()
-    expect(screen.getByRole('heading', { name: /lab/i })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /demo/i })).toBeInTheDocument()
   })
 
   it('renders primary CTA linking to /apps', () => {

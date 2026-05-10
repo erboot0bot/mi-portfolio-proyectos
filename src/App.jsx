@@ -1,5 +1,5 @@
 import React, { Suspense } from 'react'
-import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation, useParams } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion' // eslint-disable-line no-unused-vars
 import { Analytics } from '@vercel/analytics/react'
 import Layout from './components/Layout'
@@ -8,6 +8,7 @@ import ComingSoonPage from './components/ComingSoonPage'
 import { LanguageProvider } from './contexts/LanguageContext'
 
 const LandingPage   = React.lazy(() => import('./pages/LandingPage'))
+const Documentacion = React.lazy(() => import('./pages/Documentacion'))
 const ProjectsHome  = React.lazy(() => import('./pages/ProjectsHome'))
 const ProjectDetail = React.lazy(() => import('./pages/ProjectDetail'))
 const Login         = React.lazy(() => import('./pages/Login'))
@@ -98,6 +99,11 @@ function getAnimKey(pathname) {
   return pathname
 }
 
+function LegacySlugRedirect() {
+  const { slug } = useParams()
+  return <Navigate to={`/documentacion/${slug}`} replace />
+}
+
 export default function App() {
   const location = useLocation()
 
@@ -122,9 +128,13 @@ export default function App() {
           <Routes location={location}>
 
             {/* Públicas */}
-            <Route path="/"               element={<LandingPage />} />
-            <Route path="/projects"       element={<ProjectsHome />} />
-            <Route path="/projects/:slug" element={<ProjectDetail />} />
+            <Route path="/"                    element={<LandingPage />} />
+            <Route path="/documentacion"       element={<Documentacion />} />
+            <Route path="/documentacion/:slug" element={<ProjectDetail />} />
+            {/* Redirecciones legacy */}
+            <Route path="/projects"            element={<Navigate to="/documentacion" replace />} />
+            <Route path="/projects/:slug"      element={<LegacySlugRedirect />} />
+            <Route path="/lab"                 element={<Navigate to="/documentacion" replace />} />
             <Route path="/courses"        element={<ComingSoonPage title="Cursos" icon="📚" waitlistKey="cursos" />} />
             <Route path="/store"          element={<ComingSoonPage title="Tienda" icon="🛒" waitlistKey="tienda" />} />
             <Route path="/login"          element={<Login />} />

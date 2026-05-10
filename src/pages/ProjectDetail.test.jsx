@@ -6,9 +6,9 @@ import NotFound from './NotFound'
 
 function renderDetail(slug) {
   return render(
-    <MemoryRouter initialEntries={[`/projects/${slug}`]}>
+    <MemoryRouter initialEntries={[`/documentacion/${slug}`]}>
       <Routes>
-        <Route path="/projects/:slug" element={<ProjectDetail />} />
+        <Route path="/documentacion/:slug" element={<ProjectDetail />} />
         <Route path="/404" element={<NotFound />} />
       </Routes>
     </MemoryRouter>,
