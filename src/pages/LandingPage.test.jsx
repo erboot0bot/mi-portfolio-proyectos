@@ -1,4 +1,3 @@
-// src/pages/LandingPage.test.jsx
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { LanguageProvider } from '../contexts/LanguageContext'
@@ -15,18 +14,24 @@ function renderLanding() {
 }
 
 describe('LandingPage', () => {
-  it('renders the hero h1', () => {
+  it('renders the hero section with kicker text', () => {
     renderLanding()
-    expect(screen.getByRole('heading', { level: 1 })).toBeInTheDocument()
+    expect(screen.getByText(/H3NKY · DEV · 2026/i)).toBeInTheDocument()
+  })
+
+  it('renders the hero logo image', () => {
+    renderLanding()
+    const logos = screen.getAllByRole('img', { name: /h3nky/i })
+    expect(logos.length).toBeGreaterThan(0)
   })
 
   it('renders the stats section with metric values', () => {
     renderLanding()
-    expect(screen.getByText('4+')).toBeInTheDocument()
+    expect(screen.getByText('100%')).toBeInTheDocument()
     expect(screen.getByText('Apps en producción')).toBeInTheDocument()
   })
 
-  it('renders the Lab section card', () => {
+  it('renders the pillars section with Lab pillar', () => {
     renderLanding()
     expect(screen.getByRole('heading', { name: /lab/i })).toBeInTheDocument()
   })
@@ -35,5 +40,11 @@ describe('LandingPage', () => {
     renderLanding()
     const appsLink = screen.getByRole('link', { name: /ver mis apps/i })
     expect(appsLink).toHaveAttribute('href', '/apps')
+  })
+
+  it('renders the auth section with Google login link', () => {
+    renderLanding()
+    const loginLink = screen.getByRole('link', { name: /continuar con google/i })
+    expect(loginLink).toHaveAttribute('href', '/login')
   })
 })
