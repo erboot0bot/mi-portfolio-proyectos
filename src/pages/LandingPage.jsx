@@ -10,6 +10,13 @@ const prefersReducedMotion =
   typeof window !== 'undefined' &&
   window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
+const STATS = [
+  { num: '4',     suffix: '+', label: 'Apps en producción',     color: 'var(--accent)' },
+  { num: '100%',               label: 'Código asistido por IA', color: 'var(--brand-green)' },
+  { num: '27.5',  suffix: 'K', label: 'Líneas de código',       color: 'var(--brand-purple)' },
+  { num: 'Open',               label: 'Código fuente público',  color: 'var(--text)' },
+]
+
 // ── Hero ─────────────────────────────────────────────────────────────────
 function HeroSection() {
   const containerRef = useRef(null)
@@ -17,10 +24,11 @@ function HeroSection() {
   useGSAP(() => {
     if (prefersReducedMotion) return
     const tl = gsap.timeline({ defaults: { ease: 'power2.out' } })
-    tl.fromTo('[data-hero-lockup]',  { opacity: 0, scale: 0.96 }, { opacity: 1, scale: 1, duration: 0.8 })
-      .fromTo('[data-hero-kicker]',  { opacity: 0, y: 12 },       { opacity: 1, y: 0, duration: 0.5 }, '-=0.5')
-      .fromTo('[data-hero-tagline]', { opacity: 0, y: 16 },       { opacity: 1, y: 0, duration: 0.6 }, '-=0.4')
-      .fromTo('[data-hero-ctas] > *',{ opacity: 0, y: 12 },       { opacity: 1, y: 0, duration: 0.4, stagger: 0.1 }, '-=0.35')
+    tl.fromTo('[data-hero-kicker]',    { opacity: 0, y: 10 },       { opacity: 1, y: 0, duration: 0.5 })
+      .fromTo('[data-hero-lockup]',    { opacity: 0, scale: 0.96 }, { opacity: 1, scale: 1, duration: 0.7 }, '-=0.3')
+      .fromTo('[data-hero-tagline]',   { opacity: 0, y: 14 },       { opacity: 1, y: 0, duration: 0.5 }, '-=0.35')
+      .fromTo('[data-hero-ctas] > *',  { opacity: 0, y: 10 },       { opacity: 1, y: 0, duration: 0.4, stagger: 0.1 }, '-=0.3')
+      .fromTo('[data-hero-stat]',      { opacity: 0, y: 8 },        { opacity: 1, y: 0, duration: 0.4, stagger: 0.07 }, '-=0.2')
   }, { scope: containerRef })
 
   const hidden = prefersReducedMotion ? {} : { opacity: 0 }
@@ -29,53 +37,129 @@ function HeroSection() {
     <section
       ref={containerRef}
       className="relative overflow-hidden"
-      style={{
-        padding: 'clamp(60px, 8vw, 100px) var(--page-px) 140px',
-        background: 'linear-gradient(110deg, #ea580c 0%, #7c2d12 28%, #4c1d95 52%, #0a0a0f 78%)',
-      }}
+      style={{ padding: 'clamp(60px, 8vw, 100px) var(--page-px) 80px' }}
     >
-      {/* Bottom fade into page bg */}
+      {/* Mesh gradient background */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background: [
+            'radial-gradient(ellipse 65% 55% at 18% 50%, rgba(154,78,251,0.28) 0%, transparent 60%)',
+            'radial-gradient(ellipse 55% 65% at 82% 28%, rgba(254,112,0,0.20) 0%, transparent 55%)',
+            'radial-gradient(ellipse 55% 45% at 62% 82%, rgba(33,235,63,0.10) 0%, transparent 50%)',
+            'var(--bg)',
+          ].join(', '),
+        }}
+      />
+
+      {/* Grid overlay */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backgroundImage: [
+            'linear-gradient(rgba(128,128,128,0.03) 1px, transparent 1px)',
+            'linear-gradient(90deg, rgba(128,128,128,0.03) 1px, transparent 1px)',
+          ].join(', '),
+          backgroundSize: '56px 56px',
+        }}
+      />
+
+      {/* Bottom fade */}
       <div
         className="absolute bottom-0 left-0 right-0 pointer-events-none"
-        style={{ height: '140px', background: 'linear-gradient(to bottom, transparent, var(--bg))' }}
+        style={{ height: '120px', background: 'linear-gradient(to bottom, transparent, var(--bg))', zIndex: 1 }}
       />
 
       <div
         className="relative flex flex-col items-center text-center"
         style={{ zIndex: 2, maxWidth: 'var(--max-width)', margin: '0 auto' }}
       >
-        {/* Kicker */}
-        <p
+        {/* Kicker pill */}
+        <div
           data-hero-kicker
           style={{
             ...hidden,
-            fontFamily: 'var(--font-mono)',
-            fontSize: '12px',
-            fontWeight: 700,
-            letterSpacing: '0.28em',
-            textTransform: 'uppercase',
-            color: 'rgba(255,255,255,0.55)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '14px',
-            marginBottom: '36px',
+            display: 'inline-flex', alignItems: 'center', gap: '10px',
+            fontFamily: 'var(--font-mono)', fontSize: '10px', fontWeight: 600,
+            letterSpacing: '0.28em', textTransform: 'uppercase',
+            color: 'var(--text-faint)',
+            marginBottom: '32px',
+            padding: '7px 18px',
+            border: '1px solid var(--border)',
+            borderRadius: '99px',
+            background: 'var(--bg-card)',
+            backdropFilter: 'blur(10px)',
           }}
         >
-          <span style={{ width: '32px', height: '1px', background: 'rgba(255,255,255,0.3)', flexShrink: 0 }} />
+          <span style={{ width: '12px', height: '1px', background: 'rgba(254,112,0,0.5)', flexShrink: 0 }} />
           H3NKY · DEV · 2026
-          <span style={{ width: '32px', height: '1px', background: 'rgba(255,255,255,0.3)', flexShrink: 0 }} />
-        </p>
+          <span style={{ width: '12px', height: '1px', background: 'rgba(254,112,0,0.5)', flexShrink: 0 }} />
+        </div>
 
-        {/* Logo lockup */}
+        {/* Lockup: logo + H3NKY gradient + DEV */}
         <div
           data-hero-lockup
-          style={{ ...hidden, width: '100%', maxWidth: '760px', margin: '0 auto' }}
+          style={{
+            ...hidden,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            gap: '28px', flexWrap: 'wrap',
+            marginBottom: '24px',
+          }}
         >
+          {/* Dark mode logo */}
           <img
             src="/logo-horizontal.png"
             alt="H3nky"
-            style={{ width: '100%', height: 'auto', display: 'block', filter: 'drop-shadow(0 12px 50px rgba(0,0,0,0.45))' }}
+            className="hidden dark:block"
+            style={{
+              height: '84px', width: 'auto',
+              filter: 'drop-shadow(0 0 24px rgba(254,112,0,0.3)) drop-shadow(0 0 48px rgba(154,78,251,0.2))',
+            }}
           />
+          {/* Light mode logo */}
+          <img
+            src="/logo-horizontal-light.png"
+            alt="H3nky"
+            className="block dark:hidden"
+            style={{
+              height: '84px', width: 'auto',
+              filter: 'drop-shadow(0 4px 16px rgba(0,0,0,0.12))',
+            }}
+          />
+
+          <div style={{ textAlign: 'left' }}>
+            <span
+              style={{
+                display: 'block',
+                fontFamily: 'var(--font-hero)',
+                fontSize: 'clamp(52px, 8vw, 88px)',
+                fontWeight: 900,
+                letterSpacing: '0.05em',
+                textTransform: 'uppercase',
+                lineHeight: 0.9,
+                background: 'linear-gradient(90deg, #fe7000 0%, #9a4efb 50%, #21eb3f 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+              }}
+            >
+              H3NKY
+            </span>
+            <span
+              style={{
+                display: 'block',
+                fontFamily: 'var(--font-mono)',
+                fontSize: 'clamp(12px, 1.6vw, 16px)',
+                fontWeight: 600,
+                letterSpacing: '0.5em',
+                textTransform: 'uppercase',
+                color: 'var(--text-faint)',
+                marginTop: '10px',
+              }}
+            >
+              // DEV
+            </span>
+          </div>
         </div>
 
         {/* Tagline */}
@@ -84,31 +168,32 @@ function HeroSection() {
           style={{
             ...hidden,
             fontFamily: 'var(--font-body)',
-            fontSize: '19px',
+            fontSize: '16px',
             fontWeight: 300,
-            color: 'rgba(255,255,255,0.82)',
-            maxWidth: '580px',
-            lineHeight: 1.6,
-            margin: '40px 0 44px',
+            color: 'var(--text-muted)',
+            maxWidth: '490px',
+            lineHeight: 1.7,
+            margin: '0 0 32px',
           }}
         >
           Construyo aplicaciones reales con IA y documento exactamente cómo lo hago.
         </p>
 
         {/* CTAs */}
-        <div data-hero-ctas className="flex flex-wrap gap-3 justify-center">
+        <div data-hero-ctas className="flex flex-wrap gap-3 justify-center" style={{ marginBottom: '40px' }}>
           <Link
             to="/apps"
             style={{
               display: 'inline-flex', alignItems: 'center', gap: '8px',
-              padding: '14px 28px', borderRadius: 'var(--radius-md)',
-              background: 'var(--accent)', color: '#fff',
+              padding: '14px 32px', borderRadius: '99px',
+              background: 'linear-gradient(135deg, #fe7000, #cc5800)', color: '#fff',
               fontFamily: 'var(--font-body)', fontSize: '14px', fontWeight: 600,
-              textDecoration: 'none', border: '1px solid transparent',
-              boxShadow: 'var(--shadow-cta)', transition: 'all var(--transition)',
+              textDecoration: 'none',
+              boxShadow: '0 8px 28px rgba(254,112,0,0.4), 0 0 0 1px rgba(254,112,0,0.3)',
+              transition: 'all var(--transition)',
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'var(--accent-hover)'; e.currentTarget.style.transform = 'translateY(-1px)' }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'var(--accent)'; e.currentTarget.style.transform = '' }}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 12px 36px rgba(254,112,0,0.5), 0 0 0 1px rgba(254,112,0,0.4)' }}
+            onMouseLeave={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '0 8px 28px rgba(254,112,0,0.4), 0 0 0 1px rgba(254,112,0,0.3)' }}
           >
             Ver mis apps →
           </Link>
@@ -116,98 +201,55 @@ function HeroSection() {
             to="/documentacion"
             style={{
               display: 'inline-flex', alignItems: 'center', gap: '8px',
-              padding: '14px 28px', borderRadius: 'var(--radius-md)',
-              background: 'rgba(255,255,255,0.06)', color: '#fff',
+              padding: '14px 32px', borderRadius: '99px',
+              background: 'var(--bg-card)', color: 'var(--text)',
               fontFamily: 'var(--font-body)', fontSize: '14px', fontWeight: 600,
-              textDecoration: 'none', border: '1px solid rgba(255,255,255,0.18)',
+              textDecoration: 'none', border: '1px solid var(--border)',
               backdropFilter: 'blur(8px)', transition: 'all var(--transition)',
             }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.background = 'rgba(255,255,255,0.1)' }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.18)'; e.currentTarget.style.background = 'rgba(255,255,255,0.06)' }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.color = 'var(--accent)' }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text)' }}
           >
             Ver el portfolio →
           </Link>
         </div>
-      </div>
-    </section>
-  )
-}
 
-// ── Stats ─────────────────────────────────────────────────────────────────
-const STATS = [
-  { num: '4',  suffix: '+', label: 'Apps en producción',     color: 'var(--accent)' },
-  { num: '100%',             label: 'Código asistido por IA', color: 'var(--brand-green)' },
-  { num: '27.5', suffix: 'K', label: 'Líneas de código',       color: 'var(--text)' },
-  { num: 'Open',             label: 'Código fuente público',  color: 'var(--brand-purple)', small: true },
-]
-
-function StatsSection() {
-  const containerRef = useRef(null)
-
-  useGSAP(() => {
-    if (prefersReducedMotion) return
-    gsap.fromTo('[data-stat-card]',
-      { y: 40, opacity: 0 },
-      {
-        y: 0, opacity: 1, duration: 0.6, stagger: 0.08, ease: 'power2.out',
-        scrollTrigger: { trigger: containerRef.current, start: 'top 90%', once: true },
-      }
-    )
-  }, { scope: containerRef })
-
-  return (
-    <section
-      ref={containerRef}
-      style={{
-        maxWidth: 'var(--max-width)', margin: '-68px auto 0',
-        padding: '0 var(--page-px)', position: 'relative', zIndex: 10,
-      }}
-    >
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(4, 1fr)',
-          gap: '16px',
-        }}
-      >
-        {STATS.map(({ num, suffix, label, color, small }) => (
-          <div
-            key={label}
-            data-stat-card
-            style={{
-              background: 'var(--bg-card)',
-              border: '1px solid var(--border)',
-              borderRadius: 'var(--radius-lg)',
-              padding: '32px 24px',
-              boxShadow: 'var(--shadow-card)',
-              transition: 'all var(--transition)',
-              textAlign: 'center',
-              ...(prefersReducedMotion ? {} : { opacity: 0 }),
-            }}
-          >
-            <div style={{
-              fontFamily: 'var(--font-tech)',
-              fontSize: small ? '44px' : '56px',
-              fontWeight: 900,
-              lineHeight: 1,
-              letterSpacing: '-0.02em',
-              color,
-            }}>
-              {num}{suffix && <span style={{ color: 'var(--accent)' }}>{suffix}</span>}
-            </div>
-            <div style={{
-              fontFamily: 'var(--font-tech)',
-              fontSize: '11px',
-              fontWeight: 700,
-              letterSpacing: '0.14em',
-              textTransform: 'uppercase',
-              color: 'var(--text-faint)',
-              marginTop: '14px',
-            }}>
-              {label}
-            </div>
-          </div>
-        ))}
+        {/* Stats row — integradas en el hero */}
+        <div
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            gap: '0', flexWrap: 'wrap',
+            paddingTop: '32px',
+            borderTop: '1px solid var(--border)',
+            width: '100%',
+          }}
+        >
+          {STATS.flatMap(({ num, suffix, label, color }, i) => [
+            i > 0 && (
+              <div
+                key={`div-${i}`}
+                style={{ width: '1px', height: '32px', background: 'var(--border)', flexShrink: 0, margin: '0 28px' }}
+              />
+            ),
+            <div key={label} data-hero-stat style={{ textAlign: 'center', ...hidden }}>
+              <div style={{
+                fontFamily: 'var(--font-tech)',
+                fontSize: '24px', fontWeight: 900, lineHeight: 1,
+                color,
+              }}>
+                {num}{suffix}
+              </div>
+              <div style={{
+                fontFamily: 'var(--font-mono)',
+                fontSize: '8px', fontWeight: 600,
+                letterSpacing: '0.18em', textTransform: 'uppercase',
+                color: 'var(--text-faint)', marginTop: '5px',
+              }}>
+                {label}
+              </div>
+            </div>,
+          ])}
+        </div>
       </div>
     </section>
   )
@@ -536,7 +578,6 @@ export default function LandingPage() {
     <div>
       <title>H3nky | Portfolio</title>
       <HeroSection />
-      <StatsSection />
       <PillarsSection />
       <AppsShowcaseSection />
       <AuthSection />
