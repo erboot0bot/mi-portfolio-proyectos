@@ -242,7 +242,7 @@ export default function Layout({ children }) {
         )}
       </header>
 
-      <main className="flex-1 w-full pt-10 pb-20">
+      <main className="flex-1 w-full pb-20">
         {children}
       </main>
 
