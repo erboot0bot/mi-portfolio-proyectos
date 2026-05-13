@@ -109,26 +109,80 @@ export default function DemoAppLayout() {
           <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', margin: 0 }}>{app.name}</h1>
         </div>
         {modules.length > 1 && (
-          <nav style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 16 }}>
-            {modules.map(m => (
-              <NavLink
-                key={m.path}
-                to={m.path}
-                className={({ isActive }) => isActive ? 'module-card active' : 'module-card'}
-                style={({ isActive }) => ({
-                  display: 'flex', alignItems: 'center', gap: 12,
-                  height: 56, padding: '0 16px', borderRadius: 12,
-                  background: 'var(--bg-card)',
-                  border: isActive ? '1px solid var(--accent)' : '1px solid var(--border)',
-                  borderLeft: isActive ? '3px solid var(--accent)' : '1px solid var(--border)',
-                  textDecoration: 'none', transition: 'all var(--transition)',
-                })}
-              >
-                <span style={{ fontSize: 22, flexShrink: 0 }}>{m.icon}</span>
-                <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{m.label}</span>
-                <span style={{ color: 'var(--text-faint)', fontSize: 16 }}>›</span>
-              </NavLink>
-            ))}
+          <nav style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 16 }}>
+            {appType === 'hogar' ? (
+              HOGAR_GROUPS.map(group => {
+                const items = modules.filter(m => m.group === group.key)
+                return (
+                  <div key={group.key}>
+                    {/* Group label */}
+                    <div style={{
+                      display: 'flex', alignItems: 'center', gap: 6,
+                      padding: '10px 4px 3px',
+                      fontSize: 10,
+                      fontFamily: 'var(--font-tech)',
+                      fontWeight: 700,
+                      letterSpacing: '0.14em',
+                      textTransform: 'uppercase',
+                      color: 'var(--text-faint)',
+                    }}>
+                      <span style={{ fontSize: 12 }}>{group.icon}</span>
+                      {group.label}
+                    </div>
+                    {/* Items */}
+                    {items.length > 0 ? items.map(m => (
+                      <NavLink
+                        key={m.path}
+                        to={m.path}
+                        className={({ isActive }) => isActive ? 'module-card active' : 'module-card'}
+                        style={({ isActive }) => ({
+                          display: 'flex', alignItems: 'center', gap: 12,
+                          height: 52, padding: '0 16px', borderRadius: 10,
+                          background: 'var(--bg-card)',
+                          border: isActive ? '1px solid var(--accent)' : '1px solid var(--border)',
+                          borderLeft: isActive ? '3px solid var(--accent)' : '1px solid var(--border)',
+                          textDecoration: 'none', transition: 'all var(--transition)',
+                          marginBottom: 3,
+                        })}
+                      >
+                        <span style={{ fontSize: 20, flexShrink: 0 }}>{m.icon}</span>
+                        <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{m.label}</span>
+                        <span style={{ color: 'var(--text-faint)', fontSize: 16 }}>›</span>
+                      </NavLink>
+                    )) : (
+                      <div style={{
+                        height: 40, display: 'flex', alignItems: 'center',
+                        padding: '0 16px', marginBottom: 3,
+                        border: '1px dashed var(--border)', borderRadius: 10,
+                        fontSize: 12, color: 'var(--text-faint)', fontStyle: 'italic',
+                      }}>
+                        Próximamente
+                      </div>
+                    )}
+                  </div>
+                )
+              })
+            ) : (
+              modules.map(m => (
+                <NavLink
+                  key={m.path}
+                  to={m.path}
+                  className={({ isActive }) => isActive ? 'module-card active' : 'module-card'}
+                  style={({ isActive }) => ({
+                    display: 'flex', alignItems: 'center', gap: 12,
+                    height: 56, padding: '0 16px', borderRadius: 12,
+                    background: 'var(--bg-card)',
+                    border: isActive ? '1px solid var(--accent)' : '1px solid var(--border)',
+                    borderLeft: isActive ? '3px solid var(--accent)' : '1px solid var(--border)',
+                    textDecoration: 'none', transition: 'all var(--transition)',
+                  })}
+                >
+                  <span style={{ fontSize: 22, flexShrink: 0 }}>{m.icon}</span>
+                  <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{m.label}</span>
+                  <span style={{ color: 'var(--text-faint)', fontSize: 16 }}>›</span>
+                </NavLink>
+              ))
+            )}
           </nav>
         )}
         <Outlet context={{ app, modules }} />
