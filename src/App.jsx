@@ -15,7 +15,9 @@ const Login         = React.lazy(() => import('./pages/Login'))
 const NotFound      = React.lazy(() => import('./pages/NotFound'))
 const Contact       = React.lazy(() => import('./pages/Contact'))
 const DemoHome       = React.lazy(() => import('./pages/DemoHome'))
+const DemoSettings   = React.lazy(() => import('./pages/DemoSettings'))
 const DemoAppLayout  = React.lazy(() => import('./pages/app/DemoAppLayout'))
+const HogarHome      = React.lazy(() => import('./pages/app/modules/HogarHome'))
 
 const AppsHub       = React.lazy(() => import('./pages/AppsHub'))
 
@@ -87,6 +89,12 @@ class ErrorBoundary extends React.Component {
   }
 }
 
+function DemoAppIndex() {
+  const { appType } = useParams()
+  if (appType === 'hogar') return <HogarHome />
+  return null
+}
+
 const pageVariants = {
   initial: { opacity: 1, y: 8 },
   animate: { opacity: 1, y: 0 },
@@ -140,6 +148,7 @@ export default function App() {
             <Route path="/login"          element={<Login />} />
             <Route path="/contact"        element={<Contact />} />
             <Route path="/demo"           element={<DemoHome />} />
+            <Route path="/demo/settings" element={<DemoSettings />} />
 
             {/* Hub de apps */}
             <Route path="/apps" element={
@@ -162,7 +171,8 @@ export default function App() {
               <Route path="menu"              element={<Menu />} />
               <Route path="recipes"           element={<Recipes />} />
               <Route path="recipes/:recipeId" element={<RecipeDetail />} />
-              <Route path="inventario"        element={<Inventario />} />
+              <Route path="despensa"          element={<Inventario />} />
+              <Route path="inventario"        element={<Navigate to="../despensa" replace />} />
               <Route path="limpieza"          element={<Limpieza />} />
               <Route path="ajustes"           element={<Navigate to="/app/settings" replace />} />
             </Route>
@@ -220,12 +230,14 @@ export default function App() {
 
             {/* Demo (público) */}
             <Route path="/demo/:appType" element={<DemoAppLayout />}>
+              <Route index element={<DemoAppIndex />} />
               <Route path="calendar"            element={<Calendar />} />
               <Route path="shopping"            element={<ShoppingList />} />
               <Route path="menu"                element={<Menu />} />
               <Route path="recipes"             element={<Recipes />} />
               <Route path="recipes/:recipeId"   element={<RecipeDetail />} />
-              <Route path="inventario"          element={<Inventario />} />
+              <Route path="despensa"            element={<Inventario />} />
+              <Route path="inventario"          element={<Navigate to="../despensa" replace />} />
               <Route path="limpieza"            element={<Limpieza />} />
               <Route path="resumen"             element={<FinanzasResumen />} />
               <Route path="transacciones"       element={<FinanzasTransacciones />} />
