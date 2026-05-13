@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Navigate, NavLink, Outlet, useLocation, useParams } from 'react-router-dom'
+import { Link, Navigate, NavLink, Outlet, useLocation, useParams } from 'react-router-dom'
 import { AppProvider } from '../../contexts/AppContext'
 import { useMode } from '../../contexts/ModeContext'
 import { initDemoData } from '../../data/demo/index.js'
@@ -52,7 +52,23 @@ const MODULE_MAP = {
   personal: PERSONAL_MODULES,
 }
 
-const FULL_LAYOUT_MODULES = ['calendar', 'shopping', 'menu', 'recipes', 'despensa', 'limpieza']
+// Fix 2: removed 'calendar' from FULL_LAYOUT_MODULES
+const FULL_LAYOUT_MODULES = ['shopping', 'menu', 'recipes', 'despensa', 'limpieza']
+
+// Fix 1: shared Footer component
+const Footer = () => (
+  <footer className="hidden md:block border-t" style={{ borderColor: 'var(--border)', padding: '28px 64px' }}>
+    <div style={{ maxWidth: '1440px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24 }}>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-faint)' }}>
+        © {new Date().getFullYear()} <span style={{ color: 'var(--accent)' }}>H3nky</span> · Construido con IA · Open source
+      </div>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-faint)' }}>
+        <a href="https://github.com/H3nky" target="_blank" rel="noreferrer"
+          className="hover:text-[var(--accent)] transition-colors">GitHub</a>
+      </div>
+    </div>
+  </footer>
+)
 
 export default function DemoAppLayout() {
   const { appType } = useParams()
@@ -74,6 +90,88 @@ export default function DemoAppLayout() {
   const currentModule = location.pathname.split('/').pop()
   const isFullLayout  = FULL_LAYOUT_MODULES.includes(currentModule)
 
+  // Fix 3: shared grouped nav renderer for hogar
+  function renderHogarNav(modules, isMobile) {
+    return HOGAR_GROUPS.map(group => {
+      const items = modules.filter(m => m.group === group.key)
+      return (
+        <div key={group.key} style={isMobile ? undefined : { marginBottom: 4 }}>
+          {/* Group label */}
+          <div style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            padding: isMobile ? '10px 4px 3px' : '10px 12px 3px',
+            fontSize: 10,
+            fontFamily: 'var(--font-tech)',
+            fontWeight: 700,
+            letterSpacing: '0.14em',
+            textTransform: 'uppercase',
+            color: 'var(--text-faint)',
+          }}>
+            <span style={{ fontSize: 12 }}>{group.icon}</span>
+            {group.label}
+          </div>
+          {/* Items */}
+          {items.length > 0 ? items.map(m => (
+            isMobile ? (
+              <NavLink
+                key={m.path}
+                to={m.path}
+                className={({ isActive }) => isActive ? 'module-card active' : 'module-card'}
+                style={({ isActive }) => ({
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  height: 52, padding: '0 16px', borderRadius: 10,
+                  background: 'var(--bg-card)',
+                  border: isActive ? '1px solid var(--accent)' : '1px solid var(--border)',
+                  borderLeft: isActive ? '3px solid var(--accent)' : '1px solid var(--border)',
+                  textDecoration: 'none', transition: 'all var(--transition)',
+                  marginBottom: 3,
+                })}
+              >
+                <span style={{ fontSize: 20, flexShrink: 0 }}>{m.icon}</span>
+                <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{m.label}</span>
+                <span style={{ color: 'var(--text-faint)', fontSize: 16 }}>›</span>
+              </NavLink>
+            ) : (
+              <NavLink
+                key={m.path}
+                to={m.path}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
+                    isActive
+                      ? 'bg-[var(--accent)] text-white font-semibold'
+                      : 'text-[var(--text-muted)] hover:bg-[var(--bg-card)] hover:text-[var(--text)]'
+                  }`
+                }
+              >
+                <span>{m.icon}</span>
+                {m.label}
+              </NavLink>
+            )
+          )) : isMobile ? (
+            <div style={{
+              height: 40, display: 'flex', alignItems: 'center',
+              padding: '0 16px', marginBottom: 3,
+              border: '1px dashed var(--border)', borderRadius: 10,
+              fontSize: 12, color: 'var(--text-faint)', fontStyle: 'italic',
+            }}>
+              Próximamente
+            </div>
+          ) : (
+            <div style={{
+              padding: '4px 12px 6px 32px',
+              fontSize: 11,
+              color: 'var(--text-faint)',
+              fontStyle: 'italic',
+              fontFamily: 'var(--font-body)',
+            }}>
+              Próximamente
+            </div>
+          )}
+        </div>
+      )
+    })
+  }
+
   if (isFullLayout) {
     return (
       <AppProvider app={app}>
@@ -82,17 +180,7 @@ export default function DemoAppLayout() {
           <div className="demo-full-content">
             <Outlet context={{ app, modules }} />
           </div>
-          <footer className="hidden md:block border-t" style={{ borderColor: 'var(--border)', padding: '28px 64px', flexShrink: 0 }}>
-            <div style={{ maxWidth: '1440px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24 }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-faint)' }}>
-                © {new Date().getFullYear()} <span style={{ color: 'var(--accent)' }}>H3nky</span> · Construido con IA · Open source
-              </div>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-faint)' }}>
-                <a href="https://github.com/H3nky" target="_blank" rel="noreferrer"
-                  className="hover:text-[var(--accent)] transition-colors">GitHub</a>
-              </div>
-            </div>
-          </footer>
+          <Footer />
         </div>
       </AppProvider>
     )
@@ -110,59 +198,7 @@ export default function DemoAppLayout() {
         </div>
         {modules.length > 1 && (
           <nav style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 16 }}>
-            {appType === 'hogar' ? (
-              HOGAR_GROUPS.map(group => {
-                const items = modules.filter(m => m.group === group.key)
-                return (
-                  <div key={group.key}>
-                    {/* Group label */}
-                    <div style={{
-                      display: 'flex', alignItems: 'center', gap: 6,
-                      padding: '10px 4px 3px',
-                      fontSize: 10,
-                      fontFamily: 'var(--font-tech)',
-                      fontWeight: 700,
-                      letterSpacing: '0.14em',
-                      textTransform: 'uppercase',
-                      color: 'var(--text-faint)',
-                    }}>
-                      <span style={{ fontSize: 12 }}>{group.icon}</span>
-                      {group.label}
-                    </div>
-                    {/* Items */}
-                    {items.length > 0 ? items.map(m => (
-                      <NavLink
-                        key={m.path}
-                        to={m.path}
-                        className={({ isActive }) => isActive ? 'module-card active' : 'module-card'}
-                        style={({ isActive }) => ({
-                          display: 'flex', alignItems: 'center', gap: 12,
-                          height: 52, padding: '0 16px', borderRadius: 10,
-                          background: 'var(--bg-card)',
-                          border: isActive ? '1px solid var(--accent)' : '1px solid var(--border)',
-                          borderLeft: isActive ? '3px solid var(--accent)' : '1px solid var(--border)',
-                          textDecoration: 'none', transition: 'all var(--transition)',
-                          marginBottom: 3,
-                        })}
-                      >
-                        <span style={{ fontSize: 20, flexShrink: 0 }}>{m.icon}</span>
-                        <span style={{ flex: 1, fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{m.label}</span>
-                        <span style={{ color: 'var(--text-faint)', fontSize: 16 }}>›</span>
-                      </NavLink>
-                    )) : (
-                      <div style={{
-                        height: 40, display: 'flex', alignItems: 'center',
-                        padding: '0 16px', marginBottom: 3,
-                        border: '1px dashed var(--border)', borderRadius: 10,
-                        fontSize: 12, color: 'var(--text-faint)', fontStyle: 'italic',
-                      }}>
-                        Próximamente
-                      </div>
-                    )}
-                  </div>
-                )
-              })
-            ) : (
+            {appType === 'hogar' ? renderHogarNav(modules, true) : (
               modules.map(m => (
                 <NavLink
                   key={m.path}
@@ -198,56 +234,7 @@ export default function DemoAppLayout() {
               <h1 className="font-bold text-[var(--text)]">{app.name}</h1>
             </div>
             <nav className="flex flex-col gap-0">
-              {appType === 'hogar' ? (
-                HOGAR_GROUPS.map(group => {
-                  const items = modules.filter(m => m.group === group.key)
-                  return (
-                    <div key={group.key} style={{ marginBottom: 4 }}>
-                      {/* Group header */}
-                      <div style={{
-                        display: 'flex', alignItems: 'center', gap: 6,
-                        padding: '10px 12px 3px',
-                        fontSize: 10,
-                        fontFamily: 'var(--font-tech)',
-                        fontWeight: 700,
-                        letterSpacing: '0.14em',
-                        textTransform: 'uppercase',
-                        color: 'var(--text-faint)',
-                      }}>
-                        <span style={{ fontSize: 12 }}>{group.icon}</span>
-                        {group.label}
-                      </div>
-                      {/* Items */}
-                      {items.length > 0 ? items.map(m => (
-                        <NavLink
-                          key={m.path}
-                          to={m.path}
-                          className={({ isActive }) =>
-                            `flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
-                              isActive
-                                ? 'bg-[var(--accent)] text-white font-semibold'
-                                : 'text-[var(--text-muted)] hover:bg-[var(--bg-card)] hover:text-[var(--text)]'
-                            }`
-                          }
-                        >
-                          <span>{m.icon}</span>
-                          {m.label}
-                        </NavLink>
-                      )) : (
-                        <div style={{
-                          padding: '4px 12px 6px 32px',
-                          fontSize: 11,
-                          color: 'var(--text-faint)',
-                          fontStyle: 'italic',
-                          fontFamily: 'var(--font-body)',
-                        }}>
-                          Próximamente
-                        </div>
-                      )}
-                    </div>
-                  )
-                })
-              ) : (
+              {appType === 'hogar' ? renderHogarNav(modules, false) : (
                 modules.map(m => (
                   <NavLink
                     key={m.path}
@@ -271,12 +258,13 @@ export default function DemoAppLayout() {
               <p className="text-[10px] text-[var(--text-faint)] leading-relaxed mb-3">
                 Modo demo — los datos no se guardan al cerrar la sesión.
               </p>
-              <a
-                href="/login"
+              {/* Fix 4: Link instead of <a> */}
+              <Link
+                to="/login"
                 className="block text-center text-xs font-semibold py-2 px-3 rounded-lg border border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-white transition-colors"
               >
                 Crear cuenta gratis
-              </a>
+              </Link>
             </div>
           </aside>
           <main className="flex-1 min-w-0">
@@ -284,17 +272,7 @@ export default function DemoAppLayout() {
           </main>
         </div>
       </div>
-      <footer className="hidden md:block border-t" style={{ borderColor: 'var(--border)', padding: '28px 64px' }}>
-        <div style={{ maxWidth: '1440px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24 }}>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-faint)' }}>
-            © {new Date().getFullYear()} <span style={{ color: 'var(--accent)' }}>H3nky</span> · Construido con IA · Open source
-          </div>
-          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-faint)' }}>
-            <a href="https://github.com/H3nky" target="_blank" rel="noreferrer"
-              className="hover:text-[var(--accent)] transition-colors">GitHub</a>
-          </div>
-        </div>
-      </footer>
+      <Footer />
       </div>
     </AppProvider>
   )
