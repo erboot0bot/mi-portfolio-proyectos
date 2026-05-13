@@ -13,13 +13,21 @@ const APP_META = {
   personal: { name: 'Personal', icon: '🗂️' },
 }
 
+const HOGAR_GROUPS = [
+  { key: 'cocina',   label: 'Cocina',   icon: '🍳' },
+  { key: 'limpieza', label: 'Limpieza', icon: '🧹' },
+  { key: 'espacios', label: 'Espacios', icon: '📦' },
+  { key: 'casa',     label: 'Casa',     icon: '🔧' },
+]
+
 const HOGAR_MODULES = [
-  { path: 'calendar',   label: 'Calendario', icon: '📅' },
-  { path: 'shopping',   label: 'Lista',       icon: '🛒' },
-  { path: 'menu',       label: 'Menú',        icon: '🍽️' },
-  { path: 'recipes',    label: 'Recetas',     icon: '👨‍🍳' },
-  { path: 'inventario', label: 'Inventario',  icon: '📦' },
-  { path: 'limpieza',   label: 'Limpieza',    icon: '🧹' },
+  // ── Cocina ──────────────────────────────────
+  { path: 'menu',      label: 'Menú',     icon: '🍽️', group: 'cocina' },
+  { path: 'recipes',   label: 'Recetas',  icon: '👨‍🍳', group: 'cocina' },
+  { path: 'despensa',  label: 'Despensa', icon: '🥫',  group: 'cocina' },
+  { path: 'shopping',  label: 'Lista',    icon: '🛒',  group: 'cocina' },
+  // ── Limpieza ─────────────────────────────────
+  { path: 'limpieza',  label: 'Tareas',   icon: '🧹',  group: 'limpieza' },
 ]
 const MASCOTAS_MODULES = [{ path: 'mis-mascotas', label: 'Mis Mascotas', icon: '🐾' }]
 const VEHICULO_MODULES = [{ path: 'mis-vehiculos', label: 'Mis Vehículos', icon: '🚗' }]
@@ -44,7 +52,7 @@ const MODULE_MAP = {
   personal: PERSONAL_MODULES,
 }
 
-const FULL_LAYOUT_MODULES = ['calendar', 'shopping', 'menu', 'recipes', 'inventario', 'limpieza']
+const FULL_LAYOUT_MODULES = ['calendar', 'shopping', 'menu', 'recipes', 'despensa', 'limpieza']
 
 export default function DemoAppLayout() {
   const { appType } = useParams()
@@ -70,7 +78,22 @@ export default function DemoAppLayout() {
     return (
       <AppProvider app={app}>
         <DemoBanner />
-        <Outlet context={{ app, modules }} />
+        <div className="demo-full-wrap">
+          <div className="demo-full-content">
+            <Outlet context={{ app, modules }} />
+          </div>
+          <footer className="hidden md:block border-t" style={{ borderColor: 'var(--border)', padding: '28px 64px', flexShrink: 0 }}>
+            <div style={{ maxWidth: '1440px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24 }}>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-faint)' }}>
+                © {new Date().getFullYear()} <span style={{ color: 'var(--accent)' }}>H3nky</span> · Construido con IA · Open source
+              </div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-faint)' }}>
+                <a href="https://github.com/H3nky" target="_blank" rel="noreferrer"
+                  className="hover:text-[var(--accent)] transition-colors">GitHub</a>
+              </div>
+            </div>
+          </footer>
+        </div>
       </AppProvider>
     )
   }
@@ -81,14 +104,7 @@ export default function DemoAppLayout() {
 
       {/* Mobile layout */}
       <div className="flex flex-col md:hidden min-h-[70vh] px-4 py-0">
-        <NavLink to="/demo" style={{
-          display: 'inline-flex', alignItems: 'center', gap: 4,
-          fontSize: 13, color: 'var(--text-muted)', textDecoration: 'none',
-          padding: '12px 0 0', lineHeight: 1,
-        }}>
-          ← Demo
-        </NavLink>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0 8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 0 8px' }}>
           <span style={{ fontSize: 36 }}>{app.icon}</span>
           <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', margin: 0 }}>{app.name}</h1>
         </div>
@@ -119,15 +135,10 @@ export default function DemoAppLayout() {
       </div>
 
       {/* Desktop layout */}
-      <div className="hidden md:block max-w-[1440px] mx-auto px-6 sm:px-10 lg:px-16">
+      <div className="hidden md:flex flex-col min-h-[calc(100vh-48px)]">
+      <div className="max-w-[1440px] w-full mx-auto px-6 sm:px-10 lg:px-16 flex-1">
         <div className="flex gap-8 py-8 min-h-[70vh]">
-          <aside className="w-52 shrink-0">
-            <NavLink
-              to="/demo"
-              className="flex items-center gap-1 text-xs text-[var(--text-muted)] hover:text-[var(--text)] mb-4 transition-colors"
-            >
-              ← Demo
-            </NavLink>
+          <aside className="w-52 shrink-0 flex flex-col">
             <div className="mb-6">
               <div className="text-3xl mb-1">{app.icon}</div>
               <h1 className="font-bold text-[var(--text)]">{app.name}</h1>
@@ -150,11 +161,35 @@ export default function DemoAppLayout() {
                 </NavLink>
               ))}
             </nav>
+
+            <div className="mt-auto pt-6 border-t border-[var(--border)]">
+              <p className="text-[10px] text-[var(--text-faint)] leading-relaxed mb-3">
+                Modo demo — los datos no se guardan al cerrar la sesión.
+              </p>
+              <a
+                href="/login"
+                className="block text-center text-xs font-semibold py-2 px-3 rounded-lg border border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-white transition-colors"
+              >
+                Crear cuenta gratis
+              </a>
+            </div>
           </aside>
           <main className="flex-1 min-w-0">
             <Outlet context={{ app, modules }} />
           </main>
         </div>
+      </div>
+      <footer className="hidden md:block border-t" style={{ borderColor: 'var(--border)', padding: '28px 64px' }}>
+        <div style={{ maxWidth: '1440px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24 }}>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-faint)' }}>
+            © {new Date().getFullYear()} <span style={{ color: 'var(--accent)' }}>H3nky</span> · Construido con IA · Open source
+          </div>
+          <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-faint)' }}>
+            <a href="https://github.com/H3nky" target="_blank" rel="noreferrer"
+              className="hover:text-[var(--accent)] transition-colors">GitHub</a>
+          </div>
+        </div>
+      </footer>
       </div>
     </AppProvider>
   )
