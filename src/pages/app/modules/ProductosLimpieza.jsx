@@ -4,7 +4,7 @@ import { useMode } from '../../../contexts/ModeContext'
 import { demoRead } from '../../../data/demo/index.js'
 
 export default function ProductosLimpieza() {
-  const { app, modules } = useOutletContext()
+  const { app } = useOutletContext()
   const { mode } = useMode()
 
   const [productos, setProductos] = useState(() =>
