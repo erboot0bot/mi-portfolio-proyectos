@@ -12,9 +12,14 @@ export default function Bano() {
   const { app } = useOutletContext()
   const { mode } = useMode()
 
-  const initial = mode === 'demo' ? (demoRead(app.type ?? 'hogar', 'bano') ?? {}) : {}
-  const [consumibles, setConsumibles] = useState(initial.consumibles ?? [])
-  const [durables,    setDurables]    = useState(initial.durables    ?? [])
+  const [consumibles, setConsumibles] = useState(() => {
+    const initial = mode === 'demo' ? (demoRead(app.type ?? 'hogar', 'bano') ?? {}) : {}
+    return initial.consumibles ?? []
+  })
+  const [durables, setDurables] = useState(() => {
+    const initial = mode === 'demo' ? (demoRead(app.type ?? 'hogar', 'bano') ?? {}) : {}
+    return initial.durables ?? []
+  })
 
   function ajustar(id, delta) {
     setConsumibles(prev => prev.map(c =>
@@ -48,6 +53,9 @@ export default function Bano() {
       {/* Consumibles */}
       <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: 20 }}>
         <p style={{ margin: '0 0 14px', fontSize: 11, fontWeight: 700, color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '.1em' }}>Stock</p>
+        {consumibles.length === 0 ? (
+          <p style={{ margin: 0, fontSize: 13, color: 'var(--text-faint)', textAlign: 'center', padding: '12px 0' }}>Sin productos registrados</p>
+        ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {consumibles.map(c => {
             const bajo = c.cantidad < c.minimo
@@ -71,11 +79,15 @@ export default function Bano() {
             )
           })}
         </div>
+        )}
       </div>
 
       {/* Durables */}
       <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, padding: 20 }}>
         <p style={{ margin: '0 0 14px', fontSize: 11, fontWeight: 700, color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '.1em' }}>Cambio periódico</p>
+        {durables.length === 0 ? (
+          <p style={{ margin: 0, fontSize: 13, color: 'var(--text-faint)', textAlign: 'center', padding: '12px 0' }}>Sin elementos periódicos</p>
+        ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {durables.map(d => {
             const dias      = diasDesde(d.ultimo_cambio)
@@ -106,6 +118,7 @@ export default function Bano() {
             )
           })}
         </div>
+        )}
       </div>
 
     </div>
