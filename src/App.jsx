@@ -32,6 +32,7 @@ const Inventario    = React.lazy(() => import('./pages/app/modules/Inventario'))
 const Limpieza            = React.lazy(() => import('./pages/app/modules/Limpieza'))
 const ProductosLimpieza   = React.lazy(() => import('./pages/app/modules/ProductosLimpieza'))
 const Roomba              = React.lazy(() => import('./pages/app/modules/Roomba'))
+const PersonalLimpieza    = React.lazy(() => import('./pages/app/modules/PersonalLimpieza'))
 const HogarAjustes    = React.lazy(() => import('./pages/app/modules/HogarAjustes'))
 const GlobalSettings  = React.lazy(() => import('./pages/app/GlobalSettings'))
 
@@ -178,6 +179,7 @@ export default function App() {
               <Route path="limpieza"          element={<Limpieza />} />
               <Route path="productos-limpieza" element={<ProductosLimpieza />} />
               <Route path="roomba"            element={<Roomba />} />
+              <Route path="personal-limpieza" element={<PersonalLimpieza />} />
               <Route path="ajustes"           element={<Navigate to="/app/settings" replace />} />
             </Route>
 
@@ -245,6 +247,7 @@ export default function App() {
               <Route path="limpieza"            element={<Limpieza />} />
               <Route path="productos-limpieza"  element={<ProductosLimpieza />} />
               <Route path="roomba"              element={<Roomba />} />
+              <Route path="personal-limpieza"  element={<PersonalLimpieza />} />
               <Route path="resumen"             element={<FinanzasResumen />} />
               <Route path="transacciones"       element={<FinanzasTransacciones />} />
               <Route path="categorias"          element={<FinanzasCategorias />} />

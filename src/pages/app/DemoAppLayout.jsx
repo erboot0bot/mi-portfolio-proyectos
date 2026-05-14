@@ -30,6 +30,7 @@ const HOGAR_MODULES = [
   { path: 'limpieza',           label: 'Tareas',    icon: '🧹', group: 'limpieza' },
   { path: 'productos-limpieza', label: 'Productos', icon: '🧴', group: 'limpieza' },
   { path: 'roomba', label: 'Roomba', icon: '🤖', group: 'limpieza' },
+  { path: 'personal-limpieza', label: 'Personal', icon: '👷', group: 'limpieza' },
 ]
 const MASCOTAS_MODULES = [{ path: 'mis-mascotas', label: 'Mis Mascotas', icon: '🐾' }]
 const VEHICULO_MODULES = [{ path: 'mis-vehiculos', label: 'Mis Vehículos', icon: '🚗' }]
