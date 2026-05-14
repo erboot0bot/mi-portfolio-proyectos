@@ -13,9 +13,17 @@ const MOCK_BY_APP = {
   mascotas:  mockMascotas,
 }
 
+// Bump this to force-clear stale sessionStorage when demo data changes
+const DEMO_VERSION = '7'
+
 // Loads mock data into sessionStorage for a given appType.
-// Only writes keys that don't already exist (preserves user mutations during session).
+// Checks version on every call so HMR changes always clear stale data.
 export function initDemoData(appType) {
+  if (sessionStorage.getItem('demo_version') !== DEMO_VERSION) {
+    Object.keys(sessionStorage).filter(k => k.startsWith('demo_')).forEach(k => sessionStorage.removeItem(k))
+    sessionStorage.setItem('demo_version', DEMO_VERSION)
+  }
+
   const mock = MOCK_BY_APP[appType]
   if (!mock) return
 

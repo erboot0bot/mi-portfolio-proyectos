@@ -44,11 +44,11 @@ const ts = (dayOffset, h, m = 0) =>
 export const mockHogar = {
   items_supermercado: [
     { id: 'demo-item-1', app_id: 'demo-hogar', module: 'supermercado', type: 'product', title: 'Leche', checked: false, checked_at: null, owner_id: 'demo', visibility: 'shared', metadata: { quantity: 2, unit: 'L', category: 'lacteos', store: 'Mercadona' }, created_at: fmtTs(subDays(hoy, 1)) },
-    { id: 'demo-item-2', app_id: 'demo-hogar', module: 'supermercado', type: 'product', title: 'Pan integral', checked: false, checked_at: null, owner_id: 'demo', visibility: 'shared', metadata: { quantity: 1, unit: 'unidad', category: 'pan', store: 'Mercadona' }, created_at: fmtTs(subDays(hoy, 1)) },
-    { id: 'demo-item-3', app_id: 'demo-hogar', module: 'supermercado', type: 'product', title: 'Tomates', checked: false, checked_at: null, owner_id: 'demo', visibility: 'shared', metadata: { quantity: 1, unit: 'kg', category: 'frutas', store: 'Mercadona' }, created_at: fmtTs(subDays(hoy, 1)) },
+    { id: 'demo-item-2', app_id: 'demo-hogar', module: 'supermercado', type: 'product', title: 'Pan integral', checked: false, checked_at: null, owner_id: 'maria', owner_name: 'María', visibility: 'shared', metadata: { quantity: 1, unit: 'unidad', category: 'pan', store: 'Mercadona' }, created_at: fmtTs(subDays(hoy, 1)) },
+    { id: 'demo-item-3', app_id: 'demo-hogar', module: 'supermercado', type: 'product', title: 'Tomates', checked: false, checked_at: null, owner_id: 'maria', owner_name: 'María', visibility: 'shared', metadata: { quantity: 1, unit: 'kg', category: 'frutas', store: 'Mercadona' }, created_at: fmtTs(subDays(hoy, 1)) },
     { id: 'demo-item-4', app_id: 'demo-hogar', module: 'supermercado', type: 'product', title: 'Pechuga de pollo', checked: false, checked_at: null, owner_id: 'demo', visibility: 'shared', metadata: { quantity: 500, unit: 'g', category: 'carnes', store: 'Mercadona' }, created_at: fmtTs(subDays(hoy, 1)) },
     { id: 'demo-item-5', app_id: 'demo-hogar', module: 'supermercado', type: 'product', title: 'Huevos', checked: true, checked_at: fmtTs(hoy), owner_id: 'demo', visibility: 'shared', metadata: { quantity: 12, unit: 'unidades', category: 'lacteos', store: 'Mercadona' }, created_at: fmtTs(subDays(hoy, 2)) },
-    { id: 'demo-item-6', app_id: 'demo-hogar', module: 'supermercado', type: 'product', title: 'Cerveza', checked: false, checked_at: null, owner_id: 'demo', visibility: 'shared', metadata: { quantity: 6, unit: 'unidades', category: 'bebidas', store: 'Lidl' }, created_at: fmtTs(subDays(hoy, 1)) },
+    { id: 'demo-item-6', app_id: 'demo-hogar', module: 'supermercado', type: 'product', title: 'Cerveza', checked: false, checked_at: null, owner_id: 'maria', owner_name: 'María', visibility: 'shared', metadata: { quantity: 6, unit: 'unidades', category: 'bebidas', store: 'Lidl' }, created_at: fmtTs(subDays(hoy, 1)) },
     { id: 'demo-item-7', app_id: 'demo-hogar', module: 'supermercado', type: 'product', title: 'Detergente', checked: false, checked_at: null, owner_id: 'demo', visibility: 'shared', metadata: { quantity: 1, unit: 'unidad', category: 'limpieza', store: 'Carrefour' }, created_at: fmtTs(subDays(hoy, 1)) },
     { id: 'demo-item-8', app_id: 'demo-hogar', module: 'supermercado', type: 'product', title: 'Pasta', checked: true, checked_at: fmtTs(hoy), owner_id: 'demo', visibility: 'shared', metadata: { quantity: 500, unit: 'g', category: 'pan', store: 'Mercadona' }, created_at: fmtTs(subDays(hoy, 3)) },
     { id: 'demo-item-9', app_id: 'demo-hogar', module: 'supermercado', type: 'product', title: 'Yogur natural', checked: false, checked_at: null, owner_id: 'demo', visibility: 'shared', metadata: { quantity: 4, unit: 'unidades', category: 'lacteos', store: 'Mercadona' }, created_at: fmtTs(subDays(hoy, 1)) },
@@ -242,6 +242,23 @@ export const mockHogar = {
       { id: 'ban-d2', nombre: 'Cepillo dientes (adulto 2)', icono: '🪥', ultimo_cambio: fmt(subDays(hoy, 30)), intervalo_dias: 90 },
       { id: 'ban-d3', nombre: 'Toallas baño',               icono: '🛁', ultimo_cambio: fmt(subDays(hoy, 15)), intervalo_dias: 7  },
       { id: 'ban-d4', nombre: 'Esponja ducha',              icono: '🧽', ultimo_cambio: fmt(subDays(hoy, 25)), intervalo_dias: 30 },
+    ],
+  },
+
+  comparticion: {
+    personas: [
+      { id: 'maria', nombre: 'María', avatar: '👩', relacion: 'Pareja', color: '#8b5cf6' }
+    ],
+    secciones: [
+      { id: 'lista-compra', label: 'Lista de compra',  icono: '🛒', nivel: 'editar'  },
+      { id: 'nevera',       label: 'Nevera',            icono: '🧊', nivel: 'ver'     },
+      { id: 'congelador',   label: 'Congelador',         icono: '❄️', nivel: 'ver'     },
+      { id: 'despensa',     label: 'Despensa',           icono: '🥫', nivel: 'ver'     },
+      { id: 'menu',         label: 'Menú',               icono: '🍽️', nivel: 'editar'  },
+      { id: 'recetas',      label: 'Recetas',            icono: '👨‍🍳', nivel: 'editar'  },
+      { id: 'limpieza',     label: 'Tareas de limpieza', icono: '🧹', nivel: 'editar'  },
+      { id: 'bano',         label: 'Baño',               icono: '🪥', nivel: 'privado' },
+      { id: 'finanzas',     label: 'Finanzas',           icono: '💰', nivel: 'privado' },
     ],
   },
 }
