@@ -194,4 +194,54 @@ export const mockHogar = {
       activo: true,
     },
   ],
+
+  nevera: [
+    { id: 'nev-1', nombre: 'Leche entera',      icono: '🥛', cantidad: 2,   unidad: 'L',    caducidad: fmt(addDays(hoy, 3)),  categoria: 'lácteos'   },
+    { id: 'nev-2', nombre: 'Yogures',            icono: '🥄', cantidad: 8,   unidad: 'ud',   caducidad: fmt(addDays(hoy, 7)),  categoria: 'lácteos'   },
+    { id: 'nev-3', nombre: 'Huevos',             icono: '🥚', cantidad: 6,   unidad: 'ud',   caducidad: fmt(addDays(hoy, 14)), categoria: 'proteínas' },
+    { id: 'nev-4', nombre: 'Pollo filetes',      icono: '🍗', cantidad: 500, unidad: 'g',    caducidad: fmt(addDays(hoy, 1)),  categoria: 'carnes'    },
+    { id: 'nev-5', nombre: 'Queso manchego',     icono: '🧀', cantidad: 200, unidad: 'g',    caducidad: fmt(addDays(hoy, 20)), categoria: 'lácteos'   },
+    { id: 'nev-6', nombre: 'Ensalada bolsa',     icono: '🥗', cantidad: 1,   unidad: 'bolsa',caducidad: fmt(subDays(hoy, 1)),  categoria: 'verduras'  },
+    { id: 'nev-7', nombre: 'Mermelada fresa',    icono: '🍓', cantidad: 1,   unidad: 'tarro',caducidad: fmt(addDays(hoy, 90)), categoria: 'otros'     },
+    { id: 'nev-8', nombre: 'Mantequilla',        icono: '🧈', cantidad: 1,   unidad: 'paquete', caducidad: fmt(addDays(hoy, 30)), categoria: 'lácteos' },
+  ],
+
+  congelador: [
+    { id: 'con-1', nombre: 'Pollo entero',    icono: '🍗', cantidad: 1,   unidad: 'ud', fecha_congelado: fmt(subDays(hoy, 30)), tiempo_max: 180, categoria: 'carnes'    },
+    { id: 'con-2', nombre: 'Carne picada',    icono: '🥩', cantidad: 500, unidad: 'g',  fecha_congelado: fmt(subDays(hoy, 14)), tiempo_max: 90,  categoria: 'carnes'    },
+    { id: 'con-3', nombre: 'Gambas',          icono: '🦐', cantidad: 500, unidad: 'g',  fecha_congelado: fmt(subDays(hoy, 7)),  tiempo_max: 90,  categoria: 'pescados'  },
+    { id: 'con-4', nombre: 'Judías verdes',   icono: '🫘', cantidad: 400, unidad: 'g',  fecha_congelado: fmt(subDays(hoy, 60)), tiempo_max: 365, categoria: 'verduras'  },
+    { id: 'con-5', nombre: 'Helado vainilla', icono: '🍦', cantidad: 500, unidad: 'g',  fecha_congelado: fmt(subDays(hoy, 3)),  tiempo_max: 365, categoria: 'postres'   },
+    { id: 'con-6', nombre: 'Pan de molde',    icono: '🍞', cantidad: 1,   unidad: 'bolsa', fecha_congelado: fmt(subDays(hoy, 5)), tiempo_max: 90, categoria: 'panadería' },
+  ],
+
+  despensa_items: [
+    { id: 'des-1',  nombre: 'Arroz',            icono: '🍚', cantidad: 2,    unidad: 'kg',   minimo: 0.5, categoria: 'cereales'    },
+    { id: 'des-2',  nombre: 'Pasta macarrones', icono: '🍝', cantidad: 0.5,  unidad: 'kg',   minimo: 0.5, categoria: 'cereales'    },
+    { id: 'des-3',  nombre: 'Lentejas',         icono: '🫘', cantidad: 1,    unidad: 'kg',   minimo: 0.5, categoria: 'legumbres'   },
+    { id: 'des-4',  nombre: 'Tomate frito',     icono: '🥫', cantidad: 3,    unidad: 'bote', minimo: 2,   categoria: 'conservas'   },
+    { id: 'des-5',  nombre: 'Atún en lata',     icono: '🐟', cantidad: 2,    unidad: 'lata', minimo: 3,   categoria: 'conservas'   },
+    { id: 'des-6',  nombre: 'Aceite de oliva',  icono: '🫙', cantidad: 1,    unidad: 'L',    minimo: 0.5, categoria: 'aceites'     },
+    { id: 'des-7',  nombre: 'Azúcar',           icono: '🍬', cantidad: 0,    unidad: 'kg',   minimo: 0.5, categoria: 'otros'       },
+    { id: 'des-8',  nombre: 'Harina',           icono: '🌾', cantidad: 1,    unidad: 'kg',   minimo: 0.5, categoria: 'cereales'    },
+    { id: 'des-9',  nombre: 'Café molido',      icono: '☕', cantidad: 0.25, unidad: 'kg',   minimo: 0.25,categoria: 'bebidas'     },
+    { id: 'des-10', nombre: 'Sal',              icono: '🧂', cantidad: 1,    unidad: 'kg',   minimo: 0.5, categoria: 'condimentos' },
+  ],
+
+  bano: {
+    consumibles: [
+      { id: 'ban-1', nombre: 'Papel higiénico', icono: '🧻', cantidad: 6,   unidad: 'rollos', minimo: 4 },
+      { id: 'ban-2', nombre: 'Jabón de manos',  icono: '🫧', cantidad: 2,   unidad: 'bote',   minimo: 1 },
+      { id: 'ban-3', nombre: 'Pasta de dientes',icono: '🪥', cantidad: 1,   unidad: 'tubo',   minimo: 1 },
+      { id: 'ban-4', nombre: 'Champú',          icono: '🧴', cantidad: 0.5, unidad: 'bote',   minimo: 1 },
+      { id: 'ban-5', nombre: 'Gel de ducha',    icono: '🚿', cantidad: 1,   unidad: 'bote',   minimo: 1 },
+      { id: 'ban-6', nombre: 'Desodorante',     icono: '💨', cantidad: 2,   unidad: 'ud',     minimo: 1 },
+    ],
+    durables: [
+      { id: 'ban-d1', nombre: 'Cepillo dientes (adulto 1)', icono: '🪥', ultimo_cambio: fmt(subDays(hoy, 70)), intervalo_dias: 90 },
+      { id: 'ban-d2', nombre: 'Cepillo dientes (adulto 2)', icono: '🪥', ultimo_cambio: fmt(subDays(hoy, 30)), intervalo_dias: 90 },
+      { id: 'ban-d3', nombre: 'Toallas baño',               icono: '🛁', ultimo_cambio: fmt(subDays(hoy, 15)), intervalo_dias: 7  },
+      { id: 'ban-d4', nombre: 'Esponja ducha',              icono: '🧽', ultimo_cambio: fmt(subDays(hoy, 25)), intervalo_dias: 30 },
+    ],
+  },
 }
