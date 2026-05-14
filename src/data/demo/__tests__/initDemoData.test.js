@@ -21,8 +21,9 @@ describe('initDemoData', () => {
   })
 
   it('does not overwrite existing demo data', () => {
+    initDemoData('finanzas')                         // stamp version first (mirrors real usage)
     demoWrite('finanzas', 'fin_categories', [{ id: 'custom' }])
-    initDemoData('finanzas')
+    initDemoData('finanzas')                         // should not overwrite the custom write
     const cats = demoRead('finanzas', 'fin_categories')
     expect(cats[0].id).toBe('custom')
   })
