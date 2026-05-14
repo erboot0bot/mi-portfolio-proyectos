@@ -27,7 +27,8 @@ const HOGAR_MODULES = [
   { path: 'despensa',  label: 'Despensa', icon: '🥫',  group: 'cocina' },
   { path: 'shopping',  label: 'Lista',    icon: '🛒',  group: 'cocina' },
   // ── Limpieza ─────────────────────────────────
-  { path: 'limpieza',  label: 'Tareas',   icon: '🧹',  group: 'limpieza' },
+  { path: 'limpieza',           label: 'Tareas',    icon: '🧹', group: 'limpieza' },
+  { path: 'productos-limpieza', label: 'Productos', icon: '🧴', group: 'limpieza' },
 ]
 const MASCOTAS_MODULES = [{ path: 'mis-mascotas', label: 'Mis Mascotas', icon: '🐾' }]
 const VEHICULO_MODULES = [{ path: 'mis-vehiculos', label: 'Mis Vehículos', icon: '🚗' }]
