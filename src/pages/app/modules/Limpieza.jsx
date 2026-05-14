@@ -3,6 +3,7 @@ import { useOutletContext } from 'react-router-dom'
 import ModuleShell from './ModuleShell'
 import { useMode } from '../../../contexts/ModeContext'
 import { useEventsData } from '../../../hooks/data/useEventsData'
+import { demoRead } from '../../../data/demo/index.js'
 
 function formatDue(dateStr) {
   const d = new Date(dateStr)
@@ -22,11 +23,26 @@ export default function Limpieza() {
   const { app, modules } = useOutletContext()
   const { mode } = useMode()
   const { events, loading, add, remove } = useEventsData({ appId: app.id, mode, eventTypes: ['cleaning'] })
-  const tasks = [...events].sort((a, b) => new Date(a.start_time) - new Date(b.start_time))
   const [showAdd, setShowAdd] = useState(false)
   const [form, setForm]       = useState({ title: '', due: '', interval_days: '', products: '' })
   const [addError, setAddError]   = useState(null)
   const [markError, setMarkError] = useState(null)
+  const [factoryTasks, setFactoryTasks] = useState(() =>
+    mode === 'demo' ? (demoRead(app.type ?? 'hogar', 'factory_tasks') ?? []) : []
+  )
+  const [showFactory, setShowFactory] = useState(false)
+
+  const factoryActive = factoryTasks
+    .filter(ft => ft.active && ft.next_date)
+    .map(ft => ({
+      id: ft.id,
+      title: ft.label,
+      start_time: new Date(ft.next_date + 'T09:00:00').toISOString(),
+      metadata: { interval_days: ft.default_interval, is_factory: true, factory_key: ft.key },
+      _factory: true,
+    }))
+  const tasks = [...events, ...factoryActive]
+    .sort((a, b) => new Date(a.start_time) - new Date(b.start_time))
 
   const today = new Date().toISOString().slice(0, 10)
 
@@ -54,6 +70,17 @@ export default function Limpieza() {
   }
 
   async function markDone(task) {
+    if (task._factory) {
+      const intervalDays = task.metadata?.interval_days ?? 7
+      const nextDate = new Date()
+      nextDate.setDate(nextDate.getDate() + intervalDays)
+      setFactoryTasks(prev => prev.map(ft =>
+        ft.id === task.id
+          ? { ...ft, next_date: nextDate.toISOString().slice(0, 10) }
+          : ft
+      ))
+      return
+    }
     await remove(task.id)
     const intervalDays = task.metadata?.interval_days
     if (intervalDays) {
@@ -78,6 +105,17 @@ export default function Limpieza() {
     await remove(id)
   }
 
+  function toggleFactory(taskId) {
+    setFactoryTasks(prev => {
+      const updated = prev.map(t =>
+        t.id === taskId
+          ? { ...t, active: !t.active, next_date: !t.active ? new Date().toISOString().slice(0, 10) : null }
+          : t
+      )
+      return updated
+    })
+  }
+
   const overdueCount = tasks.filter(t => formatDue(t.start_time).overdue).length
 
   return (
@@ -97,11 +135,50 @@ export default function Limpieza() {
               <p style={{ fontSize: 12, color: '#ef4444', margin: '4px 0 0' }}>{markError}</p>
             )}
           </div>
-          <button
-            onClick={() => setShowAdd(p => !p)}
-            style={{ padding: '8px 16px', borderRadius: 10, background: 'var(--accent)', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}
-          >+ Nueva tarea</button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              onClick={() => setShowFactory(p => !p)}
+              style={{ padding: '8px 12px', borderRadius: 10, background: showFactory ? 'var(--bg-card)' : 'transparent', color: 'var(--text-muted)', border: '1px solid var(--border)', cursor: 'pointer', fontSize: 12, fontWeight: 500 }}
+            >
+              ⚙️ Fábrica ({factoryTasks.filter(f => f.active).length}/{factoryTasks.length})
+            </button>
+            <button
+              onClick={() => setShowAdd(p => !p)}
+              style={{ padding: '8px 16px', borderRadius: 10, background: 'var(--accent)', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}
+            >+ Nueva tarea</button>
+          </div>
         </div>
+
+        {/* Panel Fábrica */}
+        {showFactory && (
+          <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: 16 }}>
+            <p style={{ margin: '0 0 12px', fontSize: 11, fontWeight: 700, color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '.08em' }}>
+              Tareas de fábrica — activa las que hagas habitualmente
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {factoryTasks.map(ft => (
+                <div key={ft.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: ft.active ? 'rgba(254,112,0,0.04)' : 'transparent' }}>
+                  <span style={{ fontSize: 18, flexShrink: 0 }}>{ft.icon}</span>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: ft.active ? 'var(--text)' : 'var(--text-muted)' }}>{ft.label}</p>
+                    <p style={{ margin: 0, fontSize: 11, color: 'var(--text-faint)' }}>↻ cada {ft.default_interval} días</p>
+                  </div>
+                  <button
+                    onClick={() => toggleFactory(ft.id)}
+                    style={{
+                      padding: '4px 12px', borderRadius: 20, fontSize: 11, fontWeight: 600, cursor: 'pointer',
+                      background: ft.active ? 'var(--accent)' : 'var(--bg)',
+                      color: ft.active ? '#fff' : 'var(--text-muted)',
+                      border: ft.active ? 'none' : '1px solid var(--border)',
+                    }}
+                  >
+                    {ft.active ? 'Activa' : 'Activar'}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Formulario */}
         {showAdd && (
@@ -190,7 +267,14 @@ export default function Limpieza() {
                     onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = overdue ? '#ef4444' : 'var(--border)'; e.currentTarget.textContent = '' }}
                   />
                   <div style={{ flex: 1 }}>
-                    <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{task.title}</p>
+                    <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
+                      {task.title}
+                      {task._factory && (
+                        <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 600, color: 'var(--accent)', background: 'rgba(254,112,0,0.1)', padding: '1px 6px', borderRadius: 20, verticalAlign: 'middle' }}>
+                          fábrica
+                        </span>
+                      )}
+                    </p>
                     <div style={{ display: 'flex', gap: 8, marginTop: 3, flexWrap: 'wrap' }}>
                       <span style={{ fontSize: 11, color: overdue ? '#ef4444' : 'var(--text-muted)' }}>{dueLabel}</span>
                       {intervalDays && <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>↻ cada {intervalDays} días</span>}
