@@ -29,6 +29,7 @@ const Menu          = React.lazy(() => import('./pages/app/modules/Menu'))
 const Recipes       = React.lazy(() => import('./pages/app/modules/Recipes'))
 const RecipeDetail  = React.lazy(() => import('./pages/app/modules/RecipeDetail'))
 const Inventario    = React.lazy(() => import('./pages/app/modules/Inventario'))
+const Despensa      = React.lazy(() => import('./pages/app/modules/Despensa'))
 const Nevera              = React.lazy(() => import('./pages/app/modules/Nevera'))
 const Congelador          = React.lazy(() => import('./pages/app/modules/Congelador'))
 const Limpieza            = React.lazy(() => import('./pages/app/modules/Limpieza'))
@@ -178,7 +179,7 @@ export default function App() {
               <Route path="menu"              element={<Menu />} />
               <Route path="recipes"           element={<Recipes />} />
               <Route path="recipes/:recipeId" element={<RecipeDetail />} />
-              <Route path="despensa"          element={<Inventario />} />
+              <Route path="despensa"          element={<Despensa />} />
               <Route path="inventario"        element={<Navigate to="../despensa" replace />} />
               <Route path="limpieza"          element={<Limpieza />} />
               <Route path="productos-limpieza" element={<ProductosLimpieza />} />
@@ -248,7 +249,7 @@ export default function App() {
               <Route path="menu"                element={<Menu />} />
               <Route path="recipes"             element={<Recipes />} />
               <Route path="recipes/:recipeId"   element={<RecipeDetail />} />
-              <Route path="despensa"            element={<Inventario />} />
+              <Route path="despensa"            element={<Despensa />} />
               <Route path="inventario"          element={<Navigate to="../despensa" replace />} />
               <Route path="limpieza"            element={<Limpieza />} />
               <Route path="productos-limpieza"  element={<ProductosLimpieza />} />
