@@ -58,6 +58,11 @@ const PERSONAL_MODULES = [
   { path: 'trabajo',       label: 'Trabajo',       icon: '💼' },
   { path: 'salud',         label: 'Salud',         icon: '🏥' },
   { path: 'documentacion', label: 'Documentación', icon: '📄' },
+  { path: 'deporte',   label: 'Deporte',   icon: '🏋️' },
+  { path: 'vehiculos', label: 'Vehículos', icon: '🚗' },
+  { path: 'mascotas',  label: 'Mascotas',  icon: '🐾' },
+  { path: 'ropa',      label: 'Ropa',      icon: '👕' },
+  { path: 'formacion', label: 'Formación', icon: '📚' },
 ]
 
 const MODULE_MAP = {

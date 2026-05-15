@@ -53,6 +53,11 @@ const PersonalIdeas  = React.lazy(() => import('./pages/app/modules/personal/Ide
 const PersonalTrabajo       = React.lazy(() => import('./pages/app/modules/personal/Trabajo'))
 const PersonalSalud         = React.lazy(() => import('./pages/app/modules/personal/Salud'))
 const PersonalDocumentacion = React.lazy(() => import('./pages/app/modules/personal/Documentacion'))
+const PersonalDeporte   = React.lazy(() => import('./pages/app/modules/personal/Deporte'))
+const PersonalVehiculos = React.lazy(() => import('./pages/app/modules/personal/Vehiculos'))
+const PersonalMascotas  = React.lazy(() => import('./pages/app/modules/personal/Mascotas'))
+const PersonalRopa      = React.lazy(() => import('./pages/app/modules/personal/Ropa'))
+const PersonalFormacion = React.lazy(() => import('./pages/app/modules/personal/Formacion'))
 
 // Vehículo
 const MisVehiculos       = React.lazy(() => import('./pages/app/modules/vehiculo/MisVehiculos'))
@@ -224,6 +229,11 @@ export default function App() {
               <Route path="trabajo"       element={<PersonalTrabajo />} />
               <Route path="salud"         element={<PersonalSalud />} />
               <Route path="documentacion" element={<PersonalDocumentacion />} />
+              <Route path="deporte"   element={<PersonalDeporte />} />
+              <Route path="vehiculos" element={<PersonalVehiculos />} />
+              <Route path="mascotas"  element={<PersonalMascotas />} />
+              <Route path="ropa"      element={<PersonalRopa />} />
+              <Route path="formacion" element={<PersonalFormacion />} />
             </Route>
 
             {/* Vehículo */}
@@ -288,6 +298,11 @@ export default function App() {
               <Route path="trabajo"       element={<PersonalTrabajo />} />
               <Route path="salud"         element={<PersonalSalud />} />
               <Route path="documentacion" element={<PersonalDocumentacion />} />
+              <Route path="deporte"   element={<PersonalDeporte />} />
+              <Route path="vehiculos" element={<PersonalVehiculos />} />
+              <Route path="mascotas"  element={<PersonalMascotas />} />
+              <Route path="ropa"      element={<PersonalRopa />} />
+              <Route path="formacion" element={<PersonalFormacion />} />
               <Route path="mis-mascotas"        element={<MisMascotas />} />
               <Route path="mis-mascotas/:petId" element={<PetDetail />}>
                 <Route index element={<Navigate to="alimentacion" replace />} />
