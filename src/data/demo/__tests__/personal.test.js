@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { initDemoData, demoRead } from '../index.js'
+import { mockPersonal } from '../personal.js'
 
 describe('personal demo data — Fase 5', () => {
   beforeEach(() => {
@@ -60,5 +61,54 @@ describe('personal demo data — Fase 5', () => {
     const pasaporte = d.find(doc => doc.tipo === 'Pasaporte')
     expect(pasaporte).toBeDefined()
     expect(new Date(pasaporte.caducidad) < new Date()).toBe(true)
+  })
+
+  it('deporte — rutinas shape', () => {
+    expect(Array.isArray(mockPersonal.deporte_rutinas)).toBe(true)
+    expect(mockPersonal.deporte_rutinas.length).toBeGreaterThanOrEqual(2)
+    const r = mockPersonal.deporte_rutinas[0]
+    expect(r).toHaveProperty('id')
+    expect(r).toHaveProperty('nombre')
+    expect(Array.isArray(r.ejercicios)).toBe(true)
+  })
+
+  it('vehiculos — shape', () => {
+    expect(Array.isArray(mockPersonal.vehiculos)).toBe(true)
+    expect(mockPersonal.vehiculos.length).toBeGreaterThanOrEqual(1)
+    const v = mockPersonal.vehiculos[0]
+    expect(v).toHaveProperty('id')
+    expect(v).toHaveProperty('marca')
+    expect(v).toHaveProperty('matricula')
+    expect(v).toHaveProperty('itv_proxima')
+  })
+
+  it('mascotas — shape', () => {
+    expect(Array.isArray(mockPersonal.mascotas)).toBe(true)
+    expect(mockPersonal.mascotas.length).toBeGreaterThanOrEqual(1)
+    const m = mockPersonal.mascotas[0]
+    expect(m).toHaveProperty('id')
+    expect(m).toHaveProperty('nombre')
+    expect(m).toHaveProperty('especie')
+    expect(Array.isArray(m.vacunas)).toBe(true)
+  })
+
+  it('ropa — prendas shape', () => {
+    expect(Array.isArray(mockPersonal.ropa_prendas)).toBe(true)
+    expect(mockPersonal.ropa_prendas.length).toBeGreaterThanOrEqual(3)
+    const p = mockPersonal.ropa_prendas[0]
+    expect(p).toHaveProperty('id')
+    expect(p).toHaveProperty('nombre')
+    expect(p).toHaveProperty('categoria')
+    expect(p).toHaveProperty('temporada')
+  })
+
+  it('formacion — cursos shape', () => {
+    expect(Array.isArray(mockPersonal.formacion_cursos)).toBe(true)
+    expect(mockPersonal.formacion_cursos.length).toBeGreaterThanOrEqual(2)
+    const c = mockPersonal.formacion_cursos[0]
+    expect(c).toHaveProperty('id')
+    expect(c).toHaveProperty('titulo')
+    expect(c).toHaveProperty('plataforma')
+    expect(typeof c.progreso).toBe('number')
   })
 })

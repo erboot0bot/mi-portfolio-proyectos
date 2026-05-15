@@ -91,4 +91,80 @@ export const mockPersonal = {
     { id: 'doc-3', tipo: 'Carnet de conducir', numero: 'B-12345678', caducidad: fmt(addDays(hoy, 1825)), notas: null },
     { id: 'doc-4', tipo: 'Tarjeta sanitaria',  numero: 'MAD-987654', caducidad: null,                   notas: 'Madrid' },
   ],
+
+  deporte_rutinas: [
+    {
+      id: 'rut-1', nombre: 'Fuerza — Upper body', dias: ['L', 'X', 'V'],
+      ejercicios: [
+        { id: 'ej-1', nombre: 'Press banca',   series: 4, reps: 8,  peso: 70 },
+        { id: 'ej-2', nombre: 'Dominadas',     series: 3, reps: 10, peso: 0  },
+        { id: 'ej-3', nombre: 'Press militar', series: 3, reps: 10, peso: 40 },
+        { id: 'ej-4', nombre: 'Curl bíceps',   series: 3, reps: 12, peso: 15 },
+      ],
+    },
+    {
+      id: 'rut-2', nombre: 'Fuerza — Lower body', dias: ['M', 'J'],
+      ejercicios: [
+        { id: 'ej-5', nombre: 'Sentadilla', series: 4, reps: 8,  peso: 90  },
+        { id: 'ej-6', nombre: 'Peso muerto', series: 3, reps: 6, peso: 100 },
+        { id: 'ej-7', nombre: 'Prensa',      series: 3, reps: 12, peso: 120 },
+      ],
+    },
+  ],
+  deporte_rutas: [
+    { id: 'ruta-1', nombre: 'Montserrat circular',    tipo: 'senderismo', distancia_km: 12, desnivel_m: 650, dificultad: 'media', tiempo_h: 4.5, fecha: fmt(subDays(hoy, 14)), notas: 'Espectacular, mucha gente en verano' },
+    { id: 'ruta-2', nombre: 'Collserola — Sant Cugat', tipo: 'bici',       distancia_km: 35, desnivel_m: 420, dificultad: 'media', tiempo_h: 2.0, fecha: fmt(subDays(hoy, 7)),  notas: 'Buen firme hasta la bajada final' },
+  ],
+
+  vehiculos: [
+    {
+      id: 'veh-1', marca: 'Volkswagen', modelo: 'Golf', anio: 2018, matricula: '1234 ABC', color: 'Gris',
+      itv_ultima: '2022-11-15', itv_proxima: fmt(addDays(hoy, 180)),
+      seguro_compania: 'Mapfre', seguro_vencimiento: fmt(addDays(hoy, 45)),
+      taller: 'Taller García — 93 123 45 67',
+      incidencias: [
+        { id: 'inc-1', fecha: fmt(subDays(hoy, 30)), descripcion: 'Pinchazo rueda delantera derecha. Cambiada por la de repuesto.' },
+      ],
+    },
+  ],
+
+  mascotas: [
+    {
+      id: 'mas-1', nombre: 'Luna', especie: 'perro', raza: 'Labrador', edad_anios: 3, icono: '🐕',
+      veterinario: { nombre: 'Clínica VetCare', telefono: '93 456 78 90', direccion: 'Calle Mayor 12' },
+      vacunas: [
+        { id: 'vac-1', nombre: 'Rabia',       fecha_ultima: fmt(subDays(hoy, 90)), proxima: fmt(addDays(hoy, 275)) },
+        { id: 'vac-2', nombre: 'Polivalente', fecha_ultima: fmt(subDays(hoy, 90)), proxima: fmt(addDays(hoy, 275)) },
+      ],
+      medicacion: [],
+      notas: 'Alérgica al pollo. Revisar oídos cada mes.',
+    },
+  ],
+
+  ropa_prendas: [
+    { id: 'ropa-1', nombre: 'Vaqueros slim azul',    categoria: 'pantalon', color: 'Azul',   marca: "Levi's", temporada: 'todo_año',    en_trastero: false },
+    { id: 'ropa-2', nombre: 'Camiseta básica blanca', categoria: 'camiseta', color: 'Blanco', marca: 'Uniqlo', temporada: 'verano',       en_trastero: true  },
+    { id: 'ropa-3', nombre: 'Chaqueta cuero marrón',  categoria: 'chaqueta', color: 'Marrón', marca: 'Zara',   temporada: 'entretiempo', en_trastero: false },
+    { id: 'ropa-4', nombre: 'Zapatillas running',     categoria: 'calzado',  color: 'Negro',  marca: 'Nike',   temporada: 'todo_año',    en_trastero: false },
+    { id: 'ropa-5', nombre: 'Abrigo gris',            categoria: 'abrigo',   color: 'Gris',   marca: 'Mango',  temporada: 'invierno',    en_trastero: true  },
+  ],
+  ropa_tallas: { camiseta: 'M', pantalon: '32x32', calzado: '43', chaqueta: 'L' },
+  ropa_wishlist: [
+    { id: 'wish-1', nombre: 'Sudadera técnica running', marca: 'Decathlon',      precio_aprox: 35, url: '' },
+    { id: 'wish-2', nombre: 'Chinos beige',             marca: 'Massimo Dutti', precio_aprox: 70, url: '' },
+  ],
+
+  formacion_cursos: [
+    { id: 'cur-1', titulo: 'React 18 + TypeScript Avanzado', plataforma: 'Udemy',         progreso: 68,  fecha_limite: fmt(addDays(hoy, 45)), estado: 'activo'     },
+    { id: 'cur-2', titulo: 'AWS Solutions Architect',         plataforma: 'A Cloud Guru',  progreso: 30,  fecha_limite: fmt(addDays(hoy, 90)), estado: 'activo'     },
+    { id: 'cur-3', titulo: 'Docker & Kubernetes',             plataforma: 'Udemy',         progreso: 100, fecha_limite: null,                  estado: 'completado' },
+  ],
+  formacion_idiomas: [
+    { id: 'idm-1', idioma: 'Inglés',  nivel: 'B2', metodo: 'Italki + series en VO', objetivo: 'C1' },
+    { id: 'idm-2', idioma: 'Francés', nivel: 'A2', metodo: 'Duolingo',              objetivo: 'B1' },
+  ],
+  formacion_certificaciones: [
+    { id: 'cert-1', nombre: 'AWS Cloud Practitioner', entidad: 'Amazon', fecha: '2024-03-15', estado: 'obtenida'    },
+    { id: 'cert-2', nombre: 'Google Analytics 4',     entidad: 'Google', fecha: null,         estado: 'en_progreso' },
+  ],
 }

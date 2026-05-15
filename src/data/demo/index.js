@@ -14,7 +14,7 @@ const MOCK_BY_APP = {
 }
 
 // Bump this to force-clear stale sessionStorage when demo data changes
-const DEMO_VERSION = '10'
+const DEMO_VERSION = '11'
 
 // Loads mock data into sessionStorage for a given appType.
 // Checks version on every call so HMR changes always clear stale data.
