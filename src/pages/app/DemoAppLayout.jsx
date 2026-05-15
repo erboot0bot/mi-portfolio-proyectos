@@ -52,9 +52,7 @@ const FINANZAS_MODULES = [
 ]
 const PERSONAL_MODULES = [
   { path: 'calendar',      label: 'Calendario',    icon: '📅' },
-  { path: 'notas',         label: 'Notas',         icon: '📝' },
   { path: 'tareas',        label: 'Tareas',        icon: '✅' },
-  { path: 'ideas',         label: 'Ideas',         icon: '💡' },
   { path: 'trabajo',       label: 'Trabajo',       icon: '💼' },
   { path: 'salud',         label: 'Salud',         icon: '🏥' },
   { path: 'documentacion', label: 'Documentación', icon: '📄' },

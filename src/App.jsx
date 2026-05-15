@@ -47,9 +47,7 @@ const MascotasAlimentacion = React.lazy(() => import('./pages/app/modules/mascot
 const MascotasSalud        = React.lazy(() => import('./pages/app/modules/mascotas/Salud'))
 const MascotasRutinas      = React.lazy(() => import('./pages/app/modules/mascotas/Rutinas'))
 // Personal
-const PersonalNotas  = React.lazy(() => import('./pages/app/modules/personal/Notas'))
 const PersonalTareas = React.lazy(() => import('./pages/app/modules/personal/Tareas'))
-const PersonalIdeas  = React.lazy(() => import('./pages/app/modules/personal/Ideas'))
 const PersonalTrabajo       = React.lazy(() => import('./pages/app/modules/personal/Trabajo'))
 const PersonalSalud         = React.lazy(() => import('./pages/app/modules/personal/Salud'))
 const PersonalDocumentacion = React.lazy(() => import('./pages/app/modules/personal/Documentacion'))
@@ -223,9 +221,7 @@ export default function App() {
             }>
               <Route index element={<Navigate to="calendar" replace />} />
               <Route path="calendar" element={<Calendar />} />
-              <Route path="notas"    element={<PersonalNotas />} />
               <Route path="tareas"   element={<PersonalTareas />} />
-              <Route path="ideas"    element={<PersonalIdeas />} />
               <Route path="trabajo"       element={<PersonalTrabajo />} />
               <Route path="salud"         element={<PersonalSalud />} />
               <Route path="documentacion" element={<PersonalDocumentacion />} />
@@ -292,9 +288,7 @@ export default function App() {
               <Route path="seguros"             element={<FinanzasSeguros />} />
               <Route path="gastos-fijos"        element={<FinanzasGastosFijos />} />
               <Route path="hipoteca"            element={<FinanzasHipoteca />} />
-              <Route path="notas"               element={<PersonalNotas />} />
               <Route path="tareas"              element={<PersonalTareas />} />
-              <Route path="ideas"               element={<PersonalIdeas />} />
               <Route path="trabajo"       element={<PersonalTrabajo />} />
               <Route path="salud"         element={<PersonalSalud />} />
               <Route path="documentacion" element={<PersonalDocumentacion />} />
