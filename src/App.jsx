@@ -50,6 +50,9 @@ const MascotasRutinas      = React.lazy(() => import('./pages/app/modules/mascot
 const PersonalNotas  = React.lazy(() => import('./pages/app/modules/personal/Notas'))
 const PersonalTareas = React.lazy(() => import('./pages/app/modules/personal/Tareas'))
 const PersonalIdeas  = React.lazy(() => import('./pages/app/modules/personal/Ideas'))
+const PersonalTrabajo       = React.lazy(() => import('./pages/app/modules/personal/Trabajo'))
+const PersonalSalud         = React.lazy(() => import('./pages/app/modules/personal/Salud'))
+const PersonalDocumentacion = React.lazy(() => import('./pages/app/modules/personal/Documentacion'))
 
 // Vehículo
 const MisVehiculos       = React.lazy(() => import('./pages/app/modules/vehiculo/MisVehiculos'))
@@ -215,6 +218,9 @@ export default function App() {
               <Route path="notas"    element={<PersonalNotas />} />
               <Route path="tareas"   element={<PersonalTareas />} />
               <Route path="ideas"    element={<PersonalIdeas />} />
+              <Route path="trabajo"       element={<PersonalTrabajo />} />
+              <Route path="salud"         element={<PersonalSalud />} />
+              <Route path="documentacion" element={<PersonalDocumentacion />} />
             </Route>
 
             {/* Vehículo */}
@@ -268,6 +274,9 @@ export default function App() {
               <Route path="notas"               element={<PersonalNotas />} />
               <Route path="tareas"              element={<PersonalTareas />} />
               <Route path="ideas"               element={<PersonalIdeas />} />
+              <Route path="trabajo"       element={<PersonalTrabajo />} />
+              <Route path="salud"         element={<PersonalSalud />} />
+              <Route path="documentacion" element={<PersonalDocumentacion />} />
               <Route path="mis-mascotas"        element={<MisMascotas />} />
               <Route path="mis-mascotas/:petId" element={<PetDetail />}>
                 <Route index element={<Navigate to="alimentacion" replace />} />
