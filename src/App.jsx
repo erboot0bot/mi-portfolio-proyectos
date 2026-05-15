@@ -67,6 +67,10 @@ const FinanzasResumen       = React.lazy(() => import('./pages/app/modules/finan
 const FinanzasTransacciones = React.lazy(() => import('./pages/app/modules/finanzas/Transacciones'))
 const FinanzasCategorias    = React.lazy(() => import('./pages/app/modules/finanzas/Categorias'))
 const FinanzasPresupuestos  = React.lazy(() => import('./pages/app/modules/finanzas/Presupuestos'))
+const FinanzasSuscripciones = React.lazy(() => import('./pages/app/modules/finanzas/Suscripciones'))
+const FinanzasSeguros       = React.lazy(() => import('./pages/app/modules/finanzas/Seguros'))
+const FinanzasGastosFijos   = React.lazy(() => import('./pages/app/modules/finanzas/GastosFijos'))
+const FinanzasHipoteca      = React.lazy(() => import('./pages/app/modules/finanzas/Hipoteca'))
 
 class ErrorBoundary extends React.Component {
   state = { hasError: false, error: null }
@@ -154,8 +158,7 @@ export default function App() {
             <Route path="/projects"            element={<Navigate to="/documentacion" replace />} />
             <Route path="/projects/:slug"      element={<LegacySlugRedirect />} />
             <Route path="/lab"                 element={<Navigate to="/documentacion" replace />} />
-            <Route path="/courses"        element={<ComingSoonPage title="Cursos" icon="📚" waitlistKey="cursos" />} />
-            <Route path="/store"          element={<ComingSoonPage title="Tienda" icon="🛒" waitlistKey="tienda" />} />
+<Route path="/store"          element={<ComingSoonPage title="Tienda" icon="🛒" waitlistKey="tienda" />} />
             <Route path="/login"          element={<Login />} />
             <Route path="/contact"        element={<Contact />} />
             <Route path="/demo"           element={<DemoHome />} />
@@ -247,6 +250,10 @@ export default function App() {
               <Route path="transacciones" element={<FinanzasTransacciones />} />
               <Route path="categorias"    element={<FinanzasCategorias />} />
               <Route path="presupuestos"  element={<FinanzasPresupuestos />} />
+              <Route path="suscripciones" element={<FinanzasSuscripciones />} />
+              <Route path="seguros"       element={<FinanzasSeguros />} />
+              <Route path="gastos-fijos"  element={<FinanzasGastosFijos />} />
+              <Route path="hipoteca"      element={<FinanzasHipoteca />} />
             </Route>
 
             {/* Demo (público) */}
@@ -271,6 +278,10 @@ export default function App() {
               <Route path="transacciones"       element={<FinanzasTransacciones />} />
               <Route path="categorias"          element={<FinanzasCategorias />} />
               <Route path="presupuestos"        element={<FinanzasPresupuestos />} />
+              <Route path="suscripciones"       element={<FinanzasSuscripciones />} />
+              <Route path="seguros"             element={<FinanzasSeguros />} />
+              <Route path="gastos-fijos"        element={<FinanzasGastosFijos />} />
+              <Route path="hipoteca"            element={<FinanzasHipoteca />} />
               <Route path="notas"               element={<PersonalNotas />} />
               <Route path="tareas"              element={<PersonalTareas />} />
               <Route path="ideas"               element={<PersonalIdeas />} />

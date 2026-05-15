@@ -45,6 +45,10 @@ const FINANZAS_MODULES = [
   { path: 'transacciones', label: 'Transacciones', icon: '💳' },
   { path: 'categorias',    label: 'Categorías',    icon: '🏷️' },
   { path: 'presupuestos',  label: 'Presupuestos',  icon: '🎯' },
+  { path: 'suscripciones', label: 'Suscripciones', icon: '🔄' },
+  { path: 'seguros',       label: 'Seguros',       icon: '🛡️' },
+  { path: 'gastos-fijos',  label: 'Gastos fijos',  icon: '📆' },
+  { path: 'hipoteca',      label: 'Hipoteca',      icon: '🏦' },
 ]
 const PERSONAL_MODULES = [
   { path: 'calendar',      label: 'Calendario',    icon: '📅' },
