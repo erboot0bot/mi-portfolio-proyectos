@@ -1,5 +1,5 @@
 // src/data/demo/finanzas.js
-import { subDays, startOfMonth, startOfWeek, format } from 'date-fns'
+import { subDays, addDays, startOfMonth, startOfWeek, format } from 'date-fns'
 
 const hoy    = new Date()
 const fmt    = d => format(d, 'yyyy-MM-dd')
@@ -74,4 +74,37 @@ export const mockFinanzas = {
     { id: 'demo-b-3', app_id: 'demo-finanzas', category_id: 'demo-cat-3', month: mes, monthly_limit: 1000, fin_categories: { name: 'Vivienda',     icon: '🏠', color: '#10b981' } },
     { id: 'demo-b-4', app_id: 'demo-finanzas', category_id: 'demo-cat-4', month: mes, monthly_limit: 150,  fin_categories: { name: 'Ocio',         icon: '🎭', color: '#8b5cf6' } },
   ],
+
+  suscripciones: [
+    { id: 'sub-1', nombre: 'Netflix',         icono: '🎬', coste: 15.99, periodicidad: 'mensual', fecha_renovacion: fmt(addDays(hoy, 12)),  estado: 'activa',  compartida: true  },
+    { id: 'sub-2', nombre: 'Spotify',         icono: '🎵', coste: 9.99,  periodicidad: 'mensual', fecha_renovacion: fmt(addDays(hoy, 8)),   estado: 'activa',  compartida: false },
+    { id: 'sub-3', nombre: 'Disney+',         icono: '🏰', coste: 11.99, periodicidad: 'mensual', fecha_renovacion: fmt(addDays(hoy, 25)),  estado: 'activa',  compartida: true  },
+    { id: 'sub-4', nombre: 'iCloud 200GB',    icono: '☁️', coste: 2.99,  periodicidad: 'mensual', fecha_renovacion: fmt(addDays(hoy, 5)),   estado: 'activa',  compartida: false },
+    { id: 'sub-5', nombre: 'YouTube Premium', icono: '▶️', coste: 13.99, periodicidad: 'mensual', fecha_renovacion: fmt(addDays(hoy, 18)),  estado: 'pausada', compartida: false },
+    { id: 'sub-6', nombre: 'Amazon Prime',    icono: '📦', coste: 49.90, periodicidad: 'anual',   fecha_renovacion: fmt(addDays(hoy, 180)), estado: 'activa',  compartida: true  },
+  ],
+
+  seguros: [
+    { id: 'seg-1', tipo: 'hogar',  nombre: 'Seguro Hogar Mapfre',     compania: 'Mapfre',         poliza: 'MF-2024-001234', vencimiento: fmt(addDays(hoy, 45)),  coste_anual: 380 },
+    { id: 'seg-2', tipo: 'vida',   nombre: 'Seguro de Vida Generali', compania: 'Generali',        poliza: 'GN-2023-567890', vencimiento: fmt(addDays(hoy, 210)), coste_anual: 520 },
+    { id: 'seg-3', tipo: 'dental', nombre: 'Dental Sanitas',          compania: 'Sanitas',         poliza: 'SN-2024-112233', vencimiento: fmt(addDays(hoy, 90)),  coste_anual: 240 },
+    { id: 'seg-4', tipo: 'coche',  nombre: 'Seguro Coche Mutua',      compania: 'Mutua Madrileña', poliza: 'MM-2024-445566', vencimiento: fmt(addDays(hoy, 15)),  coste_anual: 650 },
+  ],
+
+  gastos_fijos: [
+    { id: 'gf-1', nombre: 'Alquiler',         icono: '🏠', categoria: 'vivienda',     importe: 850, dia_cobro: 1  },
+    { id: 'gf-2', nombre: 'Luz (Iberdrola)',   icono: '💡', categoria: 'suministros',  importe: 94,  dia_cobro: 15 },
+    { id: 'gf-3', nombre: 'Gas Natural',       icono: '🔥', categoria: 'suministros',  importe: 45,  dia_cobro: 20 },
+    { id: 'gf-4', nombre: 'Agua',              icono: '💧', categoria: 'suministros',  importe: 28,  dia_cobro: 10 },
+    { id: 'gf-5', nombre: 'Internet + Móvil',  icono: '📡', categoria: 'conectividad', importe: 55,  dia_cobro: 5  },
+    { id: 'gf-6', nombre: 'Comunidad',         icono: '🏢', categoria: 'vivienda',     importe: 80,  dia_cobro: 1  },
+  ],
+
+  hipoteca: {
+    banco: 'BBVA', gestor: 'Ana García',
+    cuota_mensual: 750, dia_cobro: 1,
+    capital_inicial: 180000, capital_pendiente: 142500,
+    fecha_inicio: '2019-03-01', fecha_fin: '2049-03-01',
+    tipo_interes: 'variable', diferencial: 0.75,
+  },
 }
