@@ -138,6 +138,65 @@ export const mockPersonal = {
       ],
       medicacion: [],
       notas: 'Alérgica al pollo. Revisar oídos cada mes.',
+      alimentacion_stock: [
+        { id: 'alst-1', nombre: 'Pienso adulto Royal Canin', current_stock: 3000, min_stock: 500, unit: 'g' },
+        { id: 'alst-2', nombre: 'Snacks premio',             current_stock: 20,   min_stock: 5,   unit: 'uds' },
+      ],
+      alimentacion_schedule: [
+        { time: '08:00', amount: '200g', label: 'Mañana' },
+        { time: '19:00', amount: '200g', label: 'Noche'  },
+      ],
+    },
+  ],
+
+  mascotas_eventos: [
+    {
+      id: 'mev-1', pet_id: 'mas-1',
+      tipo: 'vet_visit', titulo: 'Revisión anual',
+      start_time: new Date(fmt(addDays(hoy, 15)) + 'T10:00:00').toISOString(),
+      all_day: true,
+      metadata: { notes: 'Revisar oídos y peso', interval_days: null, duration_minutes: null },
+      created_at: fmtTs(subDays(hoy, 2)),
+    },
+    {
+      id: 'mev-2', pet_id: 'mas-1',
+      tipo: 'walk', titulo: 'Paseo',
+      start_time: new Date(new Date().setHours(8, 30, 0, 0)).toISOString(),
+      all_day: false,
+      metadata: { duration_minutes: 45, notes: null, interval_days: null },
+      created_at: fmtTs(hoy),
+    },
+    {
+      id: 'mev-3', pet_id: 'mas-1',
+      tipo: 'walk', titulo: 'Paseo',
+      start_time: new Date(new Date().setHours(19, 0, 0, 0)).toISOString(),
+      all_day: false,
+      metadata: { duration_minutes: 30, notes: 'Parque cerca de casa', interval_days: null },
+      created_at: fmtTs(hoy),
+    },
+  ],
+
+  vehiculos_mantenimiento: [
+    {
+      id: 'mant-1', vehicle_id: 'veh-1',
+      type: 'aceite', date: fmt(subDays(hoy, 180)),
+      km: 45000, description: 'Cambio aceite 5W30 + filtro aceite',
+      cost: 85, next_km: 50000, next_date: fmt(addDays(hoy, 90)),
+      created_at: fmtTs(subDays(hoy, 180)),
+    },
+    {
+      id: 'mant-2', vehicle_id: 'veh-1',
+      type: 'ITV', date: fmt(subDays(hoy, 548)),
+      km: 38000, description: 'ITV superada con observaciones menores',
+      cost: 52, next_km: null, next_date: fmt(addDays(hoy, 180)),
+      created_at: fmtTs(subDays(hoy, 548)),
+    },
+    {
+      id: 'mant-3', vehicle_id: 'veh-1',
+      type: 'ruedas', date: fmt(subDays(hoy, 365)),
+      km: 40000, description: 'Cambio 4 neumáticos Michelin Primacy 4',
+      cost: 420, next_km: 80000, next_date: null,
+      created_at: fmtTs(subDays(hoy, 365)),
     },
   ],
 
