@@ -99,6 +99,14 @@ function DesktopItem({ item, onToggle, onDelete }) {
         }}
       />
       <span style={{ flex: 1, fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>{item.name}</span>
+      {item.owner_id === 'maria' && item.owner_name && (
+        <span style={{
+          fontSize: 10, padding: '2px 7px', borderRadius: 99, flexShrink: 0,
+          background: 'rgba(139,92,246,.15)', color: '#8b5cf6', fontWeight: 700,
+        }}>
+          {item.owner_name}
+        </span>
+      )}
       {item.quantity && (
         <span style={{ fontSize: 11, color: 'var(--text-faint)', fontFamily: 'monospace' }}>
           {item.quantity}{item.unit ? ` ${item.unit}` : ''}
@@ -193,6 +201,14 @@ function SwipeItem({ item, onToggle, onDelete }) {
           border: '2px solid var(--border)', background: 'transparent',
         }} />
         <span style={{ flex: 1, fontSize: 15, fontWeight: 500, color: 'var(--text)' }}>{item.name}</span>
+        {item.owner_id === 'maria' && item.owner_name && (
+          <span style={{
+            fontSize: 11, padding: '2px 7px', borderRadius: 99, flexShrink: 0,
+            background: 'rgba(139,92,246,.15)', color: '#8b5cf6', fontWeight: 700,
+          }}>
+            {item.owner_name}
+          </span>
+        )}
         {item.quantity && (
           <span style={{ fontSize: 12, color: 'var(--text-faint)', fontFamily: 'monospace' }}>
             {item.quantity}{item.unit ? ` ${item.unit}` : ''}
@@ -290,7 +306,7 @@ export default function ShoppingList() {
   const [items, setItems]               = useState([])
   const [showDefaultModal, setShowDefaultModal] = useState(false)
   const [isMobile, setIsMobile]         = useState(window.innerWidth < 640)
-  const [activeCat, setActiveCat]       = useState(null)
+  const [activeCat, setActiveCat]       = useState(null) // eslint-disable-line no-unused-vars
   const [activeStore, setActiveStore]   = useState(
     () => localStorage.getItem('sl_default_store') || 'Mercadona'
   )
@@ -598,11 +614,6 @@ export default function ShoppingList() {
   // ── Mobile view ───────────────────────────────────────────────
   if (isMobile) {
     const storeItems = pending.filter(i => activeStore === 'General' || i.store === activeStore)
-    const byCat = CATEGORIES.reduce((acc, c) => {
-      const its = storeItems.filter(i => i.category === c.id)
-      if (its.length) acc[c.id] = its
-      return acc
-    }, {})
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--bg)' }}>
@@ -631,31 +642,27 @@ export default function ShoppingList() {
               updateFrequency={updateFrequency}
             />
           </div>
-          {Object.entries(byCat).map(([catId, catItems]) => {
-            const cat = CATEGORIES.find(c => c.id === catId)
-            return (
-              <div key={catId}>
-                <div style={{ padding: '8px 16px 4px', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--text-faint)', position: 'sticky', top: 0, background: 'var(--bg)', zIndex: 5 }}>
-                  {cat?.icon} {cat?.label}
-                </div>
-                {catItems.map(item => (
-                  <SwipeItem key={item.id} item={item} onToggle={toggleItem} onDelete={deleteItem} />
-                ))}
-              </div>
-            )
-          })}
+
+          {/* Lista pendiente — plana, sin cabeceras de categoría */}
+          {storeItems.map(item => (
+            <SwipeItem key={item.id} item={item} onToggle={toggleItem} onDelete={deleteItem} />
+          ))}
+
           {storeItems.length === 0 && inCart.length === 0 && (
             <div style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text-faint)', fontSize: 13 }}>
               Sin productos en {activeStore}
             </div>
           )}
 
+          {/* Carrito */}
           {inCart.length > 0 && (
-            <div style={{ margin: '8px 10px 0' }}>
+            <div style={{ margin: '16px 10px 0' }}>
+              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '1.5px', color: 'var(--text-faint)', padding: '0 6px 8px', textTransform: 'uppercase' }}>
+                Carrito · {inCart.length}
+              </div>
               <CartSection compact />
             </div>
           )}
-
 
           <div style={{ height: 80 }} />
         </div>
@@ -677,117 +684,106 @@ export default function ShoppingList() {
   }
 
   // ── Desktop view ──────────────────────────────────────────────
-  const filteredPending = pending.filter(i =>
-    (activeStore === 'General' || i.store === activeStore) &&
-    (!activeCat || i.category === activeCat) &&
-    (!query || i.name.toLowerCase().includes(query.toLowerCase()))
+  // Only show stores that have pending items, plus always show "General"
+  const storesWithItems = STORES.filter(s =>
+    pending.some(i => i.store === s || (s === 'General' && !STORES.slice(0, -1).includes(i.store)))
   )
-  const byCat = CATEGORIES.reduce((acc, c) => {
-    const its = filteredPending.filter(i => i.category === c.id)
-    if (its.length) acc[c.id] = its
-    return acc
-  }, {})
+  const filteredByQuery = q => !query || q.name.toLowerCase().includes(query.toLowerCase())
+
+  function itemsByStore(store) {
+    return pending.filter(i => {
+      const match = store === 'General'
+        ? (i.store === 'General' || !STORES.slice(0, -1).includes(i.store))
+        : i.store === store
+      return match && filteredByQuery(i)
+    })
+  }
+
+  const colCount = Math.max(1, storesWithItems.length)
 
   return (
     <ModuleShell app={app} modules={modules}>
-    <div style={{ display: 'flex', height: '100%', overflow: 'hidden' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' }}>
 
-      {/* Category sidebar */}
-      <div style={{ width: 200, flexShrink: 0, borderRight: '1px solid var(--border)', overflow: 'auto', padding: '16px 12px', background: 'var(--bg-card)' }}>
-        <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--text-faint)', marginBottom: 8 }}>Categorías</div>
-        {[{ id: null, label: 'Todos', icon: '📋' }, ...CATEGORIES].map(c => {
-          const count = c.id ? pending.filter(i => i.category === c.id).length : pending.length
-          if (c.id && !count) return null
-          return (
-            <div key={c.id ?? 'all'} onClick={() => setActiveCat(c.id)} style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              padding: '6px 10px', borderRadius: 8, cursor: 'pointer', fontSize: 12, fontWeight: 500,
-              color: activeCat === c.id ? 'var(--accent)' : 'var(--text-muted)',
-              background: activeCat === c.id ? 'rgba(249,115,22,.1)' : 'transparent',
-              transition: 'all .15s', marginBottom: 1,
-            }}>
-              <span>{c.icon} {c.label}</span>
-              <span style={{ fontSize: 10, padding: '1px 6px', borderRadius: 999, background: activeCat === c.id ? 'var(--accent)' : 'var(--border)', color: activeCat === c.id ? '#fff' : 'var(--text-faint)' }}>{count}</span>
-            </div>
-          )
-        })}
-      </div>
-
-      {/* Main */}
-      <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', padding: '16px 20px' }}>
-        <StoreTabs activeStore={activeStore} onChange={setActiveStore} onSettings={() => setShowDefaultModal(true)} compact={false} />
-
-        {/* Progress */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '10px 0' }}>
-          <div style={{ flex: 1, height: 4, borderRadius: 2, background: 'var(--border)', overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: `${pct}%`, background: '#10b981', borderRadius: 2, transition: 'width .3s' }} />
-          </div>
-          <span style={{ fontSize: 11, color: 'var(--text-faint)', whiteSpace: 'nowrap' }}>
-            <span style={{ color: '#10b981', fontWeight: 700 }}>{inCart.length}</span>/{items.length}
-          </span>
-        </div>
-
-        {/* Search */}
-        <input value={query} onChange={e => setQuery(e.target.value)}
-          placeholder="🔍 Buscar productos..."
-          style={{ width: '100%', padding: '9px 14px', borderRadius: 10, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', fontSize: 13, outline: 'none', marginBottom: 10 }} />
-
-        {/* Add form */}
-        <form onSubmit={addItem} style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-          <input value={newName} onChange={e => setNewName(e.target.value)} placeholder="Nombre del producto"
+      {/* Top bar: add form + search */}
+      <div style={{ padding: '12px 20px', flexShrink: 0, borderBottom: '1px solid var(--border)' }}>
+        <form onSubmit={addItem} style={{ display: 'flex', gap: 8 }}>
+          <input value={query} onChange={e => setQuery(e.target.value)}
+            placeholder="🔍 Buscar..."
+            style={{ width: 130, padding: '8px 12px', borderRadius: 9, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', fontSize: 13, outline: 'none' }} />
+          <input value={newName} onChange={e => setNewName(e.target.value)} placeholder="Añadir producto..."
             style={{ flex: 1, padding: '8px 12px', borderRadius: 9, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', fontSize: 13, outline: 'none' }} />
           <input value={newQty} onChange={e => setNewQty(e.target.value)} placeholder="Cant." type="number" min="0"
             style={{ width: 70, padding: '8px 10px', borderRadius: 9, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', fontSize: 13, outline: 'none' }} />
-          <select value={newCat} onChange={e => setNewCat(e.target.value)}
+          <select value={activeStore} onChange={e => setActiveStore(e.target.value)}
             style={{ padding: '8px 10px', borderRadius: 9, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', fontSize: 12, outline: 'none' }}>
-            {CATEGORIES.map(c => <option key={c.id} value={c.id}>{c.icon} {c.label}</option>)}
+            {STORES.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
           <button type="submit" style={{ padding: '8px 16px', borderRadius: 9, background: 'var(--accent)', color: '#fff', fontSize: 13, fontWeight: 600, border: 'none', cursor: 'pointer' }}>
             + Añadir
           </button>
         </form>
-
-        {/* Items */}
-        <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {/* Sugerencias */}
-          <SugerenciasSection
-            suggestions={suggestions}
-            editingFreqId={editingFreqId}
-            setEditingFreqId={setEditingFreqId}
-            addSuggestion={addSuggestion}
-            dismissSuggestion={dismissSuggestion}
-            updateFrequency={updateFrequency}
-          />
-          {/* Active items by category */}
-          {Object.entries(byCat).map(([catId, catItems]) => {
-            const cat = CATEGORIES.find(c => c.id === catId)
-            return (
-              <div key={catId}>
-                <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.1em', color: 'var(--text-faint)', marginBottom: 6 }}>
-                  {cat?.icon} {cat?.label}
-                </div>
-                {catItems.map(item => (
-                  <DesktopItem key={item.id} item={item} onToggle={toggleItem} onDelete={deleteItem} />
-                ))}
-              </div>
-            )
-          })}
-
-          {filteredPending.length === 0 && inCart.length === 0 && (
-            <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-faint)', fontSize: 13 }}>Lista vacía</div>
-          )}
-
-          <CartSection compact={false} />
-        </div>
       </div>
 
-      {toast && (
-        <div style={{ position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', background: '#09090b', color: '#fff', padding: '10px 18px', borderRadius: 999, fontSize: 12, fontWeight: 500, zIndex: 500, whiteSpace: 'nowrap' }}>
-          {toast}
-        </div>
-      )}
-      {showDefaultModal && <DefaultStoreModal current={activeStore} onSelect={handleDefaultStoreSelect} onClose={() => setShowDefaultModal(false)} />}
+      {/* One column per store */}
+      <div style={{
+        flex: 1, overflow: 'hidden',
+        display: 'grid',
+        gridTemplateColumns: `repeat(${colCount}, 1fr)`,
+      }}>
+        {storesWithItems.map((store, idx) => {
+          const storeItems = itemsByStore(store)
+          return (
+            <div key={store} style={{
+              display: 'flex', flexDirection: 'column', overflow: 'hidden',
+              borderRight: idx < storesWithItems.length - 1 ? '1px solid var(--border)' : 'none',
+            }}>
+              {/* Column header */}
+              <div style={{
+                padding: '12px 16px 10px', flexShrink: 0,
+                borderBottom: '1px solid var(--border)',
+                display: 'flex', alignItems: 'baseline', gap: 8,
+              }}>
+                <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', letterSpacing: '0.5px' }}>
+                  {store}
+                </span>
+                <span style={{
+                  fontSize: 10, fontWeight: 600, color: 'var(--text-faint)',
+                  fontFamily: 'var(--font-mono)',
+                }}>
+                  {storeItems.length} items
+                </span>
+              </div>
+
+              {/* Items */}
+              <div style={{ flex: 1, overflowY: 'auto', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                {storeItems.map(item => (
+                  <DesktopItem key={item.id} item={item} onToggle={toggleItem} onDelete={deleteItem} />
+                ))}
+                {storeItems.length === 0 && (
+                  <div style={{ textAlign: 'center', padding: '32px 0', color: 'var(--text-faint)', fontSize: 12 }}>
+                    {query ? 'Sin resultados' : '—'}
+                  </div>
+                )}
+              </div>
+            </div>
+          )
+        })}
+
+        {storesWithItems.length === 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-faint)', fontSize: 13 }}>
+            Lista vacía — añade productos arriba
+          </div>
+        )}
+      </div>
     </div>
+
+    {toast && (
+      <div style={{ position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', background: '#09090b', color: '#fff', padding: '10px 18px', borderRadius: 999, fontSize: 12, fontWeight: 500, zIndex: 500, whiteSpace: 'nowrap' }}>
+        {toast}
+      </div>
+    )}
+    {showDefaultModal && <DefaultStoreModal current={activeStore} onSelect={handleDefaultStoreSelect} onClose={() => setShowDefaultModal(false)} />}
     </ModuleShell>
   )
 }
