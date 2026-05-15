@@ -35,6 +35,8 @@ const HOGAR_MODULES = [
   { path: 'personal-limpieza', label: 'Personal', icon: '👷', group: 'limpieza' },
   // ── Espacios ─────────────────────────────────
   { path: 'bano', label: 'Baño', icon: '🪥', group: 'espacios' },
+  // ── Casa ─────────────────────────────────────
+  { path: 'comparticion', label: 'Compartición', icon: '👥', group: 'casa' },
 ]
 const MASCOTAS_MODULES = [{ path: 'mis-mascotas', label: 'Mis Mascotas', icon: '🐾' }]
 const VEHICULO_MODULES = [{ path: 'mis-vehiculos', label: 'Mis Vehículos', icon: '🚗' }]
