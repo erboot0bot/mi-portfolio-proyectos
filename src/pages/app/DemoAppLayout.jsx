@@ -7,8 +7,6 @@ import DemoBanner from '../../components/DemoBanner'
 
 const APP_META = {
   hogar:    { name: 'Hogar',    icon: '🏠' },
-  mascotas: { name: 'Mascotas', icon: '🐾' },
-  vehiculo: { name: 'Vehículo', icon: '🚗' },
   finanzas: { name: 'Finanzas', icon: '💰' },
   personal: { name: 'Personal', icon: '🗂️' },
 }
@@ -38,8 +36,6 @@ const HOGAR_MODULES = [
   // ── Casa ─────────────────────────────────────
   { path: 'comparticion', label: 'Compartición', icon: '👥', group: 'casa' },
 ]
-const MASCOTAS_MODULES = [{ path: 'mis-mascotas', label: 'Mis Mascotas', icon: '🐾' }]
-const VEHICULO_MODULES = [{ path: 'mis-vehiculos', label: 'Mis Vehículos', icon: '🚗' }]
 const FINANZAS_MODULES = [
   { path: 'resumen',       label: 'Resumen',       icon: '📊' },
   { path: 'transacciones', label: 'Transacciones', icon: '💳' },
@@ -65,8 +61,6 @@ const PERSONAL_MODULES = [
 
 const MODULE_MAP = {
   hogar:    HOGAR_MODULES,
-  mascotas: MASCOTAS_MODULES,
-  vehiculo: VEHICULO_MODULES,
   finanzas: FINANZAS_MODULES,
   personal: PERSONAL_MODULES,
 }

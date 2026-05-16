@@ -1,16 +1,12 @@
 // src/data/demo/index.js
-import { mockFinanzas }  from './finanzas.js'
-import { mockVehiculo }  from './vehiculo.js'
-import { mockHogar }     from './hogar.js'
-import { mockPersonal }  from './personal.js'
-import { mockMascotas }  from './mascotas.js'
+import { mockFinanzas } from './finanzas.js'
+import { mockHogar }    from './hogar.js'
+import { mockPersonal } from './personal.js'
 
 const MOCK_BY_APP = {
   finanzas: mockFinanzas,
-  vehiculo:  mockVehiculo,
-  hogar:     mockHogar,
-  personal:  mockPersonal,
-  mascotas:  mockMascotas,
+  hogar:    mockHogar,
+  personal: mockPersonal,
 }
 
 // Bump this to force-clear stale sessionStorage when demo data changes

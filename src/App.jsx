@@ -41,11 +41,6 @@ const ComparticionPanel   = React.lazy(() => import('./pages/app/modules/Compart
 const HogarAjustes    = React.lazy(() => import('./pages/app/modules/HogarAjustes'))
 const GlobalSettings  = React.lazy(() => import('./pages/app/GlobalSettings'))
 
-const MisMascotas          = React.lazy(() => import('./pages/app/modules/mascotas/MisMascotas'))
-const PetDetail            = React.lazy(() => import('./pages/app/modules/mascotas/PetDetail'))
-const MascotasAlimentacion = React.lazy(() => import('./pages/app/modules/mascotas/Alimentacion'))
-const MascotasSalud        = React.lazy(() => import('./pages/app/modules/mascotas/Salud'))
-const MascotasRutinas      = React.lazy(() => import('./pages/app/modules/mascotas/Rutinas'))
 // Personal
 const PersonalTareas = React.lazy(() => import('./pages/app/modules/personal/Tareas'))
 const PersonalTrabajo       = React.lazy(() => import('./pages/app/modules/personal/Trabajo'))
@@ -56,14 +51,6 @@ const PersonalVehiculos = React.lazy(() => import('./pages/app/modules/personal/
 const PersonalMascotas  = React.lazy(() => import('./pages/app/modules/personal/Mascotas'))
 const PersonalRopa      = React.lazy(() => import('./pages/app/modules/personal/Ropa'))
 const PersonalFormacion = React.lazy(() => import('./pages/app/modules/personal/Formacion'))
-
-// Vehículo
-const MisVehiculos       = React.lazy(() => import('./pages/app/modules/vehiculo/MisVehiculos'))
-const VehiculoDetail     = React.lazy(() => import('./pages/app/modules/vehiculo/VehiculoDetail'))
-const VehiculoRepostajes = React.lazy(() => import('./pages/app/modules/vehiculo/Repostajes'))
-const VehiculoMant       = React.lazy(() => import('./pages/app/modules/vehiculo/Mantenimiento'))
-const VehiculoGastos     = React.lazy(() => import('./pages/app/modules/vehiculo/VehiculoGastos'))
-const VehiculoStats      = React.lazy(() => import('./pages/app/modules/vehiculo/Estadisticas'))
 
 // Finanzas
 const FinanzasResumen       = React.lazy(() => import('./pages/app/modules/finanzas/Resumen'))
@@ -201,20 +188,6 @@ export default function App() {
               <Route path="ajustes"           element={<Navigate to="/app/settings" replace />} />
             </Route>
 
-            {/* Mascotas */}
-            <Route path="/app/mascotas" element={
-              <ProtectedRoute><AppLayout /></ProtectedRoute>
-            }>
-              <Route index element={<Navigate to="mis-mascotas" replace />} />
-              <Route path="mis-mascotas" element={<MisMascotas />} />
-              <Route path="mis-mascotas/:petId" element={<PetDetail />}>
-                <Route index element={<Navigate to="alimentacion" replace />} />
-                <Route path="alimentacion" element={<MascotasAlimentacion />} />
-                <Route path="salud" element={<MascotasSalud />} />
-                <Route path="rutinas" element={<MascotasRutinas />} />
-              </Route>
-            </Route>
-
             {/* Personal */}
             <Route path="/app/personal" element={
               <ProtectedRoute><AppLayout /></ProtectedRoute>
@@ -230,21 +203,6 @@ export default function App() {
               <Route path="mascotas"  element={<PersonalMascotas />} />
               <Route path="ropa"      element={<PersonalRopa />} />
               <Route path="formacion" element={<PersonalFormacion />} />
-            </Route>
-
-            {/* Vehículo */}
-            <Route path="/app/vehiculo" element={
-              <ProtectedRoute><AppLayout /></ProtectedRoute>
-            }>
-              <Route index element={<Navigate to="mis-vehiculos" replace />} />
-              <Route path="mis-vehiculos" element={<MisVehiculos />} />
-              <Route path="mis-vehiculos/:vehicleId" element={<VehiculoDetail />}>
-                <Route index element={<Navigate to="repostajes" replace />} />
-                <Route path="repostajes"    element={<VehiculoRepostajes />} />
-                <Route path="mantenimiento" element={<VehiculoMant />} />
-                <Route path="gastos"        element={<VehiculoGastos />} />
-                <Route path="estadisticas"  element={<VehiculoStats />} />
-              </Route>
             </Route>
 
             {/* Finanzas */}
@@ -297,21 +255,6 @@ export default function App() {
               <Route path="mascotas"  element={<PersonalMascotas />} />
               <Route path="ropa"      element={<PersonalRopa />} />
               <Route path="formacion" element={<PersonalFormacion />} />
-              <Route path="mis-mascotas"        element={<MisMascotas />} />
-              <Route path="mis-mascotas/:petId" element={<PetDetail />}>
-                <Route index element={<Navigate to="alimentacion" replace />} />
-                <Route path="alimentacion" element={<MascotasAlimentacion />} />
-                <Route path="salud"        element={<MascotasSalud />} />
-                <Route path="rutinas"      element={<MascotasRutinas />} />
-              </Route>
-              <Route path="mis-vehiculos"             element={<MisVehiculos />} />
-              <Route path="mis-vehiculos/:vehicleId"  element={<VehiculoDetail />}>
-                <Route index element={<Navigate to="repostajes" replace />} />
-                <Route path="repostajes"    element={<VehiculoRepostajes />} />
-                <Route path="mantenimiento" element={<VehiculoMant />} />
-                <Route path="gastos"        element={<VehiculoGastos />} />
-                <Route path="estadisticas"  element={<VehiculoStats />} />
-              </Route>
             </Route>
 
             {/* 404 */}
