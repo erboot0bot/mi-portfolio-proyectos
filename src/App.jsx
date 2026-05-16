@@ -32,6 +32,7 @@ const Inventario    = React.lazy(() => import('./pages/app/modules/Inventario'))
 const Despensa      = React.lazy(() => import('./pages/app/modules/Despensa'))
 const Nevera              = React.lazy(() => import('./pages/app/modules/Nevera'))
 const Congelador          = React.lazy(() => import('./pages/app/modules/Congelador'))
+const Refrigerado         = React.lazy(() => import('./pages/app/modules/Refrigerado'))
 const Limpieza            = React.lazy(() => import('./pages/app/modules/Limpieza'))
 const ProductosLimpieza   = React.lazy(() => import('./pages/app/modules/ProductosLimpieza'))
 const Roomba              = React.lazy(() => import('./pages/app/modules/Roomba'))
@@ -183,6 +184,7 @@ export default function App() {
               <Route path="calendar"          element={<Calendar />} />
               <Route path="nevera"            element={<Nevera />} />
               <Route path="congelador"        element={<Congelador />} />
+              <Route path="refrigerado"       element={<Refrigerado />} />
               <Route path="shopping"          element={<ShoppingList />} />
               <Route path="menu"              element={<Menu />} />
               <Route path="recipes"           element={<Recipes />} />
@@ -250,6 +252,7 @@ export default function App() {
               <Route path="calendar"            element={<Calendar />} />
               <Route path="nevera"              element={<Nevera />} />
               <Route path="congelador"          element={<Congelador />} />
+              <Route path="refrigerado"         element={<Refrigerado />} />
               <Route path="shopping"            element={<ShoppingList />} />
               <Route path="menu"                element={<Menu />} />
               <Route path="recipes"             element={<Recipes />} />
