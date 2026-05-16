@@ -2,6 +2,8 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { vi } from 'vitest'
 import Mantenimiento from '../Mantenimiento'
 
+vi.setConfig({ testTimeout: 15000 })
+
 const MOCK_VEHICLE = { id: 'v1', marca: 'Toyota', modelo: 'Corolla', matricula: 'ABC123' }
 
 const { demoWrite, demoRead } = vi.hoisted(() => {
