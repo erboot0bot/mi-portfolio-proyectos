@@ -23,7 +23,6 @@ const APP_ICONS = {
 }
 
 const HOGAR_MODULES = [
-  { path: 'calendar',   label: 'Calendario', icon: '📅' },
   { path: 'shopping',   label: 'Lista',       icon: '🛒' },
   { path: 'menu',       label: 'Menú',        icon: '🍽️' },
   { path: 'recipes',    label: 'Recetas',     icon: '👨‍🍳' },

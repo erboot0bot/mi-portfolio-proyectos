@@ -1,6 +1,6 @@
 .module-shell {
   display: flex;
-  height: calc(100vh - 104px);
+  height: calc(100vh - 108px);
 }
 
 .module-shell-sidebar {

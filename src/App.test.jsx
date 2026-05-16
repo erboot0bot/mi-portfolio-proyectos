@@ -42,12 +42,6 @@ describe('App routing', () => {
     )
   }, 12000)
 
-  it('renders ComingSoonPage at /courses', () => {
-    renderAt('/courses')
-    expect(screen.getByRole('heading', { name: /cursos/i })).toBeInTheDocument()
-    expect(screen.getByText(/en desarrollo/i)).toBeInTheDocument()
-  })
-
   it('renders ComingSoonPage at /store', () => {
     renderAt('/store')
     expect(screen.getByRole('heading', { name: /tienda/i })).toBeInTheDocument()

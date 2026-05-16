@@ -6,8 +6,8 @@ const hoy = new Date()
 
 export const mockMascotas = {
   pets: [
-    { id: 'demo-pet-1', app_id: 'demo-mascotas', name: 'Luna',  species: 'perro', icon: '🐕', birth_date: fmt(subMonths(hoy, 36)), notes: 'Labrador muy activa y juguetona', metadata: { feeding_schedule: [{ time: '08:00', amount: '300g', label: 'Mañana' }, { time: '18:00', amount: '300g', label: 'Tarde' }] }, created_at: fmtTs(subMonths(hoy, 24)) },
-    { id: 'demo-pet-2', app_id: 'demo-mascotas', name: 'Mochi', species: 'gato',  icon: '🐈', birth_date: fmt(subMonths(hoy, 18)), notes: 'Gato persa, muy tranquilo',      metadata: { feeding_schedule: [{ time: '09:00', amount: '80g', label: 'Mañana' }, { time: '19:00', amount: '80g', label: 'Tarde' }] }, created_at: fmtTs(subMonths(hoy, 12)) },
+    { id: 'demo-pet-1', app_id: 'demo-mascotas', name: 'Luna',  species: 'perro', icon: '🐕', breed: 'Labrador', birth_date: fmt(subMonths(hoy, 36)), notes: 'Labrador muy activa y juguetona', metadata: { feeding_schedule: [{ time: '08:00', amount: '300g', label: 'Mañana' }, { time: '18:00', amount: '300g', label: 'Tarde' }] }, created_at: fmtTs(subMonths(hoy, 24)) },
+    { id: 'demo-pet-2', app_id: 'demo-mascotas', name: 'Mochi', species: 'gato',  icon: '🐈', breed: 'Persa', birth_date: fmt(subMonths(hoy, 18)), notes: 'Gato persa, muy tranquilo',      metadata: { feeding_schedule: [{ time: '09:00', amount: '80g', label: 'Mañana' }, { time: '19:00', amount: '80g', label: 'Tarde' }] }, created_at: fmtTs(subMonths(hoy, 12)) },
   ],
 
   events: [

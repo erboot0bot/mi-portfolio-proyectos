@@ -176,7 +176,7 @@ function HeroSection() {
             margin: '0 0 32px',
           }}
         >
-          Construyo aplicaciones reales con IA y documento exactamente cómo lo hago.
+          Este espacio reúne proyectos, herramientas e ideas construidas desde la experimentación.
         </p>
 
         {/* CTAs */}

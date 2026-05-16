@@ -70,6 +70,7 @@ export default function Layout({ children }) {
   const [dark, setDark] = useState(false)
   const { pathname } = useLocation()
   const isAppRoute = pathname.startsWith('/app/') || pathname.startsWith('/demo/')
+  const isDemoHome = pathname === '/demo'
   const location = useLocation()
   const { user, signOut } = useAuth()
   const { lang, setLang, t } = useLang()
@@ -131,8 +132,9 @@ export default function Layout({ children }) {
         <div className="max-w-[1440px] mx-auto px-6 sm:px-10 lg:px-16 h-[60px] flex items-center justify-between">
           <Link to="/" aria-label="H3nky" className="flex items-center" style={{ height: '40px' }}>
             <img
-              src="/logo-horizontal.png"
+              src="/logo-horizontal-light.png"
               alt="H3nky"
+              className="dark:invert"
               style={{ height: '40px', width: 'auto', display: 'block' }}
             />
           </Link>
@@ -143,7 +145,6 @@ export default function Layout({ children }) {
             <NavLink to="/documentacion" className={navLinkClass}>{t('documentation')}</NavLink>
             <NavLink to="/apps" className={navLinkClass}>Apps</NavLink>
             <NavLink to="/demo" className={navLinkClass}>Demo</NavLink>
-            <NavLink to="/courses" className={navLinkClass}>Cursos</NavLink>
             <NavLink to="/store" className={navLinkClass}>Tienda</NavLink>
             <NavLink to="/contact" className={navLinkClass}>Contacto</NavLink>
             <a
@@ -216,7 +217,6 @@ export default function Layout({ children }) {
             <NavLink to="/documentacion" className={navLinkClass}>{t('documentation')}</NavLink>
             <NavLink to="/apps" className={navLinkClass}>Apps</NavLink>
             <NavLink to="/demo" className={navLinkClass}>Demo</NavLink>
-            <NavLink to="/courses" className={navLinkClass}>Cursos</NavLink>
             <NavLink to="/store" className={navLinkClass}>Tienda</NavLink>
             <NavLink to="/contact" className={navLinkClass}>Contacto</NavLink>
             <a
@@ -242,7 +242,7 @@ export default function Layout({ children }) {
         )}
       </header>
 
-      <main className="flex-1 w-full pb-20">
+      <main className={`flex-1 w-full${isDemoHome ? '' : ' pb-20'}`}>
         {children}
       </main>
 

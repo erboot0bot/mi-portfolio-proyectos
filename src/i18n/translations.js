@@ -1,6 +1,6 @@
 export const translations = {
   es: {
-    heroTitle: "Construyo aplicaciones reales con IA y documento exactamente cómo lo hago.",
+    heroTitle: "Este espacio reúne proyectos, herramientas e ideas construidas desde la experimentación.",
     heroSubtitle: "React · Supabase · IA · Arquitectura real · +4.800 líneas de código",
     documentation: "Documentación",
     documentationTitle: "Documentación de proyectos reales",

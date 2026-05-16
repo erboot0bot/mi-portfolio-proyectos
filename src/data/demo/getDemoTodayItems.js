@@ -4,6 +4,7 @@ import { demoRead } from './index.js'
 const APP_SOURCES = [
   { appType: 'hogar',    label: 'HOGAR',    color: '#f97316' },
   { appType: 'mascotas', label: 'MASCOTAS', color: '#a855f7' },
+  { appType: 'personal', label: 'PERSONAL', color: '#38bdf8' },
 ]
 
 export function getDemoTodayItems() {

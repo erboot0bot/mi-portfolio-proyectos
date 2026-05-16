@@ -60,16 +60,16 @@ describe('DemoHome', () => {
   it('muestra el número del día actual', () => {
     renderDemoHome()
     const dayNum = new Date().getDate().toString()
-    expect(screen.getByText(dayNum)).toBeInTheDocument()
+    expect(screen.getAllByText(dayNum).length).toBeGreaterThan(0)
   })
 
   it('muestra las 5 app cards con sus labels', () => {
     renderDemoHome()
-    expect(screen.getByText(/HOGAR/)).toBeInTheDocument()
-    expect(screen.getByText(/PERSONAL/)).toBeInTheDocument()
-    expect(screen.getByText(/MASCOTAS/)).toBeInTheDocument()
-    expect(screen.getByText(/VEHÍCULO/)).toBeInTheDocument()
-    expect(screen.getByText(/FINANZAS/)).toBeInTheDocument()
+    expect(screen.getAllByText(/HOGAR/).length).toBeGreaterThan(0)
+    expect(screen.getAllByText(/PERSONAL/).length).toBeGreaterThan(0)
+    expect(screen.getAllByText(/MASCOTAS/).length).toBeGreaterThan(0)
+    expect(screen.getAllByText(/VEHÍCULO/).length).toBeGreaterThan(0)
+    expect(screen.getAllByText(/FINANZAS/).length).toBeGreaterThan(0)
   })
 
   it('muestra la tarjeta IA con insight', () => {
@@ -89,23 +89,24 @@ describe('DemoHome', () => {
     expect(hogarLink).toHaveAttribute('href', '/demo/hogar')
   })
 
-  it('aplica tema dark en móvil si no hay preferencia', () => {
-    Object.defineProperty(window, 'innerWidth', { value: 375, writable: true })
-    renderDemoHome()
-    expect(document.documentElement.classList.contains('dark')).toBe(true)
-  })
-
-  it('aplica tema light en desktop si no hay preferencia', () => {
-    Object.defineProperty(window, 'innerWidth', { value: 1440, writable: true })
+  it('no modifica el tema si el usuario está en modo claro', () => {
+    document.documentElement.classList.remove('dark')
+    localStorage.setItem('theme', 'light')
     renderDemoHome()
     expect(document.documentElement.classList.contains('dark')).toBe(false)
+    expect(localStorage.getItem('theme')).toBe('light')
   })
 
-  it('respeta preferencia guardada en localStorage', () => {
-    localStorage.setItem('theme', 'dark')
+  it('no modifica el tema si el usuario está en modo oscuro', () => {
     document.documentElement.classList.add('dark')
-    Object.defineProperty(window, 'innerWidth', { value: 1440, writable: true })
+    localStorage.setItem('theme', 'dark')
     renderDemoHome()
     expect(document.documentElement.classList.contains('dark')).toBe(true)
+    expect(localStorage.getItem('theme')).toBe('dark')
+  })
+
+  it('no escribe en localStorage al montar', () => {
+    renderDemoHome()
+    expect(localStorage.getItem('theme')).toBeNull()
   })
 })

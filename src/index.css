@@ -449,3 +449,22 @@ body {
     grid-template-columns: 1.4fr 1fr !important;
   }
 }
+
+/* Demo full-layout wrapper: flex column so footer sits below ModuleShell */
+.demo-full-wrap {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 48px); /* 48px = DemoBanner */
+}
+.demo-full-content {
+  flex: 1;
+  overflow: hidden;
+}
+/* ModuleShell inside demo takes 100% of its parent instead of fixed 100vh */
+.demo-full-content .module-shell {
+  height: 100%;
+}
+@media (max-width: 767px) {
+  .demo-full-wrap { height: auto; }
+  .demo-full-content .module-shell { height: 100dvh; }
+}
