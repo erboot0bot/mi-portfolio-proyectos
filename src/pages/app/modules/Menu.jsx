@@ -18,6 +18,7 @@ const MEALS = [
   { key: 'cena',     label: 'Cena',     icon: '🌙', hour: 21 },
 ]
 const DAYS_SHORT = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom']
+const DEFAULT_MEAL_PREFS = { desayuno: 8, almuerzo: 11, comida: 14, cena: 21 }
 
 export default function Menu() {
   usePWAManifest('menu')
@@ -40,6 +41,20 @@ export default function Menu() {
   const [recipes, setRecipes]       = useState([])
   const [toast, setToast]           = useState(null)
   const [generating, setGenerating] = useState(false)
+
+  // ── Meal preferences (configurable hours) ────────────────────────
+  const [mealPrefs, setMealPrefs] = useState(() => ({
+    ...DEFAULT_MEAL_PREFS,
+    ...(mode === 'demo' ? (demoRead(appType, 'meal_prefs') ?? {}) : {}),
+  }))
+  const [showHorariosModal, setShowHorariosModal] = useState(false)
+  const [prefsForm, setPrefsForm] = useState({ ...DEFAULT_MEAL_PREFS })
+
+  function saveMealPrefs() {
+    setMealPrefs(prefsForm)
+    if (mode === 'demo') demoWrite(appType, 'meal_prefs', prefsForm)
+    setShowHorariosModal(false)
+  }
 
   function showToast(msg) { setToast(msg); setTimeout(() => setToast(null), 2500) }
 
@@ -322,6 +337,11 @@ export default function Menu() {
 
         {menuView === 'day' ? (
           <div style={{ flex:1, overflowY:'auto', padding:'12px 16px', display:'flex', flexDirection:'column', gap:10 }}>
+            <button
+              title="Horarios de comidas"
+              onClick={() => { setPrefsForm({ ...mealPrefs }); setShowHorariosModal(true) }}
+              style={{ alignSelf: 'flex-end', background: 'none', border: '1px solid var(--border)', borderRadius: 8, padding: '4px 10px', cursor: 'pointer', fontSize: 12, color: 'var(--text-muted)' }}
+            >⚙️ Horarios</button>
             {MEALS.map(meal => {
               const key = `${activeDay}-${meal.key}`
               const val = menu[key]
@@ -462,6 +482,35 @@ export default function Menu() {
             {toast}
           </div>
         )}
+
+        {/* ── Horarios modal ── */}
+        {showHorariosModal && (
+          <div onClick={() => setShowHorariosModal(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200 }}>
+            <div onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 16, padding: 24, width: 320, display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>⏰ Horarios de comidas</h3>
+              {[
+                { key: 'desayuno', label: 'Desayuno' },
+                { key: 'almuerzo', label: 'Almuerzo' },
+                { key: 'comida',   label: 'Comida'   },
+                { key: 'cena',     label: 'Cena'     },
+              ].map(({ key, label }) => (
+                <label key={key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 14 }}>
+                  {label}
+                  <input
+                    type="number" min={0} max={23}
+                    aria-label={label}
+                    value={prefsForm[key] ?? DEFAULT_MEAL_PREFS[key]}
+                    onChange={e => setPrefsForm(f => ({ ...f, [key]: Number(e.target.value) }))}
+                    style={{ width: 64, padding: '4px 8px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', fontSize: 14, textAlign: 'center' }}
+                  />
+                </label>
+              ))}
+              <button onClick={saveMealPrefs} style={{ background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 10, padding: '10px 0', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
+                Guardar
+              </button>
+            </div>
+          </div>
+        )}
       </div>
       </ModuleShell>
     )
@@ -500,6 +549,11 @@ export default function Menu() {
             onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.color = 'var(--text-muted)' }}>
             {generating ? '⏳ Generando...' : '🧠 Generar lista'}
           </button>
+          <button
+            title="Horarios de comidas"
+            onClick={() => { setPrefsForm({ ...mealPrefs }); setShowHorariosModal(true) }}
+            style={{ padding:'6px 10px', borderRadius:9, border:'1px solid var(--border)', background:'none', color:'var(--text-muted)', fontSize:12, cursor:'pointer' }}
+          >⚙️ Horarios</button>
         </div>
       </div>
 
@@ -638,6 +692,35 @@ export default function Menu() {
       {toast && (
         <div style={{ position:'fixed', bottom:24, left:'50%', transform:'translateX(-50%)', background:'#09090b', color:'#fff', padding:'10px 18px', borderRadius:999, fontSize:12, fontWeight:500, zIndex:500 }}>
           {toast}
+        </div>
+      )}
+
+      {/* ── Horarios modal (desktop) ── */}
+      {showHorariosModal && (
+        <div onClick={() => setShowHorariosModal(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 16, padding: 24, width: 320, display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>⏰ Horarios de comidas</h3>
+            {[
+              { key: 'desayuno', label: 'Desayuno' },
+              { key: 'almuerzo', label: 'Almuerzo' },
+              { key: 'comida',   label: 'Comida'   },
+              { key: 'cena',     label: 'Cena'     },
+            ].map(({ key, label }) => (
+              <label key={key} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 14 }}>
+                {label}
+                <input
+                  type="number" min={0} max={23}
+                  aria-label={label}
+                  value={prefsForm[key] ?? DEFAULT_MEAL_PREFS[key]}
+                  onChange={e => setPrefsForm(f => ({ ...f, [key]: Number(e.target.value) }))}
+                  style={{ width: 64, padding: '4px 8px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', fontSize: 14, textAlign: 'center' }}
+                />
+              </label>
+            ))}
+            <button onClick={saveMealPrefs} style={{ background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 10, padding: '10px 0', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
+              Guardar
+            </button>
+          </div>
         </div>
       )}
     </div>
