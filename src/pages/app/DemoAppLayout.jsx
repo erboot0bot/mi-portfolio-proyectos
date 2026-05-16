@@ -21,9 +21,8 @@ const HOGAR_GROUPS = [
 
 const HOGAR_MODULES = [
   // ── Cocina ──────────────────────────────────
-  { path: 'nevera',     label: 'Nevera',     icon: '🧊', group: 'cocina' },
-  { path: 'congelador', label: 'Congelador', icon: '❄️', group: 'cocina' },
-  { path: 'menu',       label: 'Menú',       icon: '🍽️', group: 'cocina' },
+  { path: 'refrigerado', label: 'Refrigerado', icon: '🧊', group: 'cocina' },
+  { path: 'menu',        label: 'Menú',        icon: '🍽️', group: 'cocina' },
   { path: 'recipes',   label: 'Recetas',  icon: '👨‍🍳', group: 'cocina' },
   { path: 'despensa',  label: 'Despensa', icon: '🥫',  group: 'cocina' },
   { path: 'shopping',  label: 'Lista',    icon: '🛒',  group: 'cocina' },

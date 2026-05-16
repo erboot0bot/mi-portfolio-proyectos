@@ -23,11 +23,12 @@ const APP_ICONS = {
 }
 
 const HOGAR_MODULES = [
-  { path: 'shopping',   label: 'Lista',       icon: '🛒' },
-  { path: 'menu',       label: 'Menú',        icon: '🍽️' },
-  { path: 'recipes',    label: 'Recetas',     icon: '👨‍🍳' },
-  { path: 'inventario', label: 'Inventario',  icon: '📦' },
-  { path: 'limpieza',   label: 'Limpieza',    icon: '🧹' },
+  { path: 'shopping',    label: 'Lista',        icon: '🛒' },
+  { path: 'menu',        label: 'Menú',         icon: '🍽️' },
+  { path: 'recipes',     label: 'Recetas',      icon: '👨‍🍳' },
+  { path: 'refrigerado', label: 'Refrigerado',  icon: '🧊' },
+  { path: 'inventario',  label: 'Inventario',   icon: '📦' },
+  { path: 'limpieza',    label: 'Limpieza',     icon: '🧹' },
 ]
 
 const MASCOTAS_MODULES = [
