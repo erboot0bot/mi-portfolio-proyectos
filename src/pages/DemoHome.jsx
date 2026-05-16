@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, NavLink } from 'react-router-dom'
-import { format, differenceInMonths, startOfWeek, addDays, isSameDay, isToday } from 'date-fns'
+import { format, isToday } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { initDemoData, demoRead } from '../data/demo/index.js'
 import { getDemoTodayItems, getActiveItem } from '../data/demo/getDemoTodayItems.js'
@@ -13,9 +13,6 @@ const APP_CONFIG = [
   { type: 'finanzas', label: 'FINANZAS', icon: '💰', color: '#22c55e', version: 'v0.3.0' },
   { type: 'ocio',     label: 'OCIO',     icon: '🎭', color: '#a855f7', version: 'v0.1.0' },
 ]
-
-const DAY_LABELS = ['L', 'M', 'X', 'J', 'V', 'S', 'D']
-const BAR_HEIGHTS = [6, 10, 8, 12, 7, 9, 11, 5]
 
 function getAppStats(type, data) {
   const { hogarEvents, shoppingItems, personalTasks, personalNotes,
@@ -55,599 +52,621 @@ function getAppStats(type, data) {
   }
 }
 
-// ── Sidebar icon ──────────────────────────────────────────────────
-function SidebarIcon({ children, active, title }) {
+// ── Module cards config ───────────────────────────────────────────
+const MODULE_CARDS = [
+  { type: 'hogar',    label: 'Hogar',    icon: '🏠', color: '#ff8a1f', sub: 'Gestión del hogar y cocina',      tags: ['Menú', 'Lista', 'Nevera'],           href: '/demo/hogar',     version: 'v0.4.0' },
+  { type: 'personal', label: 'Personal', icon: '👤', color: '#9a4efb', sub: 'Tareas, notas y objetivos',        tags: ['Tareas', 'Notas', 'Hábitos'],        href: '/demo/personal',  version: 'v1.2.0' },
+  { type: 'ocio',     label: 'Ocio',     icon: '🎭', color: '#a855f7', sub: 'Restaurantes, viajes y eventos',   tags: ['Viajes', 'Eventos', 'Resto.'],       href: '/demo/ocio',      version: 'v0.1.0' },
+  { type: 'finanzas', label: 'Finanzas', icon: '💰', color: '#1f8a5b', sub: 'Gastos, ingresos y presupuestos',  tags: ['Gastos', 'Presupuestos', 'Seguros'], href: '/demo/finanzas',  version: 'v0.3.0' },
+  { type: 'settings', label: 'Ajustes',  icon: '⚙️', color: '#64748b', sub: 'Configuración del sistema',       tags: ['Perfil', 'Notif.', 'Privacidad'],    href: '/demo/settings',  version: 'v1.0.0' },
+]
+
+const RECENT_ACTIVITY = [
+  { icon: '💰', iconBg: 'rgba(34,197,94,0.12)',  iconColor: '#22c55e', title: 'Ingreso mensual',   sub: '+2.750 € · Nómina',        time: 'Hace 2h' },
+  { icon: '🛒', iconBg: 'rgba(239,68,68,0.12)',  iconColor: '#ef4444', title: 'Compra Mercadona',  sub: '-42 € · 18 productos',     time: 'Hoy 10:32' },
+  { icon: '📋', iconBg: 'rgba(154,78,251,0.12)', iconColor: '#9a4efb', title: 'Sprint review',     sub: 'Personal · Tarea cerrada', time: 'Ayer' },
+  { icon: '📝', iconBg: 'rgba(42,111,219,0.12)', iconColor: '#2a6fdb', title: 'Nueva nota',        sub: 'Personal · Ideas proyecto', time: 'Ayer' },
+]
+
+const SPARKLINE_PTS = [40, 55, 48, 62, 51, 70, 58, 72, 65, 80]
+
+// ── Sparkline SVG ─────────────────────────────────────────────────
+function Sparkline({ pts, color = '#16a34a', width = 100, height = 40 }) {
+  const max = Math.max(...pts), min = Math.min(...pts), range = max - min || 1
+  const step = width / (pts.length - 1)
+  const toY = v => height - ((v - min) / range) * (height - 4) - 2
+  const points = pts.map((v, i) => `${i * step},${toY(v)}`).join(' ')
+  const areaPoints = `0,${height} ${points} ${(pts.length - 1) * step},${height}`
   return (
-    <button title={title} style={{
-      width: 36, height: 36, borderRadius: 8, border: 'none',
-      background: active ? 'rgba(254,112,0,0.15)' : 'transparent',
-      color: active ? 'var(--accent)' : 'var(--text-faint)',
-      cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontSize: 16, transition: 'background 0.15s, color 0.15s',
-    }}>
-      {children}
-    </button>
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} style={{ overflow: 'visible', flexShrink: 0 }}>
+      <defs>
+        <linearGradient id="sparkGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.3" />
+          <stop offset="100%" stopColor={color} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <polygon points={areaPoints} fill="url(#sparkGrad)" />
+      <polyline points={points} fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx={(pts.length - 1) * step} cy={toY(pts[pts.length - 1])} r="3" fill={color} />
+    </svg>
   )
 }
 
-// ── SVG icons ─────────────────────────────────────────────────────
-const IconHome = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/>
-  </svg>
-)
-const IconCalendar = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
-  </svg>
-)
-const IconStar = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-  </svg>
-)
-const IconSearch = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-  </svg>
-)
-const IconBell = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/>
-  </svg>
-)
-const IconPerson = ({ size = 12 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
-    <circle cx="12" cy="8" r="4"/>
-    <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-  </svg>
-)
-
-// ── Sidebar app icons (SVG) ───────────────────────────────────────
-const IconHogarSvg = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/><path d="M9 21V12h6v9"/>
-  </svg>
-)
-const IconPersonalSvg = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
-  </svg>
-)
-const IconMascotasSvg = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="11" cy="4" r="2"/><circle cx="18" cy="8" r="2"/><circle cx="4" cy="9" r="2"/>
-    <path d="M12 18c-3.5 0-6-2-6-5 0-1.7 1.2-3.2 3-4 1-.4 2-.6 3-.6s2 .2 3 .6c1.8.8 3 2.3 3 4 0 3-2.5 5-6 5z"/>
-    <circle cx="19" cy="15" r="2"/>
-  </svg>
-)
-const IconVehiculoSvg = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M5 17H3a2 2 0 01-2-2V9a2 2 0 012-2h14l4 4v4a2 2 0 01-2 2h-2"/>
-    <circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/>
-    <path d="M3 11h16"/>
-  </svg>
-)
-const IconOcioSvg = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
-  </svg>
-)
-const IconFinanzasSvg = () => (
-  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/>
-    <line x1="12" y1="12" x2="12" y2="16"/><line x1="10" y1="14" x2="14" y2="14"/>
-  </svg>
-)
-const IconSettingsSvg = () => (
-  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="3"/>
-    <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
-  </svg>
-)
-
-const APP_SIDEBAR_ITEMS = [
-  { type: 'hogar',    label: 'Hogar',    color: '#f97316', Icon: IconHogarSvg },
-  { type: 'personal', label: 'Personal', color: '#38bdf8', Icon: IconPersonalSvg },
-  { type: 'finanzas', label: 'Finanzas', color: '#22c55e', Icon: IconFinanzasSvg },
-  { type: 'ocio',     label: 'Ocio',     color: '#a855f7', Icon: IconOcioSvg },
-]
+// ── ModuleCard ────────────────────────────────────────────────────
+function ModuleCard({ card, liveStats }) {
+  return (
+    <Link
+      to={card.href}
+      style={{
+        display: 'block', textDecoration: 'none',
+        background: 'var(--bg-card)', borderRadius: 14,
+        border: '1px solid var(--border)', borderTop: `4px solid ${card.color}`,
+        overflow: 'hidden',
+        transition: 'border-color 200ms ease-out, box-shadow 200ms ease-out, transform 200ms ease-out',
+      }}
+      onMouseEnter={e => {
+        e.currentTarget.style.transform = 'translateY(-2px)'
+        e.currentTarget.style.boxShadow = `0 4px 20px ${card.color}22`
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.transform = ''
+        e.currentTarget.style.boxShadow = ''
+      }}
+    >
+      <div style={{ padding: 18 }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ width: 40, height: 40, borderRadius: 10, background: `${card.color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, flexShrink: 0 }}>{card.icon}</div>
+            <div>
+              <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)', letterSpacing: '-0.01em' }}>{card.label}</div>
+              <div style={{ fontSize: 12.5, color: 'var(--text-muted)', marginTop: 1 }}>{card.sub}</div>
+            </div>
+          </div>
+          <div style={{ textAlign: 'right', flexShrink: 0, marginLeft: 8 }}>
+            <div style={{ fontSize: 11.5, fontFamily: 'var(--font-mono)', color: 'var(--text-faint)' }}>{card.version}</div>
+            <div style={{ fontSize: 10, padding: '2px 7px', borderRadius: 999, background: 'rgba(34,197,94,0.1)', color: '#16a34a', border: '1px solid rgba(34,197,94,0.2)', display: 'inline-block', marginTop: 3, fontWeight: 600 }}>Activo</div>
+          </div>
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginBottom: 10 }}>
+          {card.tags.map(t => (
+            <span key={t} style={{ fontSize: 11.5, padding: '2px 9px', borderRadius: 999, background: 'var(--bg-subtle)', border: '1px solid var(--border)', color: 'var(--text-muted)' }}>{t}</span>
+          ))}
+        </div>
+        {liveStats && <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>{liveStats}</div>}
+        <div style={{ fontSize: 13, fontWeight: 600, color: card.color }}>Abrir →</div>
+      </div>
+    </Link>
+  )
+}
 
 // ── Desktop layout ────────────────────────────────────────────────
 function DesktopLayout({ data }) {
   const {
-    now, dayNum, dayLabel, monthLabel, year, weekLabel,
-    weekActivity, todayItems, activeItem,
+    now, dayNum, dayLabel, monthLabel, year,
+    todayItems, activeItem,
     hogarEvents, shoppingItems, personalNotes, personalEvents,
-    recipes, transactions, ocioEventos, ocioRestaurantes, ocioViajes,
+    transactions, ocioRestaurantes, ocioViajes,
   } = data
+
+  const [showShortcuts, setShowShortcuts] = useState(false)
 
   const hour = now.getHours()
   const greeting = hour < 12 ? 'Buenos días' : hour < 20 ? 'Buenas tardes' : 'Buenas noches'
   const eventsCount = todayItems.length
 
-  const weekAgo = useMemo(() => { const d = new Date(); d.setDate(d.getDate() - 7); return d }, [])
+  // Month expense calculation
+  const monthStart = useMemo(() => {
+    const d = new Date(now.getFullYear(), now.getMonth(), 1)
+    return d
+  }, [now])
 
-  const dailyExpenses = useMemo(() => {
-    const map = {}
-    transactions.forEach(t => {
-      if (t.type === 'expense') map[t.date] = (map[t.date] || 0) + t.amount
-    })
-    return map
-  }, [transactions])
-  const weeklyExpenses = transactions
-    .filter(t => t.type === 'expense' && new Date(t.date) >= weekAgo)
-    .reduce((s, t) => s + t.amount, 0)
+  const monthExpense = useMemo(() =>
+    transactions
+      .filter(t => t.type === 'expense' && new Date(t.date) >= monthStart)
+      .reduce((s, t) => s + t.amount, 0)
+  , [transactions, monthStart])
 
-  const now2 = new Date()
-  const hogarTasksToday = hogarEvents.filter(e => {
+  const monthBudget = 2750
+  const budgetPct = Math.min(100, (monthExpense / monthBudget) * 100)
+
+  const totalIncome = useMemo(() =>
+    transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0)
+  , [transactions])
+
+  // Live stats for module cards
+  const hogarTasksToday = useMemo(() => hogarEvents.filter(e => {
     const d = new Date(e.start_time)
-    return d.getFullYear() === now2.getFullYear()
-      && d.getMonth() === now2.getMonth()
-      && d.getDate() === now2.getDate()
-  }).length
-  const pendingItems = shoppingItems.filter(i => !i.checked).length
-  const firstNote = personalNotes.find(n => n.pinned) || personalNotes[0]
+    return d.getFullYear() === now.getFullYear()
+      && d.getMonth() === now.getMonth()
+      && d.getDate() === now.getDate()
+  }).length, [hogarEvents, now])
 
-  const recipeChips = recipes.slice(0, 4).map(r => r.title.split(' ')[0])
+  const pendingItems = useMemo(() => shoppingItems.filter(i => !i.checked).length, [shoppingItems])
 
-  const dateLabel = format(now, 'd MMM', { locale: es }).toUpperCase()
+  const liveStats = {
+    hogar: `${hogarTasksToday} tareas hoy · ${pendingItems} en lista`,
+    personal: `${personalEvents.length} eventos · ${personalNotes.length} notas`,
+    ocio: `${ocioRestaurantes.filter(r => r.visitas?.length > 0).length} restaurantes · ${ocioViajes.filter(v => v.estado === 'planificado').length} viajes`,
+    finanzas: `${monthExpense.toFixed(0)}€ / 2.750€ este mes`,
+    settings: null,
+  }
 
   return (
-    <div style={{ display: 'flex', height: 'calc(100dvh - 60px)', background: 'var(--bg)', color: 'var(--text)', overflow: 'hidden', fontFamily: 'var(--font-body)' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: 'var(--bg)', color: 'var(--text)', fontFamily: 'var(--font-body)', overflow: 'hidden' }}>
 
       <style>{`
-        @keyframes dh-up { from { opacity:0; transform:translateY(8px) } to { opacity:1; transform:translateY(0) } }
-        .dh-link { transition: opacity 0.15s, transform 0.15s; }
-        .dh-link:hover { opacity: 0.82; transform: translateY(-1px); }
-        .dh-btn:hover { opacity: 0.85; }
+        @keyframes dh-up {
+          from { opacity: 0; transform: translateY(12px) }
+          to   { opacity: 1; transform: translateY(0) }
+        }
+        @keyframes pulse-ring {
+          0%   { transform: scale(1); opacity: .9 }
+          100% { transform: scale(2.4); opacity: 0 }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+        }
+        .dh-nav-link {
+          font-size: 14px;
+          color: var(--text-muted);
+          text-decoration: none;
+          padding: 4px 2px;
+          transition: color 0.15s;
+          white-space: nowrap;
+        }
+        .dh-nav-link:hover { color: var(--text); }
+        .dh-nav-link.active {
+          color: var(--accent);
+          border-bottom: 2px solid var(--accent);
+          font-weight: 600;
+        }
       `}</style>
 
-      {/* ── Sidebar ── */}
+      {/* ── Top Nav (64px sticky) ── */}
       <nav style={{
-        width: 64, background: 'var(--bg-subtle)', borderRight: '1px solid var(--border)',
-        display: 'flex', flexDirection: 'column', alignItems: 'center',
-        padding: '14px 0', gap: 4, flexShrink: 0,
+        height: 64, flexShrink: 0,
+        backdropFilter: 'blur(12px)',
+        background: 'var(--nav-bg, rgba(255,252,249,0.88))',
+        borderBottom: '1px solid var(--border)',
+        display: 'flex', alignItems: 'center',
+        padding: '0 clamp(1.5rem, 4vw, 4rem)',
+        gap: 32, position: 'sticky', top: 0, zIndex: 50,
       }}>
-        {/* Logo */}
-        <Link to="/" title="H3nky" style={{
-          width: 38, height: 38, overflow: 'hidden',
-          display: 'block', textDecoration: 'none', marginBottom: 14, flexShrink: 0,
-        }}>
-          <img src="/logo-horizontal.png" alt="H3nky" style={{ height: 38, maxWidth: 'none', display: 'block' }} />
+        {/* Brand */}
+        <Link to="/" style={{ textDecoration: 'none', flexShrink: 0 }}>
+          <img src="/logo-horizontal.png" height={34} alt="H3nky" style={{ display: 'block' }} />
         </Link>
 
-        {/* App links */}
-        {APP_SIDEBAR_ITEMS.map(({ type, label, color, Icon }) => (
-          <NavLink
-            key={type}
-            to={`/demo/${type}`}
-            title={label}
-            style={({ isActive }) => ({
-              width: 48, height: 48, borderRadius: 12, border: 'none',
-              background: isActive ? `${color}22` : 'transparent',
-              color: isActive ? color : 'var(--text-faint)',
-              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-              textDecoration: 'none', transition: 'background 0.15s, color 0.15s',
-              outline: isActive ? `1.5px solid ${color}44` : 'none',
-            })}
-          >
-            <Icon />
-          </NavLink>
-        ))}
-
-        <div style={{ flex: 1 }} />
-
-        {/* Settings */}
-        <NavLink
-          to="/demo/settings"
-          title="Configuración"
-          style={({ isActive }) => ({
-            width: 48, height: 48, borderRadius: 12, border: 'none',
-            background: isActive ? 'rgba(254,112,0,0.15)' : 'transparent',
-            color: isActive ? 'var(--accent)' : 'var(--text-faint)',
-            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-            textDecoration: 'none', transition: 'background 0.15s, color 0.15s',
-          })}
-        >
-          <IconSettingsSvg />
-        </NavLink>
-      </nav>
-
-      {/* ── Main ── */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', minWidth: 0 }}>
-
-        {/* Top bar */}
-        <div style={{
-          padding: '0 32px', height: 44, flexShrink: 0,
-          borderBottom: '1px solid var(--border)',
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          fontSize: 11, fontWeight: 600, letterSpacing: '1.5px',
-          color: 'var(--text-muted)', fontFamily: 'var(--font-mono)',
-        }}>
-          <span>{dayLabel} · {dateLabel} · <span style={{ color: 'var(--accent)' }}>DEMO</span></span>
+        {/* Center nav links */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 24, flex: 1, justifyContent: 'center' }}>
+          {[
+            { to: '/',          label: 'Inicio' },
+            { to: '/docs',      label: 'Documentación' },
+            { to: '/apps',      label: 'Apps' },
+            { to: '/demo',      label: 'Demo' },
+            { to: '/tienda',    label: 'Tienda' },
+            { to: '/contacto',  label: 'Contacto' },
+          ].map(({ to, label }) => (
+            <NavLink
+              key={to}
+              to={to}
+              end={to === '/demo' || to === '/'}
+              className={({ isActive }) => `dh-nav-link${isActive ? ' active' : ''}`}
+            >
+              {label}
+            </NavLink>
+          ))}
         </div>
 
-        {/* Scrollable content */}
-        <div style={{ flex: 1, overflow: 'auto', padding: '28px 32px 40px' }}>
+        {/* Right side */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexShrink: 0 }}>
+          {/* GitHub */}
+          <a href="https://github.com/H3nky" target="_blank" rel="noreferrer"
+            style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)', textDecoration: 'none', fontSize: 14, transition: 'color 0.15s' }}
+            onMouseEnter={e => e.currentTarget.style.color = 'var(--text)'}
+            onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+            </svg>
+            GitHub
+          </a>
 
-          {/* Fecha + Week strip — misma fila */}
-          <div style={{ display: 'flex', gap: 24, alignItems: 'stretch', marginBottom: 24 }}>
+          {/* Language */}
+          <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
+            <span style={{ color: 'var(--accent)', fontWeight: 700 }}>ES</span>
+            {' | '}
+            <span>EN</span>
+          </div>
 
-            {/* Date + greeting */}
-            <div style={{ flexShrink: 0, animation: 'dh-up 0.4s ease both' }}>
-              <div style={{ display: 'flex', alignItems: 'flex-end', gap: 16, marginBottom: 10 }}>
-                <span style={{
-                  fontSize: 108, fontWeight: 900, lineHeight: 1,
-                  fontFamily: 'var(--font-hero)', color: 'var(--text)',
+          {/* Avatar */}
+          <div style={{
+            width: 36, height: 36, borderRadius: '50%',
+            background: 'linear-gradient(135deg, #334155, #1e293b)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: 'white', fontSize: 14, fontWeight: 700, flexShrink: 0,
+            cursor: 'pointer',
+          }}>
+            E
+          </div>
+        </div>
+      </nav>
+
+      {/* ── Body ── */}
+      <div style={{ flex: 1, overflowY: 'auto' }}>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr 320px',
+          gap: 24,
+          padding: 'clamp(1.5rem, 4vw, 4rem)',
+          maxWidth: 1600,
+          margin: '0 auto',
+          alignItems: 'start',
+        }}>
+
+          {/* ── Left column ── */}
+          <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 32 }}>
+
+            {/* Greeting row */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 230px 230px', gap: 16, animation: 'dh-up 0.45s cubic-bezier(.2,.7,.2,1) both' }}>
+
+              {/* Greeting */}
+              <div>
+                <div style={{
+                  fontSize: 12, fontFamily: 'var(--font-tech)', color: 'var(--text-muted)',
+                  letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 6,
                 }}>
-                  {dayNum}
-                </span>
-                <div style={{ marginBottom: 10 }}>
-                  <div style={{
-                    fontSize: 30, fontWeight: 700, letterSpacing: '5px',
-                    color: 'var(--text)', fontFamily: 'var(--font-tech)', lineHeight: 1.1,
+                  {format(now, "EEEE, d 'de' MMMM", { locale: es })} ☀️
+                </div>
+                <h1 style={{
+                  fontSize: 'clamp(24px, 3vw, 30px)', fontWeight: 800, lineHeight: 1.2,
+                  color: 'var(--text)', margin: '0 0 10px', letterSpacing: '-0.01em',
+                  fontFamily: 'var(--font-body)',
+                }}>
+                  {greeting}, <span style={{ color: 'var(--accent)' }}>Eric.</span>
+                </h1>
+                <p style={{ fontSize: 13.5, color: 'var(--text-muted)', lineHeight: 1.65, marginBottom: 18, maxWidth: 340 }}>
+                  Tienes{' '}
+                  <span style={{ color: 'var(--text)', fontWeight: 600 }}>{eventsCount} evento{eventsCount !== 1 ? 's' : ''}</span>{' '}
+                  en marcha.{activeItem && (
+                    <> <span style={{ color: 'var(--accent)', fontWeight: 600 }}>{activeItem.title}</span> está activa ahora.</>
+                  )}
+                </p>
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', position: 'relative' }}>
+                  <button
+                    onClick={() => setShowShortcuts(v => !v)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 7, padding: '9px 18px',
+                      background: 'var(--accent)', border: 'none', borderRadius: 9,
+                      color: 'white', fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                      fontFamily: 'var(--font-body)', transition: 'opacity 0.15s',
+                    }}
+                  >
+                    ⚡ Acción rápida
+                  </button>
+                  {showShortcuts && (
+                    <div style={{
+                      position: 'absolute', top: '100%', left: 0, marginTop: 8,
+                      background: 'var(--bg-card)', border: '1px solid var(--border)',
+                      borderRadius: 10, padding: '10px 14px', zIndex: 20,
+                      minWidth: 200, boxShadow: 'var(--shadow-dropdown)',
+                    }}>
+                      {[
+                        ['G', 'Ir a Hogar'],
+                        ['N', 'Nueva nota'],
+                        ['T', 'Nueva tarea'],
+                        ['L', 'Añadir a lista'],
+                        ['R', 'Ver recetas'],
+                      ].map(([k, label]) => (
+                        <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '5px 0', fontSize: 12, color: 'var(--text-muted)' }}>
+                          <kbd style={{ fontSize: 10, padding: '2px 6px', background: 'var(--bg-subtle)', border: '1px solid var(--border)', borderRadius: 4, fontFamily: 'var(--font-mono)', color: 'var(--text)' }}>{k}</kbd>
+                          {label}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <button style={{
+                    display: 'flex', alignItems: 'center', gap: 7, padding: '9px 18px',
+                    background: 'transparent', border: '1px solid var(--border)', borderRadius: 9,
+                    color: 'var(--text-muted)', fontSize: 13, cursor: 'pointer',
+                    fontFamily: 'var(--font-body)', transition: 'border-color 0.15s, color 0.15s',
                   }}>
-                    {monthLabel}
-                  </div>
-                  <div style={{ fontSize: 12, color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', letterSpacing: '1px', marginTop: 2 }}>
-                    {year} · {dayLabel}
-                  </div>
+                    ＋ Añadir evento
+                  </button>
                 </div>
               </div>
 
-              <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.65, maxWidth: 340, marginBottom: 16 }}>
-                {greeting}, Eric.{' '}
-                <span style={{ color: 'var(--text)' }}>{eventsCount} evento{eventsCount !== 1 ? 's' : ''}</span>{' '}
-                en marcha entre tus apps.
-                {activeItem && (
-                  <> <span style={{ color: 'var(--accent)', fontWeight: 600 }}>{activeItem.title}</span> está activa ahora mismo.</>
-                )}
-              </p>
+              {/* Stat: Gasto del mes */}
+              <div style={{
+                background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14,
+                padding: 18, display: 'flex', flexDirection: 'column', gap: 8,
+              }}>
+                <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-faint)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Gasto del mes</div>
+                <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--text)', lineHeight: 1, fontFamily: 'var(--font-hero)' }}>
+                  {monthExpense.toFixed(0)}<span style={{ fontSize: 16, color: 'var(--text-muted)', fontWeight: 600 }}>€</span>
+                </div>
+                <div style={{ height: 6, background: 'var(--bg-subtle)', borderRadius: 999, overflow: 'hidden' }}>
+                  <div style={{
+                    height: '100%', width: `${budgetPct}%`,
+                    background: 'linear-gradient(90deg, var(--accent), #ff8c33)',
+                    borderRadius: 999, transition: 'width 0.6s ease',
+                  }} />
+                </div>
+                <div style={{ fontSize: 11.5, color: 'var(--text-faint)' }}>
+                  {budgetPct.toFixed(0)}% del presupuesto mensual
+                </div>
+              </div>
 
-              <div style={{ display: 'flex', gap: 10 }}>
-                <button className="dh-btn" style={{
-                  display: 'flex', alignItems: 'center', gap: 8, padding: '8px 16px',
-                  background: 'var(--bg-card)', border: '1px solid var(--border)',
-                  borderRadius: 8, color: 'var(--text-muted)', fontSize: 12,
-                  cursor: 'pointer', fontFamily: 'var(--font-body)',
-                }}>
-                  <IconSearch /> Buscar entre apps
-                </button>
-                <button className="dh-btn" style={{
-                  display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px',
-                  background: 'var(--accent)', border: 'none', borderRadius: 8,
-                  color: 'white', fontSize: 12, fontWeight: 600,
-                  cursor: 'pointer', fontFamily: 'var(--font-body)',
-                }}>
-                  + Acción rápida
-                </button>
+              {/* Stat: Saldo total */}
+              <div style={{
+                background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14,
+                padding: 18, display: 'flex', flexDirection: 'column', gap: 8,
+              }}>
+                <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-faint)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>Saldo total</div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ fontSize: 28, fontWeight: 800, color: '#16a34a', lineHeight: 1, fontFamily: 'var(--font-hero)' }}>
+                    {totalIncome.toFixed(0)}<span style={{ fontSize: 16, fontWeight: 600 }}>€</span>
+                  </div>
+                  <Sparkline pts={SPARKLINE_PTS} color="#16a34a" width={90} height={38} />
+                </div>
+                <div style={{ fontSize: 11.5, color: 'var(--text-faint)' }}>
+                  Actualizado hoy · +4,2% · 7d
+                </div>
               </div>
             </div>
 
-            {/* Week strip */}
-            <div style={{
-              flex: 1, padding: '14px 18px',
-              background: 'var(--bg-card)', borderRadius: 12, border: '1px solid var(--border)',
-              animation: 'dh-up 0.4s ease 0.06s both',
-            }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20, flexWrap: 'wrap' }}>
-              <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '1.5px', color: 'var(--text-faint)', fontFamily: 'var(--font-mono)' }}>
-                SEMANA · {weekLabel}
-              </span>
-              <div style={{ display: 'flex', gap: 12 }}>
-                {APP_CONFIG.map(app => (
-                  <span key={app.type} style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: 'var(--text-muted)' }}>
-                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: app.color, display: 'inline-block' }} />
-                    {app.label}
-                  </span>
+            {/* Tu universo */}
+            <div style={{ animation: 'dh-up 0.45s cubic-bezier(.2,.7,.2,1) 0.08s both' }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 14 }}>
+                <span style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)' }}>Tu universo</span>
+                <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-faint)' }}>5 apps · DEMO</span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+                {MODULE_CARDS.map((card, i) => (
+                  <div key={card.type} style={{ animation: `dh-up 0.45s cubic-bezier(.2,.7,.2,1) ${0.08 + i * 0.04}s both` }}>
+                    <ModuleCard card={card} liveStats={liveStats[card.type]} />
+                  </div>
                 ))}
               </div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 4 }}>
-              {weekActivity.map((activity, i) => {
-                const isCurrent = isToday(activity.day)
-                const activeApps = APP_CONFIG.filter(app => activity[app.type])
-                const dayKey = format(activity.day, 'yyyy-MM-dd')
-                const expense = dailyExpenses[dayKey]
-                return (
+
+            {/* Actividad reciente */}
+            <div style={{ animation: 'dh-up 0.45s cubic-bezier(.2,.7,.2,1) 0.28s both' }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 14 }}>
+                <span style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)' }}>Actividad reciente</span>
+                <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-faint)' }}>Últimas 24h</span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
+                {RECENT_ACTIVITY.map((act, i) => (
                   <div key={i} style={{
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
-                    padding: '8px 4px', borderRadius: 8,
-                    background: isCurrent ? 'rgba(254,112,0,0.12)' : 'transparent',
-                    border: isCurrent ? '1px solid rgba(254,112,0,0.25)' : '1px solid transparent',
+                    padding: 14, background: 'var(--bg-card)', borderRadius: 12,
+                    border: '1px solid var(--border)',
+                    animation: `dh-up 0.45s cubic-bezier(.2,.7,.2,1) ${0.28 + i * 0.04}s both`,
                   }}>
-                    <span style={{ fontSize: 10, color: 'var(--text-faint)', fontFamily: 'var(--font-mono)' }}>
-                      {DAY_LABELS[i]}
-                    </span>
-                    <span style={{
-                      fontSize: 14, lineHeight: 1,
-                      fontWeight: isCurrent ? 700 : 400,
-                      color: isCurrent ? 'var(--accent)' : 'var(--text-muted)',
-                      fontFamily: isCurrent ? 'var(--font-hero)' : 'var(--font-body)',
+                    <div style={{
+                      width: 36, height: 36, borderRadius: 9,
+                      background: act.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 18, marginBottom: 10,
                     }}>
-                      {format(activity.day, 'd')}
-                    </span>
-                    <div style={{ display: 'flex', gap: 3, height: 28, alignItems: 'flex-end' }}>
-                      {activeApps.length === 0
-                        ? <div style={{ width: 4, height: 4, background: 'var(--border)', borderRadius: 2 }} />
-                        : activeApps.slice(0, 4).map((app, j) => (
-                          <div key={app.type} style={{
-                            width: 5,
-                            height: BAR_HEIGHTS[(i * 4 + j) % BAR_HEIGHTS.length] * 2,
-                            background: app.color, borderRadius: 3, opacity: 0.8,
-                          }} />
-                        ))
-                      }
+                      {act.icon}
                     </div>
-                    <span style={{
-                      fontSize: 9, fontFamily: 'var(--font-mono)', fontWeight: 600,
-                      color: expense ? '#ef4444' : 'var(--border)',
-                      letterSpacing: '0.5px', lineHeight: 1,
-                    }}>
-                      {expense ? `-${expense.toFixed(0)}€` : '·'}
-                    </span>
+                    <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text)', marginBottom: 3 }}>{act.title}</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>{act.sub}</div>
+                    <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-faint)' }}>{act.time}</div>
                   </div>
-                )
-              })}
+                ))}
+              </div>
             </div>
+
           </div>
-          </div>{/* fin fila fecha+semana */}
 
-          {/* TU UNIVERSO */}
-          <div style={{ animation: 'dh-up 0.4s ease 0.1s both' }}>
-            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 12 }}>
-              <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: '1px', color: 'var(--text)', fontFamily: 'var(--font-tech)' }}>
-                TU UNIVERSO
-              </span>
-              <span style={{ fontSize: 10, color: 'var(--text-faint)', fontFamily: 'var(--font-mono)' }}>
-                APPs · 4 APPS · <span style={{ color: 'var(--accent)' }}>DEMO</span>
-              </span>
-            </div>
+          {/* ── Right rail ── */}
+          <aside style={{
+            position: 'sticky', top: 88,
+            maxHeight: 'calc(100dvh - 120px)', overflowY: 'auto',
+            display: 'flex', flexDirection: 'column', gap: 16,
+          }}>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-              {/* HOGAR */}
-              <Link to="/demo/hogar" className="dh-link" style={{
-                display: 'block', textDecoration: 'none', padding: '13px',
-                background: 'var(--bg-card)', borderRadius: 10,
-                border: '1px solid var(--border)', borderTop: '2px solid #f97316',
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: '#f97316', letterSpacing: '0.5px' }}>🏠 HOGAR</span>
-                  <span style={{ fontSize: 9, color: 'var(--text-faint)', fontFamily: 'var(--font-mono)' }}>v0.4.0</span>
+            {/* Tu día card */}
+            <div style={{
+              background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14,
+              display: 'flex', flexDirection: 'column',
+              animation: 'dh-up 0.45s cubic-bezier(.2,.7,.2,1) 0.12s both',
+            }}>
+              {/* Header */}
+              <div style={{ padding: '18px 18px 12px' }}>
+                <div style={{ fontSize: 10, fontFamily: 'var(--font-tech)', color: 'var(--text-faint)', letterSpacing: '0.14em', textTransform: 'uppercase', marginBottom: 2 }}>TU DÍA</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span>{eventsCount} evento{eventsCount !== 1 ? 's' : ''}</span>
                 </div>
-                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 8 }}>
-                  {hogarTasksToday} tareas hoy · {pendingItems} en lista
-                </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
-                  {recipeChips.map(chip => (
-                    <span key={chip} style={{
-                      fontSize: 10, padding: '2px 8px',
-                      background: 'rgba(249,115,22,0.12)', color: '#f97316',
-                      borderRadius: 99, fontWeight: 500,
-                    }}>
-                      {chip}
-                    </span>
-                  ))}
-                </div>
-                <span style={{ fontSize: 10, color: 'var(--text-faint)', fontFamily: 'var(--font-mono)' }}>PROBAR →</span>
-              </Link>
+              </div>
 
-              {/* PERSONAL */}
-              <Link to="/demo/personal" className="dh-link" style={{
-                display: 'block', textDecoration: 'none', padding: '13px',
-                background: 'var(--bg-card)', borderRadius: 10,
-                border: '1px solid var(--border)', borderTop: '2px solid #38bdf8',
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: '#38bdf8', letterSpacing: '0.5px', display: 'flex', alignItems: 'center', gap: 5 }}>
-                    <IconPerson size={13} /> PERSONAL
-                  </span>
-                  <span style={{ fontSize: 9, color: 'var(--text-faint)', fontFamily: 'var(--font-mono)' }}>v1.2.0</span>
-                </div>
-                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 8 }}>
-                  {personalEvents.length} eventos · {personalNotes.length} notas
-                </div>
-                {firstNote?.content && (
-                  <p style={{
-                    fontSize: 11, color: 'var(--text-faint)', fontStyle: 'italic',
-                    lineHeight: 1.5, marginBottom: 8,
-                    overflow: 'hidden', display: '-webkit-box',
-                    WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
-                  }}>
-                    "{firstNote.content.slice(0, 70)}..."
-                  </p>
+              {/* Timeline */}
+              <div style={{ padding: '0 12px 16px' }}>
+                {todayItems.length === 0 ? (
+                  <p style={{ fontSize: 12, color: 'var(--text-faint)', padding: '4px 6px' }}>Sin eventos hoy</p>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                    {todayItems.map((item, i) => {
+                      const isActive = item.id === activeItem?.id
+                      return (
+                        <div key={item.id} style={{
+                          display: 'grid', gridTemplateColumns: '56px 1fr',
+                          padding: '9px 8px',
+                          background: isActive
+                            ? `linear-gradient(90deg, ${item.appColor}18, transparent)`
+                            : 'transparent',
+                          borderRadius: 8,
+                          borderLeft: isActive ? `3px solid ${item.appColor}` : '3px solid transparent',
+                          position: 'relative',
+                          animation: `dh-up 0.3s cubic-bezier(.2,.7,.2,1) ${i * 0.04}s both`,
+                        }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                            {isActive && (
+                              <div style={{ position: 'relative', width: 8, height: 8, flexShrink: 0 }}>
+                                <div style={{
+                                  position: 'absolute', inset: 0, borderRadius: '50%',
+                                  background: item.appColor, animation: 'pulse-ring 1.2s ease-out infinite',
+                                }} />
+                                <div style={{ width: 8, height: 8, borderRadius: '50%', background: item.appColor, position: 'relative', zIndex: 1 }} />
+                              </div>
+                            )}
+                            <span style={{
+                              fontSize: 12.5, fontFamily: 'var(--font-mono)',
+                              color: isActive ? item.appColor : 'var(--text-muted)',
+                              fontWeight: isActive ? 700 : 400,
+                            }}>
+                              {isActive ? 'AHORA' : item.allDay ? 'todo' : format(new Date(item.time), 'HH:mm')}
+                            </span>
+                          </div>
+                          <div style={{ minWidth: 0 }}>
+                            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', marginBottom: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {item.title}
+                            </div>
+                            <span style={{
+                              fontSize: 10, fontWeight: 700, letterSpacing: '0.5px',
+                              color: item.appColor, fontFamily: 'var(--font-mono)',
+                              padding: '1px 6px', background: `${item.appColor}18`, borderRadius: 999,
+                            }}>
+                              {item.appLabel}
+                            </span>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
                 )}
-                <span style={{ fontSize: 10, color: 'var(--text-faint)', fontFamily: 'var(--font-mono)' }}>PROBAR →</span>
-              </Link>
-
-              {/* FINANZAS + OCIO — fila compartida */}
-              <Link to="/demo/finanzas" className="dh-link" style={{
-                display: 'flex', textDecoration: 'none', padding: '13px',
-                background: 'var(--bg-card)', borderRadius: 10,
-                border: '1px solid var(--border)', borderTop: '2px solid #22c55e',
-                gap: 16, alignItems: 'center',
-              }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: '#22c55e', letterSpacing: '0.5px' }}>💰 FINANZAS</span>
-                    <span style={{ fontSize: 9, color: 'var(--text-faint)', fontFamily: 'var(--font-mono)' }}>v0.3.0</span>
-                  </div>
-                  <div style={{ display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap' }}>
-                    <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', fontFamily: 'var(--font-hero)', lineHeight: 1 }}>
-                        {weeklyExpenses.toFixed(0)}€
-                      </div>
-                      <div style={{ fontSize: 9, color: 'var(--text-faint)', marginTop: 2 }}>esta semana</div>
-                    </div>
-                    <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontSize: 20, fontWeight: 700, color: '#22c55e', fontFamily: 'var(--font-hero)', lineHeight: 1 }}>
-                        {transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0).toFixed(0)}€
-                      </div>
-                      <div style={{ fontSize: 9, color: 'var(--text-faint)', marginTop: 2 }}>ingresos mes</div>
-                    </div>
-                  </div>
-                  <span style={{ fontSize: 10, color: 'var(--text-faint)', fontFamily: 'var(--font-mono)', display: 'block', marginTop: 8 }}>PROBAR →</span>
-                </div>
-              </Link>
-
-              {/* OCIO */}
-              {(() => {
-                const today = new Date().toISOString().slice(0, 10)
-                const visitados      = ocioRestaurantes.filter(r => r.visitas?.length > 0).length
-                const viajesPlan     = ocioViajes.filter(v => v.estado === 'planificado').length
-                const proximoEvento  = ocioEventos
-                  .filter(e => e.fecha >= today)
-                  .sort((a, b) => a.fecha.localeCompare(b.fecha))[0]
-                return (
-                  <Link to="/demo/ocio" className="dh-link" style={{
-                    display: 'flex', flexDirection: 'column', textDecoration: 'none', padding: '13px',
-                    background: 'var(--bg-card)', borderRadius: 10,
-                    border: '1px solid var(--border)', borderTop: '2px solid #a855f7',
-                  }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
-                      <span style={{ fontSize: 11, fontWeight: 700, color: '#a855f7', letterSpacing: '0.5px' }}>🎭 OCIO</span>
-                      <span style={{ fontSize: 9, color: 'var(--text-faint)', fontFamily: 'var(--font-mono)' }}>v0.1.0</span>
-                    </div>
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6 }}>
-                      {visitados} restaurante{visitados !== 1 ? 's' : ''} · {viajesPlan} viaje{viajesPlan !== 1 ? 's' : ''} planificado{viajesPlan !== 1 ? 's' : ''}
-                    </div>
-                    {proximoEvento && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                        <span style={{ fontSize: 10, padding: '2px 8px', background: 'rgba(168,85,247,0.12)', color: '#a855f7', borderRadius: 99, fontWeight: 500 }}>
-                          {proximoEvento.tipo === 'concierto' ? '🎵' : proximoEvento.tipo === 'teatro' ? '🎭' : '🎟️'} {proximoEvento.titulo}
-                        </span>
-                        <span style={{ fontSize: 9, color: 'var(--text-faint)' }}>{proximoEvento.fecha}</span>
-                      </div>
-                    )}
-                    <span style={{ fontSize: 10, color: 'var(--text-faint)', fontFamily: 'var(--font-mono)' }}>PROBAR →</span>
-                  </Link>
-                )
-              })()}
+              </div>
             </div>
-          </div>
+
+            {/* IA asistente card */}
+            <div style={{
+              background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14,
+              padding: 18,
+              animation: 'dh-up 0.45s cubic-bezier(.2,.7,.2,1) 0.2s both',
+            }}>
+              <div style={{
+                background: 'rgba(154,78,251,0.08)', borderRadius: 10, padding: 14,
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                  <div style={{ position: 'relative', width: 8, height: 8 }}>
+                    <div style={{
+                      position: 'absolute', inset: 0, borderRadius: '50%',
+                      background: '#9a4efb', animation: 'pulse-ring 1.6s ease-out infinite',
+                    }} />
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#9a4efb', position: 'relative', zIndex: 1 }} />
+                  </div>
+                  <div style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: '#9a4efb', letterSpacing: '0.14em', fontWeight: 700, textTransform: 'uppercase' }}>✦ IA Asistente</div>
+                </div>
+                <p style={{ fontSize: 12.5, color: 'var(--text-muted)', lineHeight: 1.65, marginBottom: 12 }}>
+                  Detectamos que gastas un 18% más los jueves por gasolina. ¿Reagendar la revisión del Golf al sábado?
+                </p>
+                <button style={{
+                  fontSize: 12, fontWeight: 600, color: '#9a4efb',
+                  background: 'transparent', border: '1px solid rgba(154,78,251,0.3)', borderRadius: 7,
+                  cursor: 'pointer', padding: '6px 12px', fontFamily: 'var(--font-body)',
+                  transition: 'background 0.15s',
+                }}>
+                  Aplicar sugerencia →
+                </button>
+              </div>
+            </div>
+
+          </aside>
         </div>
       </div>
-
-      {/* ── Right panel: Tu Día ── */}
-      <aside style={{
-        width: 268, background: 'var(--bg-subtle)', borderLeft: '1px solid var(--border)',
-        display: 'flex', flexDirection: 'column', overflow: 'hidden', flexShrink: 0,
-      }}>
-        {/* Header */}
-        <div style={{ padding: '28px 20px 16px', flexShrink: 0 }}>
-          <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: '2px', color: 'var(--text-faint)', fontFamily: 'var(--font-mono)', marginBottom: 4 }}>
-            HOY · {todayItems.length} ITEMS
-          </div>
-          <div style={{ fontSize: 16, fontWeight: 700, letterSpacing: '1px', color: 'var(--text)', fontFamily: 'var(--font-tech)' }}>
-            TU DÍA
-          </div>
-        </div>
-
-        {/* Timeline */}
-        <div style={{ flex: 1, overflow: 'auto', padding: '0 20px', paddingBottom: 16 }}>
-          {todayItems.length === 0 ? (
-            <p style={{ fontSize: 12, color: 'var(--text-faint)', padding: '8px 0' }}>Sin eventos hoy</p>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              {todayItems.map((item, i) => {
-                const isActive = item.id === activeItem?.id
-                return (
-                  <div key={item.id} style={{
-                    display: 'flex', gap: 10, alignItems: 'center',
-                    padding: '9px 12px',
-                    background: isActive
-                      ? `color-mix(in srgb, ${item.appColor} 12%, var(--bg-card))`
-                      : 'var(--bg-card)',
-                    borderRadius: 8,
-                    borderLeft: `2px solid ${item.appColor}`,
-                    animation: `dh-up 0.3s ease ${i * 0.04}s both`,
-                  }}>
-                    <div style={{ width: 40, flexShrink: 0, textAlign: 'right' }}>
-                      <span style={{
-                        fontSize: 10, fontFamily: 'var(--font-mono)',
-                        color: isActive ? item.appColor : 'var(--text-muted)',
-                        fontWeight: isActive ? 700 : 400,
-                      }}>
-                        {isActive ? '● AHORA' : item.allDay ? 'todo' : format(new Date(item.time), 'HH:mm')}
-                      </span>
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', marginBottom: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        {item.title}
-                      </div>
-                      <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: '1px', color: item.appColor, fontFamily: 'var(--font-mono)' }}>
-                        {item.appLabel}
-                      </span>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* ✦ IA insight */}
-        <div style={{ padding: '16px 20px', flexShrink: 0 }}>
-          <div style={{
-            padding: '14px', background: 'linear-gradient(135deg, #3b0764, #6d28d9)',
-            borderRadius: 10, animation: 'dh-up 0.4s ease 0.42s both',
-          }}>
-            <div style={{ fontSize: 9, fontWeight: 700, letterSpacing: '2px', color: '#c4b5fd', fontFamily: 'var(--font-mono)', marginBottom: 8 }}>
-              ✦ IA
-            </div>
-            <p style={{ fontSize: 11, color: '#e9d5ff', lineHeight: 1.65, marginBottom: 12 }}>
-              Detectamos que gastas un 18% más los jueves por gasolina. ¿Reagendar la revisión del Golf al sábado para evitar dos paradas?
-            </p>
-            <button style={{
-              fontSize: 9, fontWeight: 700, letterSpacing: '1px', color: '#c4b5fd',
-              fontFamily: 'var(--font-mono)', background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-            }}>
-              APLICAR SUGERENCIA →
-            </button>
-          </div>
-        </div>
-      </aside>
-
     </div>
   )
 }
 
 // ── Mobile layout ─────────────────────────────────────────────────
 function MobileLayout({ data }) {
-  const { now, dayNum, dayLabel, monthLabel, year, todayItems, activeItem } = data
+  const {
+    now, dayNum, dayLabel, monthLabel, year,
+    todayItems, activeItem, hogarEvents, shoppingItems,
+    personalNotes, personalEvents, transactions, ocioRestaurantes, ocioViajes,
+  } = data
+
+  const hour = now.getHours()
+  const greeting = hour < 12 ? 'Buenos días' : hour < 20 ? 'Buenas tardes' : 'Buenas noches'
+
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+  const monthExpense = transactions
+    .filter(t => t.type === 'expense' && new Date(t.date) >= monthStart)
+    .reduce((s, t) => s + t.amount, 0)
+
+  const hogarTasksToday = hogarEvents.filter(e => {
+    const d = new Date(e.start_time)
+    return d.getFullYear() === now.getFullYear()
+      && d.getMonth() === now.getMonth()
+      && d.getDate() === now.getDate()
+  }).length
+  const pendingItems = shoppingItems.filter(i => !i.checked).length
+
+  const liveStats = {
+    hogar: `${hogarTasksToday} tareas hoy · ${pendingItems} en lista`,
+    personal: `${personalEvents.length} eventos · ${personalNotes.length} notas`,
+    ocio: `${ocioRestaurantes.filter(r => r.visitas?.length > 0).length} restaurantes · ${ocioViajes.filter(v => v.estado === 'planificado').length} viajes`,
+    finanzas: `${monthExpense.toFixed(0)}€ / 2.750€ este mes`,
+    settings: null,
+  }
 
   return (
-    <div style={{ maxWidth: 520, margin: '0 auto', padding: '24px 20px 56px' }}>
+    <div style={{ maxWidth: 520, margin: '0 auto', padding: '24px 20px 56px', fontFamily: 'var(--font-body)' }}>
       <style>{`
         @keyframes dh-up { from { opacity:0; transform:translateY(10px) } to { opacity:1; transform:translateY(0) } }
+        @keyframes pulse-ring {
+          0%   { transform: scale(1); opacity: .9 }
+          100% { transform: scale(2.4); opacity: 0 }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+        }
       `}</style>
 
-      {/* Date */}
-      <div style={{ marginBottom: 28 }}>
-        <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '1.5px', color: 'var(--text-muted)', marginBottom: 6 }}>
+      {/* Greeting */}
+      <div style={{ marginBottom: 24, animation: 'dh-up 0.4s ease both' }}>
+        <div style={{ fontSize: 11, fontFamily: 'var(--font-tech)', color: 'var(--text-muted)', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 4 }}>
           {dayLabel} · {dayNum} {monthLabel.slice(0, 3)} {year}
         </div>
-        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 12 }}>
-          <div style={{
-            fontSize: 80, fontWeight: 900, lineHeight: 1, color: 'var(--text)',
-            fontFamily: 'var(--font-hero)', animation: 'dh-up 0.4s ease both',
-          }}>
-            {dayNum}
-          </div>
-          <div style={{
-            fontSize: 24, fontWeight: 700, letterSpacing: '4px', color: 'var(--text)', marginBottom: 8,
-            animation: 'dh-up 0.4s ease 0.05s both',
-          }}>
-            {monthLabel}
-          </div>
+        <h1 style={{ fontSize: 26, fontWeight: 800, color: 'var(--text)', margin: '0 0 6px' }}>
+          {greeting}, <span style={{ color: 'var(--accent)' }}>Eric.</span>
+        </h1>
+        <p style={{ fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6, margin: 0 }}>
+          {todayItems.length} evento{todayItems.length !== 1 ? 's' : ''} en marcha hoy.
+        </p>
+      </div>
+
+      {/* Tu universo */}
+      <div style={{ marginBottom: 28 }}>
+        <div style={{ fontSize: 16, fontWeight: 800, color: 'var(--text)', marginBottom: 10 }}>Tu universo</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+          {MODULE_CARDS.map((card, i) => (
+            <div key={card.type} style={{ animation: `dh-up 0.35s ease ${i * 0.05}s both` }}>
+              <Link
+                to={card.href}
+                style={{
+                  display: 'block', textDecoration: 'none', padding: '14px',
+                  background: 'var(--bg-card)', borderRadius: 12,
+                  border: '1px solid var(--border)', borderTop: `4px solid ${card.color}`,
+                }}
+              >
+                <div style={{ fontSize: 22, marginBottom: 6 }}>{card.icon}</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', marginBottom: 3 }}>{card.label}</div>
+                {liveStats[card.type] && (
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{liveStats[card.type]}</div>
+                )}
+                <div style={{ fontSize: 12, fontWeight: 600, color: card.color, marginTop: 8 }}>Abrir →</div>
+              </Link>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Hoy */}
-      <div style={{ marginBottom: 28 }}>
-        <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '1.5px', color: 'var(--text-faint)', marginBottom: 8 }}>
-          HOY · {todayItems.length} ITEMS
+      {/* Tu día */}
+      <div>
+        <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '1.5px', color: 'var(--text-faint)', marginBottom: 8, fontFamily: 'var(--font-mono)' }}>
+          TU DÍA · {todayItems.length} ITEMS
         </div>
         {todayItems.length === 0 ? (
           <p style={{ fontSize: 13, color: 'var(--text-faint)', padding: '8px 0' }}>Sin eventos hoy</p>
@@ -662,52 +681,16 @@ function MobileLayout({ data }) {
                   borderRadius: 8, borderLeft: `3px solid ${item.appColor}`,
                   animation: `dh-up 0.35s ease ${i * 0.04}s both`,
                 }}>
-                  <div style={{ fontSize: 10, marginBottom: 2, color: isActive ? item.appColor : 'var(--text-muted)', fontWeight: isActive ? 700 : 400 }}>
+                  <div style={{ fontSize: 10, marginBottom: 2, color: isActive ? item.appColor : 'var(--text-muted)', fontWeight: isActive ? 700 : 400, fontFamily: 'var(--font-mono)' }}>
                     {isActive ? '● AHORA' : item.allDay ? 'Todo el día' : format(new Date(item.time), 'HH:mm')}
                   </div>
                   <div style={{ fontSize: 13, fontWeight: 600, color: isActive ? item.appColor : 'var(--text)', marginBottom: 2 }}>{item.title}</div>
-                  <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.5px', color: item.appColor, opacity: 0.85 }}>{item.appLabel}</div>
+                  <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.5px', color: item.appColor, opacity: 0.85, fontFamily: 'var(--font-mono)' }}>{item.appLabel}</div>
                 </div>
               )
             })}
           </div>
         )}
-      </div>
-
-      {/* Apps */}
-      <div>
-        <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '1.5px', color: 'var(--text-faint)', marginBottom: 8 }}>
-          TUS APPS
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-          {APP_CONFIG.map((app, i) => {
-            const [line1, line2] = getAppStats(app.type, data)
-            return (
-              <Link key={app.type} to={`/demo/${app.type}`} style={{
-                display: 'block', textDecoration: 'none', padding: '12px 14px',
-                background: 'var(--bg-card)', borderRadius: 8,
-                borderTop: `2px solid ${app.color}`,
-                animation: `dh-up 0.35s ease ${(todayItems.length + i) * 0.04}s both`,
-              }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: app.color, marginBottom: 4 }}>
-                  {app.icon} {app.label}
-                </div>
-                <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{line1}</div>
-                <div style={{ fontSize: 11, color: 'var(--text-faint)' }}>{line2}</div>
-              </Link>
-            )
-          })}
-          {/* IA card */}
-          <div style={{
-            padding: '12px 14px', background: '#4c1d95', borderRadius: 8,
-            animation: `dh-up 0.35s ease ${(todayItems.length + 5) * 0.04}s both`,
-          }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: 'white', marginBottom: 4 }}>✦ IA</div>
-            <div style={{ fontSize: 11, color: '#ddd6fe', lineHeight: 1.5 }}>
-              Gastas un 18% más los jueves en gasolina
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   )
@@ -729,40 +712,23 @@ export default function DemoHome() {
   const monthLabel = format(now, 'MMMM', { locale: es }).toUpperCase()
   const year       = format(now, 'yyyy')
 
-  const weekStart = useMemo(() => startOfWeek(new Date(), { weekStartsOn: 1 }), [])
-  const weekEnd   = addDays(weekStart, 6)
-  const weekLabel = `${format(weekStart, 'd')}-${format(weekEnd, 'd')} ${format(weekStart, 'MMM', { locale: es }).toUpperCase()}`
-
-  const hogarEvents       = useMemo(() => demoRead('hogar', 'events'), [])
-  const shoppingItems     = useMemo(() => demoRead('hogar', 'items_supermercado'), [])
-  const personalEvents    = useMemo(() => demoRead('personal', 'events'), [])
-  const personalTasks     = useMemo(() => demoRead('personal', 'personal_tasks'), [])
-  const personalNotes     = useMemo(() => demoRead('personal', 'personal_notes'), [])
-  const recipes           = useMemo(() => demoRead('hogar', 'recipes'), [])
-  const transactions      = useMemo(() => demoRead('finanzas', 'fin_transactions'), [])
-  const ocioEventos       = useMemo(() => demoRead('ocio', 'eventos'), [])
-  const ocioRestaurantes  = useMemo(() => demoRead('ocio', 'restaurantes'), [])
-  const ocioViajes        = useMemo(() => demoRead('ocio', 'viajes'), [])
+  const hogarEvents      = useMemo(() => demoRead('hogar', 'events'), [])
+  const shoppingItems    = useMemo(() => demoRead('hogar', 'items_supermercado'), [])
+  const personalEvents   = useMemo(() => demoRead('personal', 'events'), [])
+  const personalTasks    = useMemo(() => demoRead('personal', 'personal_tasks'), [])
+  const personalNotes    = useMemo(() => demoRead('personal', 'personal_notes'), [])
+  const recipes          = useMemo(() => demoRead('hogar', 'recipes'), [])
+  const transactions     = useMemo(() => demoRead('finanzas', 'fin_transactions'), [])
+  const ocioEventos      = useMemo(() => demoRead('ocio', 'eventos'), [])
+  const ocioRestaurantes = useMemo(() => demoRead('ocio', 'restaurantes'), [])
+  const ocioViajes       = useMemo(() => demoRead('ocio', 'viajes'), [])
 
   const todayItems = useMemo(() => getDemoTodayItems(), [])
   const activeItem = useMemo(() => getActiveItem(todayItems), [todayItems])
 
-  const weekDays = useMemo(() =>
-    Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
-  , [weekStart])
-
-  const weekActivity = useMemo(() => weekDays.map(day => ({
-    day,
-    hogar:    hogarEvents.some(e => isSameDay(new Date(e.start_time), day)),
-    personal: personalEvents.some(e => isSameDay(new Date(e.start_time), day))
-              || personalTasks.some(t => t.due_date && isSameDay(new Date(t.due_date + 'T12:00:00'), day)),
-    finanzas: transactions.some(t => isSameDay(new Date(t.date + 'T12:00:00'), day)),
-    ocio:     ocioEventos.some(e => isSameDay(new Date(e.fecha + 'T12:00:00'), day)),
-  })), [weekDays, hogarEvents, personalEvents, personalTasks, transactions, ocioEventos])
-
   const sharedData = {
-    now, dayNum, dayLabel, monthLabel, year, weekLabel,
-    weekActivity, todayItems, activeItem,
+    now, dayNum, dayLabel, monthLabel, year,
+    todayItems, activeItem,
     hogarEvents, shoppingItems, personalNotes, personalEvents,
     personalTasks, recipes, transactions, ocioEventos,
     ocioRestaurantes, ocioViajes,
