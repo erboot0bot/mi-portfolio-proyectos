@@ -104,14 +104,15 @@ function DesktopItem({ item, onToggle, onDelete, onDragStart }) {
       onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--accent)'}
       onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
     >
-      <div
+      <button
+        type="button"
         onClick={() => onToggle(item.id)}
         title="Marcar como comprado"
         style={{
           width: 20, height: 20, borderRadius: '50%', flexShrink: 0,
           border: '2px solid var(--border)', background: 'transparent',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          cursor: 'pointer',
+          cursor: 'pointer', padding: 0,
         }}
       />
       <span style={{ flex: 1, fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>{item.name}</span>
@@ -332,7 +333,6 @@ export default function ShoppingList() {
   const [items, setItems]               = useState([])
   const [showDefaultModal, setShowDefaultModal] = useState(false)
   const [isMobile, setIsMobile]         = useState(window.innerWidth < 640)
-  const [activeCat, setActiveCat]       = useState(null) // eslint-disable-line no-unused-vars
   const [activeStore, setActiveStore]   = useState(
     () => localStorage.getItem('sl_default_store') || 'Mercadona'
   )
@@ -627,38 +627,6 @@ export default function ShoppingList() {
     .sort((a, b) => new Date(b.checked_at || 0) - new Date(a.checked_at || 0))
   const pct = items.length ? Math.round(inCart.length / items.length * 100) : 0
 
-  // ── Shared UI pieces ──────────────────────────────────────────
-
-  const CartSection = ({ compact }) => (
-    inCart.length > 0 ? (
-      <div style={{ borderRadius: 12, border: '1px solid var(--border)', overflow: 'hidden', background: '#1c1c1c' }}>
-        <div style={{ padding: '10px 16px', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '.08em', color: 'var(--text-faint)' }}>
-          En el carro ({inCart.length})
-        </div>
-        {compact
-          ? inCart.map(item => (
-              <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', borderTop: '1px solid rgba(255,255,255,.06)' }}>
-                <button onClick={() => toggleItem(item.id)} style={{ background: 'none', border: 'none', color: 'var(--text-faint)', cursor: 'pointer', fontSize: 14, padding: 0, flexShrink: 0 }}>↩</button>
-                <span style={{ flex: 1, fontSize: 14, fontWeight: 500, textDecoration: 'line-through', color: 'var(--text-faint)', opacity: 0.7 }}>{item.name}</span>
-                <button onClick={() => deleteItem(item.id)} style={{ background: 'none', border: 'none', color: 'var(--text-faint)', cursor: 'pointer', fontSize: 16, padding: '0 2px' }}>×</button>
-              </div>
-            ))
-          : <div style={{ padding: '0 8px' }}>
-              {inCart.map(item => (
-                <CartItem key={item.id} item={item} onUncheck={toggleItem} onDelete={deleteItem} />
-              ))}
-            </div>
-        }
-        <div style={{ padding: '10px 16px', borderTop: '1px solid rgba(255,255,255,.06)' }}>
-          <button
-            onClick={saveCart}
-            style={{ width: compact ? '100%' : 'auto', padding: compact ? '10px' : '8px 20px', borderRadius: 9, background: 'var(--accent)', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}
-          >Guardar compra</button>
-        </div>
-      </div>
-    ) : null
-  )
-
   // ── Mobile view ───────────────────────────────────────────────
   if (isMobile) {
     const storeItems = pending.filter(i => activeStore === 'General' || i.store === activeStore)
@@ -876,10 +844,17 @@ export default function ShoppingList() {
                 e.preventDefault()
                 e.currentTarget.style.background = ''
                 if (dragItem) {
-                  setItems(p => p.map(i => i.id === dragItem ? { ...i, store } : i))
+                  const targetId = dragItem
+                  const draggedItem = items.find(i => i.id === targetId)
+                  setItems(p => p.map(i => i.id === targetId ? { ...i, store } : i))
                   if (mode === 'demo') {
                     const raw = demoRead(appType, 'items_supermercado')
-                    demoWrite(appType, 'items_supermercado', raw.map(r => r.id === dragItem ? { ...r, metadata: { ...r.metadata, store } } : r))
+                    demoWrite(appType, 'items_supermercado', raw.map(r => r.id === targetId ? { ...r, metadata: { ...r.metadata, store } } : r))
+                  } else if (draggedItem) {
+                    supabase.from('items')
+                      .update({ metadata: { quantity: draggedItem.quantity ?? null, unit: draggedItem.unit ?? '', category: draggedItem.category ?? 'otros', store, price_unit: draggedItem.price_unit ?? null } })
+                      .eq('id', targetId)
+                      .then(() => {})
                   }
                   setDragItem(null)
                 }
