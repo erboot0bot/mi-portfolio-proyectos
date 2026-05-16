@@ -1,13 +1,21 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import { useMode } from '../../../contexts/ModeContext'
 import { demoRead, demoWrite } from '../../../data/demo/index.js'
 
 const UNIDADES = ['ud', 'L', 'g', 'kg', 'bolsa', 'tarro', 'paquete', 'bote']
 
+// Fix 4 — keyframes at module level
+const KEYFRAMES = `@keyframes ref-up { from { opacity:0; transform:translateY(6px) } to { opacity:1; transform:translateY(0) } } @media (prefers-reduced-motion: reduce) { * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }`
+
+// Fix 5 — normalize to local midnight to avoid UTC offset issues
 function diasHasta(fechaStr) {
   if (!fechaStr) return null
-  return Math.round((new Date(fechaStr) - new Date()) / (1000 * 60 * 60 * 24))
+  const [y, m, d] = fechaStr.split('-').map(Number)
+  const target = new Date(y, m - 1, d) // local midnight
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  return Math.round((target - today) / (1000 * 60 * 60 * 24))
 }
 
 function diasCongelado(fechaStr) {
@@ -46,10 +54,21 @@ export default function Refrigerado() {
   const [search, setSearch] = useState('')
   const [showAdd, setShowAdd] = useState(false)
   const [addLoc, setAddLoc]  = useState('nevera')
+  // Fix 1 — React state for hover instead of direct DOM mutation
+  const [hoveredId, setHoveredId] = useState(null)
   const [form, setForm] = useState({
     nombre: '', cantidad: '', unidad: 'ud',
     caducidad: '', fecha_congelado: new Date().toISOString().slice(0, 10), tiempo_max: '90',
   })
+
+  // Fix 4 — inject keyframes once via useEffect
+  useEffect(() => {
+    if (document.getElementById('ref-up-style')) return
+    const style = document.createElement('style')
+    style.id = 'ref-up-style'
+    style.textContent = KEYFRAMES
+    document.head.appendChild(style)
+  }, [])
 
   const sorted = useMemo(() =>
     [...items].sort((a, b) => {
@@ -70,11 +89,21 @@ export default function Refrigerado() {
     return true
   }), [sorted, filter, search])
 
-  const neveraCount     = items.filter(i => i.loc === 'nevera').length
-  const congeladorCount = items.filter(i => i.loc === 'congelador').length
-  const caducados       = items.filter(i => { const d = calcDaysLeft(i); return d !== null && d < 0 }).length
-  const caducaHoy       = items.filter(i => calcDaysLeft(i) === 0).length
-  const pronto          = items.filter(i => { const d = calcDaysLeft(i); return d !== null && d >= 0 && d <= 3 }).length
+  // Fix 3 — memoized stats
+  const stats = useMemo(() => {
+    let neveraCount = 0, congeladorCount = 0, caducados = 0, caducaHoy = 0, pronto = 0
+    for (const item of items) {
+      if (item.loc === 'nevera') neveraCount++
+      else congeladorCount++
+      const d = calcDaysLeft(item)
+      if (d !== null) {
+        if (d < 0) caducados++
+        if (d === 0) caducaHoy++
+        if (d >= 0 && d <= 3) pronto++
+      }
+    }
+    return { neveraCount, congeladorCount, caducados, caducaHoy, pronto }
+  }, [items])
 
   function handleAdd() {
     if (!form.nombre.trim()) return
@@ -115,18 +144,13 @@ export default function Refrigerado() {
 
   return (
     <div style={{ overflowY: 'auto', height: '100%', padding: '20px 28px 40px', maxWidth: 860 }}>
-      <style>{`
-        @keyframes ref-up { from { opacity:0; transform:translateY(6px) } to { opacity:1; transform:translateY(0) } }
-        @media (prefers-reduced-motion: reduce) { * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; } }
-      `}</style>
-
       {/* Page head */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 12, animation: 'ref-up 0.35s ease both' }}>
         <div>
           <h1 style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--text)', margin: '0 0 6px' }}>🧊 Refrigerado</h1>
-          {(caducados > 0 || caducaHoy > 0) && (
+          {(stats.caducados > 0 || stats.caducaHoy > 0) && (
             <p style={{ fontSize: 13, color: '#dc2626', margin: 0, fontWeight: 600 }}>
-              ⚠️{caducados > 0 ? ` ${caducados} caducado${caducados !== 1 ? 's' : ''}` : ''}{caducados > 0 && caducaHoy > 0 ? ' · ' : ''}{caducaHoy > 0 ? ` ${caducaHoy} caduca${caducaHoy !== 1 ? 'n' : ''} hoy` : ''} · {items.length} items total
+              ⚠️{stats.caducados > 0 ? ` ${stats.caducados} caducado${stats.caducados !== 1 ? 's' : ''}` : ''}{stats.caducados > 0 && stats.caducaHoy > 0 ? ' · ' : ''}{stats.caducaHoy > 0 ? ` ${stats.caducaHoy} caduca${stats.caducaHoy !== 1 ? 'n' : ''} hoy` : ''} · {items.length} items total
             </p>
           )}
         </div>
@@ -139,10 +163,10 @@ export default function Refrigerado() {
       {/* Stats strip */}
       <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', animation: 'ref-up 0.35s ease 0.04s both' }}>
         {[
-          { label: 'Nevera',        value: neveraCount,     color: '#1d4ed8', bg: 'rgba(29,78,216,0.1)' },
-          { label: 'Congelador',    value: congeladorCount, color: '#0369a1', bg: 'rgba(3,105,161,0.1)' },
-          { label: 'Caducados',     value: caducados,       color: '#dc2626', bg: 'rgba(239,68,68,0.1)' },
-          { label: 'Caducan en 3d', value: pronto,          color: '#d97706', bg: 'rgba(245,158,11,0.1)' },
+          { label: 'Nevera',        value: stats.neveraCount,     color: '#1d4ed8', bg: 'rgba(29,78,216,0.1)' },
+          { label: 'Congelador',    value: stats.congeladorCount, color: '#0369a1', bg: 'rgba(3,105,161,0.1)' },
+          { label: 'Caducados',     value: stats.caducados,       color: '#dc2626', bg: 'rgba(239,68,68,0.1)' },
+          { label: 'Caducan en 3d', value: stats.pronto,          color: '#d97706', bg: 'rgba(245,158,11,0.1)' },
         ].map(s => (
           <div key={s.label} style={{ padding: '8px 14px', borderRadius: 999, background: s.bg, display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ fontSize: 18, fontWeight: 800, color: s.color, fontFamily: 'var(--font-tech)' }}>{s.value}</span>
@@ -232,8 +256,8 @@ export default function Refrigerado() {
                 background: 'var(--bg-card)',
                 animation: `ref-up 0.3s ease ${i * 0.03}s both`,
               }}
-              onMouseEnter={e => { const b = e.currentTarget.querySelector('.ref-del'); if (b) b.style.opacity = '1' }}
-              onMouseLeave={e => { const b = e.currentTarget.querySelector('.ref-del'); if (b) b.style.opacity = '0' }}
+              onMouseEnter={() => setHoveredId(item.id)}
+              onMouseLeave={() => setHoveredId(null)}
               >
                 <div style={{ width: 44, height: 44, borderRadius: 10, background: 'var(--bg-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24 }}>
                   {item.icono}
@@ -253,8 +277,12 @@ export default function Refrigerado() {
                 <div style={{ padding: '6px 12px', borderRadius: 8, border: `1px solid ${badge.borderColor}`, background: badge.bg, textAlign: 'right', flexShrink: 0 }}>
                   <span style={{ fontSize: 12.5, fontWeight: 700, fontFamily: 'var(--font-mono)', color: badge.color, whiteSpace: 'nowrap' }}>{badge.label}</span>
                 </div>
-                <button type="button" className="ref-del" onClick={() => eliminar(item.id, item.loc)}
-                  style={{ background: 'none', border: 'none', color: 'var(--text-faint)', cursor: 'pointer', fontSize: 18, padding: '0 4px', opacity: 0, transition: 'opacity .15s', marginLeft: 8 }}
+                {/* Fix 1 & 2 — React state for opacity, aria-label, type="button" */}
+                <button
+                  type="button"
+                  aria-label={`Eliminar ${item.nombre}`}
+                  onClick={() => eliminar(item.id, item.loc)}
+                  style={{ background: 'none', border: 'none', color: 'var(--text-faint)', cursor: 'pointer', fontSize: 18, padding: '0 4px', opacity: hoveredId === item.id ? 1 : 0, transition: 'opacity .15s', marginLeft: 8 }}
                   onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
                   onMouseLeave={e => e.currentTarget.style.color = 'var(--text-faint)'}
                 >×</button>
