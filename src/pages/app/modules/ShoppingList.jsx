@@ -727,7 +727,10 @@ export default function ShoppingList() {
               padding: '12px 20px 32px',
               animation: 'slideUp 0.3s cubic-bezier(.2,.7,.2,1) both',
             }}>
-              <style>{`@keyframes slideUp { from { transform:translateY(100%) } to { transform:translateY(0) } }`}</style>
+              <style>{`
+  @keyframes slideUp { from { transform:translateY(100%) } to { transform:translateY(0) } }
+  @media (prefers-reduced-motion: reduce) { * { animation-duration: 0.01ms !important; } }
+`}</style>
               <div style={{ width: 40, height: 4, borderRadius: 2, background: 'var(--border)', margin: '0 auto 20px' }} />
               <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', marginBottom: 16 }}>Añadir producto</div>
               <input value={fabName} onChange={e => setFabName(e.target.value)} placeholder="Nombre del producto *" autoFocus

@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
-
-const MONTHLY_BUDGET = 2750
 import { Link, NavLink } from 'react-router-dom'
-import { format, isToday } from 'date-fns'
+import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { initDemoData, demoRead } from '../data/demo/index.js'
 import { getDemoTodayItems, getActiveItem } from '../data/demo/getDemoTodayItems.js'
+
+const MONTHLY_BUDGET = 2750
 
 ;['hogar', 'personal', 'finanzas', 'ocio'].forEach(initDemoData)
 
@@ -99,7 +99,7 @@ function ModuleCard({ card, liveStats }) {
 // ── Desktop layout ────────────────────────────────────────────────
 function DesktopLayout({ data }) {
   const {
-    now, dayNum, dayLabel, monthLabel, year,
+    now,
     todayItems, activeItem,
     hogarEvents, shoppingItems, personalNotes, personalEvents,
     transactions, ocioRestaurantes, ocioViajes,
@@ -197,11 +197,11 @@ function DesktopLayout({ data }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 24, flex: 1, justifyContent: 'center' }}>
           {[
             { to: '/',          label: 'Inicio' },
-            { to: '/docs',      label: 'Documentación' },
-            { to: '/apps',      label: 'Apps' },
-            { to: '/demo',      label: 'Demo' },
-            { to: '/tienda',    label: 'Tienda' },
-            { to: '/contacto',  label: 'Contacto' },
+            { to: '/documentacion', label: 'Documentación' },
+            { to: '/apps',          label: 'Apps' },
+            { to: '/demo',          label: 'Demo' },
+            { to: '/store',         label: 'Tienda' },
+            { to: '/contact',       label: 'Contacto' },
           ].map(({ to, label }) => (
             <NavLink
               key={to}
