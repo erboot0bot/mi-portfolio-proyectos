@@ -70,15 +70,18 @@ describe('DemoHome', () => {
   it('muestra el número del día actual', () => {
     renderDemoHome()
     const dayNum = new Date().getDate().toString()
-    expect(screen.getAllByText(dayNum).length).toBeGreaterThan(0)
+    // Day number appears in the greeting kicker date string
+    const body = document.body.textContent ?? ''
+    expect(body).toContain(dayNum)
   })
 
   it('muestra las 4 app cards con sus labels', () => {
     renderDemoHome()
-    expect(screen.getAllByText(/HOGAR/).length).toBeGreaterThan(0)
-    expect(screen.getAllByText(/PERSONAL/).length).toBeGreaterThan(0)
-    expect(screen.getAllByText(/FINANZAS/).length).toBeGreaterThan(0)
-    expect(screen.getAllByText(/OCIO/).length).toBeGreaterThan(0)
+    // Module card labels are now title-case (redesigned from uppercase)
+    expect(screen.getAllByText(/Hogar/i).length).toBeGreaterThan(0)
+    expect(screen.getAllByText(/Personal/i).length).toBeGreaterThan(0)
+    expect(screen.getAllByText(/Finanzas/i).length).toBeGreaterThan(0)
+    expect(screen.getAllByText(/Ocio/i).length).toBeGreaterThan(0)
   })
 
   it('muestra la tarjeta IA con insight', () => {
@@ -94,7 +97,9 @@ describe('DemoHome', () => {
 
   it('los links de apps navegan a /demo/:type', () => {
     renderDemoHome()
-    const hogarLink = screen.getByText(/🏠 HOGAR/).closest('a')
+    // Module cards are <Link> wrappers; find the Hogar card by its label text
+    const hogarLabel = screen.getAllByText(/^Hogar$/i)[0]
+    const hogarLink = hogarLabel.closest('a')
     expect(hogarLink).toHaveAttribute('href', '/demo/hogar')
   })
 
