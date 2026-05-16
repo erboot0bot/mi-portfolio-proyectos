@@ -19,7 +19,16 @@ const CATEGORIES = [
   { id: 'limpieza', label: 'Limpieza',           icon: '🧹' },
   { id: 'otros',    label: 'Otros',              icon: '📦' },
 ]
-const STORES = ['Mercadona', 'Lidl', 'Carrefour', 'La Sirena', 'General']
+const STORES = ['Mercadona', 'Lidl', 'Carrefour', 'La Sirena', 'General', 'Otros']
+
+const STORE_COLORS = {
+  'Mercadona': '#ee7c00',
+  'Lidl':      '#0050aa',
+  'Carrefour': '#0061a7',
+  'La Sirena': '#007a3d',
+  'General':   '#64748b',
+  'Otros':     '#64748b',
+}
 
 // ── Store tabs + ⚙️ ───────────────────────────────────────────────
 function StoreTabs({ activeStore, onChange, onSettings, compact }) {
@@ -81,14 +90,20 @@ function DefaultStoreModal({ current, onSelect, onClose }) {
 }
 
 // ── Desktop active item ───────────────────────────────────────────
-function DesktopItem({ item, onToggle, onDelete }) {
+function DesktopItem({ item, onToggle, onDelete, onDragStart }) {
   return (
-    <div style={{
-      display: 'flex', alignItems: 'center', gap: 10,
-      padding: '10px 14px', borderRadius: 10, border: '1px solid var(--border)',
-      background: 'var(--bg-card)', marginBottom: 5, transition: 'all .15s',
-    }}>
-      {/* Círculo: único elemento que marca como comprado */}
+    <div
+      draggable
+      onDragStart={() => onDragStart && onDragStart(item.id)}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 10,
+        padding: '10px 14px', borderRadius: 10, border: '1px solid var(--border)',
+        background: 'var(--bg-card)', marginBottom: 5, cursor: 'grab',
+        transition: 'all .15s',
+      }}
+      onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--accent)'}
+      onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border)'}
+    >
       <div
         onClick={() => onToggle(item.id)}
         title="Marcar como comprado"
@@ -101,19 +116,13 @@ function DesktopItem({ item, onToggle, onDelete }) {
       />
       <span style={{ flex: 1, fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>{item.name}</span>
       {item.owner_id === 'maria' && item.owner_name && (
-        <span style={{
-          fontSize: 10, padding: '2px 7px', borderRadius: 99, flexShrink: 0,
-          background: 'rgba(139,92,246,.15)', color: '#8b5cf6', fontWeight: 700,
-        }}>
+        <span style={{ fontSize: 10, padding: '2px 7px', borderRadius: 99, flexShrink: 0, background: 'rgba(139,92,246,.15)', color: '#8b5cf6', fontWeight: 700 }}>
           {item.owner_name}
         </span>
       )}
-      {item.quantity && (
-        <span style={{ fontSize: 11, color: 'var(--text-faint)', fontFamily: 'monospace' }}>
-          {item.quantity}{item.unit ? ` ${item.unit}` : ''}
-        </span>
-      )}
+      {item.quantity && <span style={{ fontSize: 11, color: 'var(--text-faint)', fontFamily: 'monospace' }}>{item.quantity}{item.unit ? ` ${item.unit}` : ''}</span>}
       <button
+        type="button"
         onClick={() => onDelete(item.id)}
         title="Eliminar"
         style={{ background: 'none', border: 'none', color: 'var(--text-faint)', cursor: 'pointer', fontSize: 16, padding: '0 4px', transition: 'color .15s' }}
@@ -158,41 +167,60 @@ function CartItem({ item, onUncheck, onDelete }) {
 function SwipeItem({ item, onToggle, onDelete }) {
   const [offset, setOffset] = useState(0)
   const [active, setActive] = useState(false)
+  const [axis, setAxis] = useState(null)
   const startX = useRef(0)
+  const startY = useRef(0)
 
   function onPointerDown(e) {
     startX.current = e.clientX
+    startY.current = e.clientY
     setActive(true)
+    setAxis(null)
     e.currentTarget.setPointerCapture(e.pointerId)
   }
   function onPointerMove(e) {
     if (!active) return
-    setOffset(Math.max(-120, Math.min(80, e.clientX - startX.current)))
+    const dx = e.clientX - startX.current
+    const dy = e.clientY - startY.current
+    if (!axis) {
+      if (Math.abs(dx) > Math.abs(dy) + 5) setAxis('x')
+      else if (Math.abs(dy) > Math.abs(dx) + 5) setAxis('y')
+    }
+    if (axis === 'x') {
+      e.preventDefault()
+      setOffset(Math.max(-140, Math.min(100, dx)))
+    }
   }
   function onPointerUp() {
     if (!active) return
     setActive(false)
-    if (offset < -70)     onToggle(item.id)
-    else if (offset > 50) onDelete(item.id)
-    setOffset(0)
+    if (offset <= -70) {
+      setOffset(-500)
+      setTimeout(() => onDelete(item.id), 250)
+    } else if (offset >= 70) {
+      onToggle(item.id)
+      setOffset(0)
+    } else {
+      setOffset(0)
+    }
+    setAxis(null)
   }
 
   return (
     <div style={{ position: 'relative', overflow: 'hidden', margin: '2px 10px', borderRadius: 12 }}>
-      {offset > 20  && <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 80, background: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 18, borderRadius: '12px 0 0 12px' }}>🗑</div>}
-      {offset < -20 && <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 80, background: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 18, borderRadius: '0 12px 12px 0' }}>✓</div>}
+      {offset > 20  && <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 80, background: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 13, fontWeight: 700, borderRadius: '12px 0 0 12px' }}>✓ Hecho</div>}
+      {offset < -20 && <div style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 80, background: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: 13, fontWeight: 700, borderRadius: '0 12px 12px 0' }}>Borrar ✕</div>}
       <div
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
-        onClick={() => { if (Math.abs(offset) < 5) onToggle(item.id) }}
         style={{
           display: 'flex', alignItems: 'center', gap: 12,
           padding: '14px 16px', borderRadius: 12,
           background: 'var(--bg-card)', border: '1px solid var(--border)',
           position: 'relative', zIndex: 2, cursor: 'grab', userSelect: 'none',
-          touchAction: 'pan-y',
+          touchAction: axis === 'x' ? 'none' : 'pan-y',
           transform: `translateX(${offset}px)`,
           transition: active ? 'none' : 'transform .2s ease',
         }}
@@ -203,10 +231,7 @@ function SwipeItem({ item, onToggle, onDelete }) {
         }} />
         <span style={{ flex: 1, fontSize: 15, fontWeight: 500, color: 'var(--text)' }}>{item.name}</span>
         {item.owner_id === 'maria' && item.owner_name && (
-          <span style={{
-            fontSize: 11, padding: '2px 7px', borderRadius: 99, flexShrink: 0,
-            background: 'rgba(139,92,246,.15)', color: '#8b5cf6', fontWeight: 700,
-          }}>
+          <span style={{ fontSize: 11, padding: '2px 7px', borderRadius: 99, flexShrink: 0, background: 'rgba(139,92,246,.15)', color: '#8b5cf6', fontWeight: 700 }}>
             {item.owner_name}
           </span>
         )}
@@ -321,6 +346,12 @@ export default function ShoppingList() {
   const [editingFreqId, setEditingFreqId] = useState(null)
   const [showPlanModal, setShowPlanModal] = useState(false)
   const [planForm, setPlanForm] = useState({ fecha: new Date().toISOString().slice(0, 10), hora: '10:00' })
+  const [colNames, setColNames] = useState(STORES)
+  const [dragItem, setDragItem] = useState(null)
+  const [showFAB, setShowFAB] = useState(false)
+  const [fabStore, setFabStore] = useState(() => localStorage.getItem('sl_default_store') || 'Mercadona')
+  const [fabName, setFabName] = useState('')
+  const [fabQty, setFabQty] = useState('')
 
   useEffect(() => {
     const handler = () => setIsMobile(window.innerWidth < 640)
@@ -646,6 +677,9 @@ export default function ShoppingList() {
           <div style={{ height: 4, borderRadius: 2, background: 'var(--border)', overflow: 'hidden' }}>
             <div style={{ height: '100%', width: `${pct}%`, background: '#10b981', borderRadius: 2, transition: 'width .3s ease' }} />
           </div>
+          <div style={{ fontSize: 12, color: 'var(--text-muted)', padding: '4px 2px 0', fontFamily: 'var(--font-mono)' }}>
+            <strong>{inCart.length}</strong> en el carro · <strong>{pending.length}</strong> pendientes
+          </div>
         </div>
 
         <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 8 }}>
@@ -674,25 +708,101 @@ export default function ShoppingList() {
           {/* Carrito */}
           {inCart.length > 0 && (
             <div style={{ margin: '16px 10px 0' }}>
-              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '1.5px', color: 'var(--text-faint)', padding: '0 6px 8px', textTransform: 'uppercase' }}>
-                Carrito · {inCart.length}
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 8, padding: '0 6px' }}>
+                🧺 En el carro
+                <span style={{ fontSize: 12, fontFamily: 'var(--font-mono)', background: 'var(--bg-subtle)', padding: '2px 8px', borderRadius: 99, color: 'var(--text-muted)' }}>{inCart.length}</span>
               </div>
-              <CartSection compact />
+              <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden' }}>
+                {inCart.map(item => (
+                  <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', borderBottom: '1px solid var(--border)' }}>
+                    <button type="button" onClick={() => toggleItem(item.id)} style={{ background: 'none', border: 'none', color: 'var(--text-faint)', cursor: 'pointer', fontSize: 18, padding: 0, flexShrink: 0 }}>↶</button>
+                    <span style={{ flex: 1, fontSize: 14, textDecoration: 'line-through', color: 'var(--text-faint)' }}>{item.name}</span>
+                    {item.quantity && <span style={{ fontSize: 12, fontFamily: 'monospace', color: 'var(--text-faint)' }}>{item.quantity}{item.unit ? ` ${item.unit}` : ''}</span>}
+                  </div>
+                ))}
+                <div style={{ padding: '14px 16px' }}>
+                  <button type="button" onClick={saveCart} style={{ width: '100%', padding: '14px', borderRadius: 12, background: 'var(--accent)', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 15, fontWeight: 700, boxShadow: 'var(--shadow-cta)' }}>
+                    Guardar compra
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+          {inCart.length === 0 && storeItems.length === 0 && (
+            <div style={{ margin: '16px 10px 0', padding: '24px', border: '1px dashed var(--border)', borderRadius: 14, textAlign: 'center', color: 'var(--text-faint)', fontSize: 13 }}>
+              Marca productos en la lista y aparecerán aquí.
             </div>
           )}
 
           <div style={{ height: 80 }} />
         </div>
 
-        <div style={{ padding: '10px 12px', borderTop: '1px solid var(--border)', background: 'var(--bg-card)', display: 'flex', gap: 8 }}>
-          <input
-            value={newName} onChange={e => setNewName(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && addItem()}
-            placeholder="Añadir producto..."
-            style={{ flex: 1, padding: '12px 14px', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', fontSize: 15, outline: 'none' }}
-          />
-          <button onClick={addItem} style={{ width: 48, height: 48, borderRadius: 12, background: 'var(--accent)', color: '#fff', border: 'none', fontSize: 24, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>+</button>
-        </div>
+        {/* FAB */}
+        <button
+          type="button"
+          onClick={() => { setFabStore(activeStore); setShowFAB(true) }}
+          aria-label="Añadir producto"
+          style={{
+            position: 'fixed', bottom: 20, right: 20, width: 56, height: 56, borderRadius: '50%',
+            background: 'var(--accent)', color: '#fff', border: 'none', fontSize: 28, cursor: 'pointer',
+            boxShadow: '0 4px 24px rgba(254,112,0,0.4)', zIndex: 200,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }}
+        >+</button>
+
+        {showFAB && (
+          <>
+            <div onClick={() => setShowFAB(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', zIndex: 300 }} />
+            <div style={{
+              position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 301,
+              background: 'var(--bg-card)', borderRadius: '20px 20px 0 0',
+              padding: '12px 20px 32px',
+              animation: 'slideUp 0.3s cubic-bezier(.2,.7,.2,1) both',
+            }}>
+              <style>{`@keyframes slideUp { from { transform:translateY(100%) } to { transform:translateY(0) } }`}</style>
+              <div style={{ width: 40, height: 4, borderRadius: 2, background: 'var(--border)', margin: '0 auto 20px' }} />
+              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', marginBottom: 16 }}>Añadir producto</div>
+              <input value={fabName} onChange={e => setFabName(e.target.value)} placeholder="Nombre del producto *" autoFocus
+                style={{ width: '100%', padding: '12px 14px', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', fontSize: 15, outline: 'none', boxSizing: 'border-box', marginBottom: 10 }} />
+              <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+                <input value={fabQty} onChange={e => setFabQty(e.target.value)} placeholder="Cant." type="number" min="0"
+                  style={{ flex: 1, padding: '12px 14px', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', fontSize: 14, outline: 'none' }} />
+                <select value={fabStore} onChange={e => setFabStore(e.target.value)}
+                  style={{ flex: 2, padding: '12px 14px', borderRadius: 12, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', fontSize: 14, outline: 'none' }}>
+                  {STORES.map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button type="button" onClick={() => setShowFAB(false)} style={{ flex: 1, padding: '13px', borderRadius: 12, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', fontSize: 15, cursor: 'pointer', fontWeight: 500 }}>Cancelar</button>
+                <button
+                  type="button"
+                  disabled={!fabName.trim()}
+                  onClick={async () => {
+                    if (!fabName.trim()) return
+                    const payload = itemToDb(app.id, fabName.trim(), fabQty ? Number(fabQty) : null, '', 'otros', fabStore)
+                    if (mode === 'demo') {
+                      const newRow = { ...payload, id: crypto.randomUUID(), checked: false, checked_at: null }
+                      const raw = demoRead(appType, 'items_supermercado')
+                      demoWrite(appType, 'items_supermercado', [...raw, newRow])
+                      setItems(p => [...p, itemFromDb(newRow)])
+                      showToast('Añadido ✓')
+                    } else {
+                      const { data, error } = await supabase.from('items').insert(payload).select().single()
+                      if (!error && data) {
+                        setItems(p => [...p, itemFromDb(data)])
+                        showToast('Añadido ✓')
+                      }
+                    }
+                    setFabName('')
+                    setFabQty('')
+                    setShowFAB(false)
+                  }}
+                  style={{ flex: 2, padding: '13px', borderRadius: 12, background: 'var(--accent)', color: '#fff', border: 'none', fontSize: 15, fontWeight: 700, cursor: 'pointer', boxShadow: 'var(--shadow-cta)', opacity: fabName.trim() ? 1 : 0.4 }}
+                >Añadir</button>
+              </div>
+            </div>
+          </>
+        )}
 
         {toast && <div style={{ position: 'fixed', bottom: 80, left: '50%', transform: 'translateX(-50%)', background: '#09090b', color: '#fff', padding: '10px 18px', borderRadius: 999, fontSize: 12, fontWeight: 500, zIndex: 500, whiteSpace: 'nowrap' }}>{toast}</div>}
         {showDefaultModal && <DefaultStoreModal current={activeStore} onSelect={handleDefaultStoreSelect} onClose={() => setShowDefaultModal(false)} />}
@@ -759,28 +869,53 @@ export default function ShoppingList() {
             <div key={store} style={{
               display: 'flex', flexDirection: 'column', overflow: 'hidden',
               borderRight: idx < storesWithItems.length - 1 ? '1px solid var(--border)' : 'none',
-            }}>
+            }}
+              onDragOver={e => { e.preventDefault(); e.currentTarget.style.background = 'var(--accent-light)' }}
+              onDragLeave={e => { e.currentTarget.style.background = '' }}
+              onDrop={e => {
+                e.preventDefault()
+                e.currentTarget.style.background = ''
+                if (dragItem) {
+                  setItems(p => p.map(i => i.id === dragItem ? { ...i, store } : i))
+                  if (mode === 'demo') {
+                    const raw = demoRead(appType, 'items_supermercado')
+                    demoWrite(appType, 'items_supermercado', raw.map(r => r.id === dragItem ? { ...r, metadata: { ...r.metadata, store } } : r))
+                  }
+                  setDragItem(null)
+                }
+              }}
+            >
               {/* Column header */}
-              <div style={{
-                padding: '12px 16px 10px', flexShrink: 0,
-                borderBottom: '1px solid var(--border)',
-                display: 'flex', alignItems: 'baseline', gap: 8,
-              }}>
-                <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', letterSpacing: '0.5px' }}>
-                  {store}
-                </span>
-                <span style={{
-                  fontSize: 10, fontWeight: 600, color: 'var(--text-faint)',
-                  fontFamily: 'var(--font-mono)',
+              <div style={{ padding: '14px 16px 10px', flexShrink: 0, borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{
+                  width: 30, height: 30, borderRadius: 8, flexShrink: 0,
+                  background: `${STORE_COLORS[store] ?? '#64748b'}22`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 13, fontWeight: 800, color: STORE_COLORS[store] ?? '#64748b',
                 }}>
-                  {storeItems.length} items
-                </span>
+                  {(colNames[STORES.indexOf(store)] ?? store)[0]}
+                </div>
+                <div
+                  contentEditable suppressContentEditableWarning
+                  onBlur={e => {
+                    const names = [...colNames]
+                    names[STORES.indexOf(store)] = e.currentTarget.textContent.trim() || store
+                    setColNames(names)
+                    e.currentTarget.style.borderColor = 'transparent'
+                    e.currentTarget.style.background = 'transparent'
+                  }}
+                  onFocus={e => { e.currentTarget.style.borderColor = 'var(--accent)'; e.currentTarget.style.background = 'var(--bg-subtle)' }}
+                  style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', outline: 'none', borderBottom: '1px solid transparent', cursor: 'text', flex: 1, padding: '2px 4px', borderRadius: 4, transition: 'border-color 200ms, background 200ms' }}
+                >
+                  {colNames[STORES.indexOf(store)] ?? store}
+                </div>
+                <span style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-faint)', flexShrink: 0 }}>{storeItems.length} items</span>
               </div>
 
               {/* Items */}
               <div style={{ flex: 1, overflowY: 'auto', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 4 }}>
                 {storeItems.map(item => (
-                  <DesktopItem key={item.id} item={item} onToggle={toggleItem} onDelete={deleteItem} />
+                  <DesktopItem key={item.id} item={item} onToggle={toggleItem} onDelete={deleteItem} onDragStart={setDragItem} />
                 ))}
                 {storeItems.length === 0 && (
                   <div style={{ textAlign: 'center', padding: '32px 0', color: 'var(--text-faint)', fontSize: 12 }}>
