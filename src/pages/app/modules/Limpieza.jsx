@@ -4,6 +4,7 @@ import ModuleShell from './ModuleShell'
 import { useMode } from '../../../contexts/ModeContext'
 import { useEventsData } from '../../../hooks/data/useEventsData'
 import { demoRead } from '../../../data/demo/index.js'
+import { addCalendarEvent } from '../../../utils/calendarUtils'
 
 function formatDue(dateStr) {
   const d = new Date(dateStr)
@@ -31,6 +32,17 @@ export default function Limpieza() {
     mode === 'demo' ? (demoRead(app.type ?? 'hogar', 'factory_tasks') ?? []) : []
   )
   const [showFactory, setShowFactory] = useState(false)
+
+  // Roomba
+  const DAYS_LABELS = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom']
+  const [showRoomba, setShowRoomba]   = useState(false)
+  const [roombaDays, setRoombaDays]   = useState([])  // weekday indices 0=Mon
+  const [roombaHour, setRoombaHour]   = useState(10)
+
+  // Personal de limpieza
+  const [showCleaner, setShowCleaner] = useState(false)
+  const [cleanerDate, setCleanerDate] = useState('')
+  const [cleanerHour, setCleanerHour] = useState(9)
 
   const factoryActive = factoryTasks
     .filter(ft => ft.active && ft.next_date)
@@ -116,6 +128,40 @@ export default function Limpieza() {
     })
   }
 
+  function saveRoombaSchedule() {
+    if (roombaDays.length === 0) return
+    const at = app.type ?? 'hogar'
+    roombaDays.forEach(dayIdx => {
+      const now = new Date()
+      const daysUntil = (dayIdx - ((now.getDay() + 6) % 7) + 7) % 7
+      const next = new Date(now)
+      next.setDate(now.getDate() + (daysUntil === 0 ? 7 : daysUntil))
+      next.setHours(roombaHour, 0, 0, 0)
+      addCalendarEvent(at, {
+        event_type: 'roomba',
+        title: `🤖 Roomba — ${DAYS_LABELS[dayIdx]}`,
+        start_time: next.toISOString(),
+        end_time:   new Date(next.getTime() + 45 * 60 * 1000).toISOString(),
+        recurrence: 'weekly',
+      })
+    })
+    setShowRoomba(false)
+  }
+
+  function addCleanerVisit() {
+    if (!cleanerDate) return
+    const at = app.type ?? 'hogar'
+    const start = new Date(`${cleanerDate}T${String(cleanerHour).padStart(2,'0')}:00:00`)
+    addCalendarEvent(at, {
+      event_type: 'cleaner_visit',
+      title: '🧹 Visita limpiadora',
+      start_time: start.toISOString(),
+      end_time:   new Date(start.getTime() + 3 * 60 * 60 * 1000).toISOString(),
+    })
+    setCleanerDate('')
+    setShowCleaner(false)
+  }
+
   const overdueCount = tasks.filter(t => formatDue(t.start_time).overdue).length
 
   return (
@@ -179,6 +225,72 @@ export default function Limpieza() {
             </div>
           </div>
         )}
+
+        {/* ── Roomba schedule ── */}
+        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
+          <button onClick={() => setShowRoomba(v => !v)}
+            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 600, color: 'var(--text)', textAlign: 'left' }}>
+            🤖 Roomba
+            <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--text-faint)' }}>{showRoomba ? '▲' : '▼'}</span>
+          </button>
+          {showRoomba && (
+            <div style={{ padding: '0 16px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <p style={{ margin: 0, fontSize: 12, color: 'var(--text-muted)' }}>Selecciona los días en que pones el Roomba:</p>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {DAYS_LABELS.map((d, i) => (
+                  <button key={i} onClick={() => setRoombaDays(prev => prev.includes(i) ? prev.filter(x => x !== i) : [...prev, i])}
+                    style={{ padding: '5px 12px', borderRadius: 20, fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                      background: roombaDays.includes(i) ? '#8b5cf6' : 'var(--bg)',
+                      color: roombaDays.includes(i) ? '#fff' : 'var(--text-muted)',
+                      border: `1px solid ${roombaDays.includes(i) ? '#8b5cf6' : 'var(--border)'}` }}>
+                    {d}
+                  </button>
+                ))}
+              </div>
+              <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                Hora
+                <input type="number" min={6} max={22} aria-label="Hora" value={roombaHour}
+                  onChange={e => setRoombaHour(Number(e.target.value))}
+                  style={{ width: 60, padding: '4px 8px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', fontSize: 13, textAlign: 'center' }} />
+                :00
+              </label>
+              <button onClick={saveRoombaSchedule} disabled={roombaDays.length === 0}
+                style={{ padding: '8px 0', borderRadius: 8, background: '#8b5cf6', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 700, opacity: roombaDays.length > 0 ? 1 : 0.4 }}>
+                Guardar horario
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* ── Personal de limpieza ── */}
+        <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
+          <button onClick={() => setShowCleaner(v => !v)}
+            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, padding: '12px 16px', background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 600, color: 'var(--text)', textAlign: 'left' }}>
+            🧹 Personal de limpieza
+            <span style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--text-faint)' }}>{showCleaner ? '▲' : '▼'}</span>
+          </button>
+          {showCleaner && (
+            <div style={{ padding: '0 16px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <label style={{ fontSize: 13 }}>
+                Próxima visita
+                <input type="date" aria-label="Próxima visita" value={cleanerDate}
+                  onChange={e => setCleanerDate(e.target.value)}
+                  style={{ display: 'block', width: '100%', marginTop: 4, padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', fontSize: 13 }} />
+              </label>
+              <label style={{ fontSize: 12, color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                Hora de llegada
+                <input type="number" min={7} max={20} value={cleanerHour}
+                  onChange={e => setCleanerHour(Number(e.target.value))}
+                  style={{ width: 60, padding: '4px 8px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', fontSize: 13, textAlign: 'center' }} />
+                :00
+              </label>
+              <button onClick={addCleanerVisit} disabled={!cleanerDate}
+                style={{ padding: '8px 0', borderRadius: 8, background: 'var(--accent)', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 700, opacity: cleanerDate ? 1 : 0.4 }}>
+                Añadir visita
+              </button>
+            </div>
+          )}
+        </div>
 
         {/* Formulario */}
         {showAdd && (
