@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
+
+const MONTHLY_BUDGET = 2750
 import { Link, NavLink } from 'react-router-dom'
 import { format, isToday } from 'date-fns'
 import { es } from 'date-fns/locale'
@@ -6,51 +8,6 @@ import { initDemoData, demoRead } from '../data/demo/index.js'
 import { getDemoTodayItems, getActiveItem } from '../data/demo/getDemoTodayItems.js'
 
 ;['hogar', 'personal', 'finanzas', 'ocio'].forEach(initDemoData)
-
-const APP_CONFIG = [
-  { type: 'hogar',    label: 'HOGAR',    icon: '🏠', color: '#f97316', version: 'v0.4.0' },
-  { type: 'personal', label: 'PERSONAL', icon: '👤', color: '#38bdf8', version: 'v1.2.0' },
-  { type: 'finanzas', label: 'FINANZAS', icon: '💰', color: '#22c55e', version: 'v0.3.0' },
-  { type: 'ocio',     label: 'OCIO',     icon: '🎭', color: '#a855f7', version: 'v0.1.0' },
-]
-
-function getAppStats(type, data) {
-  const { hogarEvents, shoppingItems, personalTasks, personalNotes,
-    personalEvents, transactions } = data
-  switch (type) {
-    case 'hogar': {
-      const now = new Date()
-      const tc = hogarEvents.filter(e => {
-        const d = new Date(e.start_time)
-        return d.getFullYear() === now.getFullYear()
-          && d.getMonth() === now.getMonth()
-          && d.getDate() === now.getDate()
-      }).length
-      const pending = shoppingItems.filter(i => !i.checked).length
-      return [`${tc} tarea${tc !== 1 ? 's' : ''} hoy`, `${pending} en lista`]
-    }
-    case 'personal': {
-      const tasks = personalTasks.filter(t => t.status !== 'done').length
-      const notes = personalNotes.length
-      return [`${tasks} tarea${tasks !== 1 ? 's' : ''}`, `${notes} notas`]
-    }
-    case 'finanzas': {
-      const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7)
-      const total = transactions.filter(t => t.type === 'expense' && new Date(t.date) >= weekAgo)
-        .reduce((s, t) => s + t.amount, 0)
-      const budgets = demoRead('finanzas', 'fin_budgets').length
-      return [`${total.toFixed(0)}€ esta semana`, `${budgets} presupuestos`]
-    }
-    case 'ocio': {
-      const restaurantes = demoRead('ocio', 'restaurantes')
-      const viajes = demoRead('ocio', 'viajes')
-      const visitados = restaurantes.filter(r => r.visitas.length > 0).length
-      const planificados = viajes.filter(v => v.estado === 'planificado').length
-      return [`${visitados} restaurante${visitados !== 1 ? 's' : ''}`, `${planificados} viaje${planificados !== 1 ? 's' : ''} planificado${planificados !== 1 ? 's' : ''}`]
-    }
-    default: return ['—', '']
-  }
-}
 
 // ── Module cards config ───────────────────────────────────────────
 const MODULE_CARDS = [
@@ -166,8 +123,7 @@ function DesktopLayout({ data }) {
       .reduce((s, t) => s + t.amount, 0)
   , [transactions, monthStart])
 
-  const monthBudget = 2750
-  const budgetPct = Math.min(100, (monthExpense / monthBudget) * 100)
+  const budgetPct = Math.min(100, (monthExpense / MONTHLY_BUDGET) * 100)
 
   const totalIncome = useMemo(() =>
     transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0)
@@ -187,7 +143,7 @@ function DesktopLayout({ data }) {
     hogar: `${hogarTasksToday} tareas hoy · ${pendingItems} en lista`,
     personal: `${personalEvents.length} eventos · ${personalNotes.length} notas`,
     ocio: `${ocioRestaurantes.filter(r => r.visitas?.length > 0).length} restaurantes · ${ocioViajes.filter(v => v.estado === 'planificado').length} viajes`,
-    finanzas: `${monthExpense.toFixed(0)}€ / 2.750€ este mes`,
+    finanzas: `${monthExpense.toFixed(0)}€ / ${MONTHLY_BUDGET.toLocaleString('es-ES')}€ este mes`,
     settings: null,
   }
 
@@ -334,6 +290,7 @@ function DesktopLayout({ data }) {
                 </p>
                 <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', position: 'relative' }}>
                   <button
+                    type="button"
                     onClick={() => setShowShortcuts(v => !v)}
                     style={{
                       display: 'flex', alignItems: 'center', gap: 7, padding: '9px 18px',
@@ -365,7 +322,7 @@ function DesktopLayout({ data }) {
                       ))}
                     </div>
                   )}
-                  <button style={{
+                  <button type="button" style={{
                     display: 'flex', alignItems: 'center', gap: 7, padding: '9px 18px',
                     background: 'transparent', border: '1px solid var(--border)', borderRadius: 9,
                     color: 'var(--text-muted)', fontSize: 13, cursor: 'pointer',
@@ -438,7 +395,7 @@ function DesktopLayout({ data }) {
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
                 {RECENT_ACTIVITY.map((act, i) => (
-                  <div key={i} style={{
+                  <div key={act.title} style={{
                     padding: 14, background: 'var(--bg-card)', borderRadius: 12,
                     border: '1px solid var(--border)',
                     animation: `dh-up 0.45s cubic-bezier(.2,.7,.2,1) ${0.28 + i * 0.04}s both`,
@@ -561,7 +518,7 @@ function DesktopLayout({ data }) {
                 <p style={{ fontSize: 12.5, color: 'var(--text-muted)', lineHeight: 1.65, marginBottom: 12 }}>
                   Detectamos que gastas un 18% más los jueves por gasolina. ¿Reagendar la revisión del Golf al sábado?
                 </p>
-                <button style={{
+                <button type="button" style={{
                   fontSize: 12, fontWeight: 600, color: '#9a4efb',
                   background: 'transparent', border: '1px solid rgba(154,78,251,0.3)', borderRadius: 7,
                   cursor: 'pointer', padding: '6px 12px', fontFamily: 'var(--font-body)',
@@ -607,7 +564,7 @@ function MobileLayout({ data }) {
     hogar: `${hogarTasksToday} tareas hoy · ${pendingItems} en lista`,
     personal: `${personalEvents.length} eventos · ${personalNotes.length} notas`,
     ocio: `${ocioRestaurantes.filter(r => r.visitas?.length > 0).length} restaurantes · ${ocioViajes.filter(v => v.estado === 'planificado').length} viajes`,
-    finanzas: `${monthExpense.toFixed(0)}€ / 2.750€ este mes`,
+    finanzas: `${monthExpense.toFixed(0)}€ / ${MONTHLY_BUDGET.toLocaleString('es-ES')}€ este mes`,
     settings: null,
   }
 
@@ -706,7 +663,7 @@ export default function DemoHome() {
     return () => window.removeEventListener('resize', onResize)
   }, [])
 
-  const now = new Date()
+  const [now] = useState(() => new Date())
   const dayLabel   = format(now, 'EEE', { locale: es }).toUpperCase()
   const dayNum     = format(now, 'd')
   const monthLabel = format(now, 'MMMM', { locale: es }).toUpperCase()
@@ -715,11 +672,8 @@ export default function DemoHome() {
   const hogarEvents      = useMemo(() => demoRead('hogar', 'events'), [])
   const shoppingItems    = useMemo(() => demoRead('hogar', 'items_supermercado'), [])
   const personalEvents   = useMemo(() => demoRead('personal', 'events'), [])
-  const personalTasks    = useMemo(() => demoRead('personal', 'personal_tasks'), [])
   const personalNotes    = useMemo(() => demoRead('personal', 'personal_notes'), [])
-  const recipes          = useMemo(() => demoRead('hogar', 'recipes'), [])
   const transactions     = useMemo(() => demoRead('finanzas', 'fin_transactions'), [])
-  const ocioEventos      = useMemo(() => demoRead('ocio', 'eventos'), [])
   const ocioRestaurantes = useMemo(() => demoRead('ocio', 'restaurantes'), [])
   const ocioViajes       = useMemo(() => demoRead('ocio', 'viajes'), [])
 
@@ -730,8 +684,7 @@ export default function DemoHome() {
     now, dayNum, dayLabel, monthLabel, year,
     todayItems, activeItem,
     hogarEvents, shoppingItems, personalNotes, personalEvents,
-    personalTasks, recipes, transactions, ocioEventos,
-    ocioRestaurantes, ocioViajes,
+    transactions, ocioRestaurantes, ocioViajes,
   }
 
   return isMobile
