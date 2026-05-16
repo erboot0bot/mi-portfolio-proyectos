@@ -159,7 +159,7 @@ function DesktopLayout({ data }) {
     now, dayNum, dayLabel, monthLabel, year, weekLabel,
     weekActivity, todayItems, activeItem,
     hogarEvents, shoppingItems, personalNotes, personalEvents,
-    recipes, transactions,
+    recipes, transactions, ocioEventos, ocioRestaurantes, ocioViajes,
   } = data
 
   const hour = now.getHours()
@@ -401,7 +401,7 @@ function DesktopLayout({ data }) {
                 TU UNIVERSO
               </span>
               <span style={{ fontSize: 10, color: 'var(--text-faint)', fontFamily: 'var(--font-mono)' }}>
-                APPs · 5 APPS · <span style={{ color: 'var(--accent)' }}>DEMO</span>
+                APPs · 4 APPS · <span style={{ color: 'var(--accent)' }}>DEMO</span>
               </span>
             </div>
 
@@ -461,38 +461,69 @@ function DesktopLayout({ data }) {
                 <span style={{ fontSize: 10, color: 'var(--text-faint)', fontFamily: 'var(--font-mono)' }}>PROBAR →</span>
               </Link>
 
-              {/* FINANZAS — fila completa */}
+              {/* FINANZAS + OCIO — fila compartida */}
               <Link to="/demo/finanzas" className="dh-link" style={{
                 display: 'flex', textDecoration: 'none', padding: '13px',
                 background: 'var(--bg-card)', borderRadius: 10,
                 border: '1px solid var(--border)', borderTop: '2px solid #22c55e',
-                gridColumn: '1 / -1', gap: 24, alignItems: 'center',
+                gap: 16, alignItems: 'center',
               }}>
-                <div style={{ minWidth: 0 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
                     <span style={{ fontSize: 11, fontWeight: 700, color: '#22c55e', letterSpacing: '0.5px' }}>💰 FINANZAS</span>
                     <span style={{ fontSize: 9, color: 'var(--text-faint)', fontFamily: 'var(--font-mono)' }}>v0.3.0</span>
                   </div>
-                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>
-                    {demoRead('finanzas', 'fin_budgets').length} presupuestos activos
-                  </div>
-                </div>
-                <div style={{ display: 'flex', gap: 20, flex: 1, justifyContent: 'flex-end', alignItems: 'center', flexWrap: 'wrap' }}>
-                  <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', fontFamily: 'var(--font-hero)', lineHeight: 1 }}>
-                      {weeklyExpenses.toFixed(0)}€
+                  <div style={{ display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', fontFamily: 'var(--font-hero)', lineHeight: 1 }}>
+                        {weeklyExpenses.toFixed(0)}€
+                      </div>
+                      <div style={{ fontSize: 9, color: 'var(--text-faint)', marginTop: 2 }}>esta semana</div>
                     </div>
-                    <div style={{ fontSize: 9, color: 'var(--text-faint)', marginTop: 2 }}>esta semana</div>
-                  </div>
-                  <div style={{ textAlign: 'center' }}>
-                    <div style={{ fontSize: 22, fontWeight: 700, color: '#22c55e', fontFamily: 'var(--font-hero)', lineHeight: 1 }}>
-                      {transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0).toFixed(0)}€
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontSize: 20, fontWeight: 700, color: '#22c55e', fontFamily: 'var(--font-hero)', lineHeight: 1 }}>
+                        {transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0).toFixed(0)}€
+                      </div>
+                      <div style={{ fontSize: 9, color: 'var(--text-faint)', marginTop: 2 }}>ingresos mes</div>
                     </div>
-                    <div style={{ fontSize: 9, color: 'var(--text-faint)', marginTop: 2 }}>ingresos mes</div>
                   </div>
-                  <span style={{ fontSize: 10, color: 'var(--text-faint)', fontFamily: 'var(--font-mono)' }}>PROBAR →</span>
+                  <span style={{ fontSize: 10, color: 'var(--text-faint)', fontFamily: 'var(--font-mono)', display: 'block', marginTop: 8 }}>PROBAR →</span>
                 </div>
               </Link>
+
+              {/* OCIO */}
+              {(() => {
+                const today = new Date().toISOString().slice(0, 10)
+                const visitados      = ocioRestaurantes.filter(r => r.visitas?.length > 0).length
+                const viajesPlan     = ocioViajes.filter(v => v.estado === 'planificado').length
+                const proximoEvento  = ocioEventos
+                  .filter(e => e.fecha >= today)
+                  .sort((a, b) => a.fecha.localeCompare(b.fecha))[0]
+                return (
+                  <Link to="/demo/ocio" className="dh-link" style={{
+                    display: 'flex', flexDirection: 'column', textDecoration: 'none', padding: '13px',
+                    background: 'var(--bg-card)', borderRadius: 10,
+                    border: '1px solid var(--border)', borderTop: '2px solid #a855f7',
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: '#a855f7', letterSpacing: '0.5px' }}>🎭 OCIO</span>
+                      <span style={{ fontSize: 9, color: 'var(--text-faint)', fontFamily: 'var(--font-mono)' }}>v0.1.0</span>
+                    </div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6 }}>
+                      {visitados} restaurante{visitados !== 1 ? 's' : ''} · {viajesPlan} viaje{viajesPlan !== 1 ? 's' : ''} planificado{viajesPlan !== 1 ? 's' : ''}
+                    </div>
+                    {proximoEvento && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                        <span style={{ fontSize: 10, padding: '2px 8px', background: 'rgba(168,85,247,0.12)', color: '#a855f7', borderRadius: 99, fontWeight: 500 }}>
+                          {proximoEvento.tipo === 'concierto' ? '🎵' : proximoEvento.tipo === 'teatro' ? '🎭' : '🎟️'} {proximoEvento.titulo}
+                        </span>
+                        <span style={{ fontSize: 9, color: 'var(--text-faint)' }}>{proximoEvento.fecha}</span>
+                      </div>
+                    )}
+                    <span style={{ fontSize: 10, color: 'var(--text-faint)', fontFamily: 'var(--font-mono)' }}>PROBAR →</span>
+                  </Link>
+                )
+              })()}
             </div>
           </div>
         </div>
@@ -702,14 +733,16 @@ export default function DemoHome() {
   const weekEnd   = addDays(weekStart, 6)
   const weekLabel = `${format(weekStart, 'd')}-${format(weekEnd, 'd')} ${format(weekStart, 'MMM', { locale: es }).toUpperCase()}`
 
-  const hogarEvents    = useMemo(() => demoRead('hogar', 'events'), [])
-  const shoppingItems  = useMemo(() => demoRead('hogar', 'items_supermercado'), [])
-  const personalEvents = useMemo(() => demoRead('personal', 'events'), [])
-  const personalTasks  = useMemo(() => demoRead('personal', 'personal_tasks'), [])
-  const personalNotes  = useMemo(() => demoRead('personal', 'personal_notes'), [])
-  const recipes        = useMemo(() => demoRead('hogar', 'recipes'), [])
-  const transactions   = useMemo(() => demoRead('finanzas', 'fin_transactions'), [])
-  const ocioEventos    = useMemo(() => demoRead('ocio', 'eventos'), [])
+  const hogarEvents       = useMemo(() => demoRead('hogar', 'events'), [])
+  const shoppingItems     = useMemo(() => demoRead('hogar', 'items_supermercado'), [])
+  const personalEvents    = useMemo(() => demoRead('personal', 'events'), [])
+  const personalTasks     = useMemo(() => demoRead('personal', 'personal_tasks'), [])
+  const personalNotes     = useMemo(() => demoRead('personal', 'personal_notes'), [])
+  const recipes           = useMemo(() => demoRead('hogar', 'recipes'), [])
+  const transactions      = useMemo(() => demoRead('finanzas', 'fin_transactions'), [])
+  const ocioEventos       = useMemo(() => demoRead('ocio', 'eventos'), [])
+  const ocioRestaurantes  = useMemo(() => demoRead('ocio', 'restaurantes'), [])
+  const ocioViajes        = useMemo(() => demoRead('ocio', 'viajes'), [])
 
   const todayItems = useMemo(() => getDemoTodayItems(), [])
   const activeItem = useMemo(() => getActiveItem(todayItems), [todayItems])
@@ -732,6 +765,7 @@ export default function DemoHome() {
     weekActivity, todayItems, activeItem,
     hogarEvents, shoppingItems, personalNotes, personalEvents,
     personalTasks, recipes, transactions, ocioEventos,
+    ocioRestaurantes, ocioViajes,
   }
 
   return isMobile

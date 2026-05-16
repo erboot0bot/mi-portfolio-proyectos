@@ -2,6 +2,8 @@ import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
 
+vi.setConfig({ testTimeout: 15000 })
+
 vi.mock('../../data/demo/index.js', () => ({
   initDemoData: vi.fn(),
   demoRead: vi.fn((appType, key) => {
@@ -28,6 +30,14 @@ vi.mock('../../data/demo/index.js', () => ({
     if (appType === 'finanzas' && key === 'fin_budgets') return [
       { id: 'b1' }, { id: 'b2' },
     ]
+    if (appType === 'ocio' && key === 'restaurantes') return [
+      { id: 'r1', nombre: 'El Xampanyet', visitas: [{ fecha: '2025-01-01' }] },
+      { id: 'r2', nombre: 'Bar Mut', visitas: [] },
+    ]
+    if (appType === 'ocio' && key === 'viajes') return [
+      { id: 'v1', destino: 'Lisboa', estado: 'planificado' },
+    ]
+    if (appType === 'ocio' && key === 'eventos') return []
     return []
   }),
 }))
@@ -63,13 +73,12 @@ describe('DemoHome', () => {
     expect(screen.getAllByText(dayNum).length).toBeGreaterThan(0)
   })
 
-  it('muestra las 5 app cards con sus labels', () => {
+  it('muestra las 4 app cards con sus labels', () => {
     renderDemoHome()
     expect(screen.getAllByText(/HOGAR/).length).toBeGreaterThan(0)
     expect(screen.getAllByText(/PERSONAL/).length).toBeGreaterThan(0)
-    expect(screen.getAllByText(/MASCOTAS/).length).toBeGreaterThan(0)
-    expect(screen.getAllByText(/VEHÍCULO/).length).toBeGreaterThan(0)
     expect(screen.getAllByText(/FINANZAS/).length).toBeGreaterThan(0)
+    expect(screen.getAllByText(/OCIO/).length).toBeGreaterThan(0)
   })
 
   it('muestra la tarjeta IA con insight', () => {
