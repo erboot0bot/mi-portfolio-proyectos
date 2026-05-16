@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import { demoRead, demoWrite } from '../../../../data/demo'
+import { addCalendarEvent } from '../../../../utils/calendarUtils'
 
 const PRESETS = [
   { nombre: 'Netflix',         icono: '🎬', coste: 15.99, periodicidad: 'mensual' },
@@ -67,6 +68,17 @@ export default function Suscripciones() {
 
   const totalMensual = subs.reduce((acc, s) => acc + mensualEquiv(s), 0)
 
+  function addSubToCalendar(sub) {
+    addCalendarEvent(appType, {
+      event_type: 'subscription_renewal',
+      title: `${sub.icono} ${sub.nombre} — renovación`,
+      start_time: new Date(sub.fecha_renovacion + 'T08:00:00').toISOString(),
+      all_day: true,
+      recurrence: sub.periodicidad === 'mensual' ? 'monthly' : 'none',
+      metadata: { sub_id: sub.id, coste: sub.coste, periodicidad: sub.periodicidad },
+    })
+  }
+
   return (
     <div style={{ padding: '1.5rem', maxWidth: 640 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
@@ -118,6 +130,8 @@ export default function Suscripciones() {
                 style={{ background: 'none', border: `1px solid ${ESTADO_COLOR[sub.estado]}`, borderRadius: 6, padding: '0.2rem 0.5rem', cursor: 'pointer', color: ESTADO_COLOR[sub.estado], fontSize: '0.75rem', minWidth: 72 }}>
                 {sub.estado}
               </button>
+              <button onClick={() => addSubToCalendar(sub)} title="Añadir al calendario"
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '0.9rem' }}>📅</button>
               <button onClick={() => deleteSub(sub.id)}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-faint)', fontSize: '0.9rem' }}>🗑</button>
             </div>

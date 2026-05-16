@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import { demoRead, demoWrite } from '../../../../data/demo'
+import { addCalendarEvent } from '../../../../utils/calendarUtils'
 
 const TIPO_ICONS = { hogar: '🏠', vida: '❤️', dental: '🦷', coche: '🚗', otros: '📋' }
 const TIPOS = ['hogar', 'vida', 'dental', 'coche', 'otros']
@@ -50,6 +51,16 @@ export default function Seguros() {
 
   const deleteSeg = (id) => save(seguros.filter(s => s.id !== id))
 
+  function addSeguroToCalendar(seg) {
+    addCalendarEvent(appType, {
+      event_type: 'insurance_expiry',
+      title: `🛡️ ${seg.nombre} — vencimiento`,
+      start_time: new Date(seg.vencimiento + 'T09:00:00').toISOString(),
+      all_day: true,
+      metadata: { seguro_id: seg.id, compania: seg.compania, coste_anual: seg.coste_anual },
+    })
+  }
+
   const totalAnual = seguros.reduce((acc, s) => acc + (s.coste_anual ?? 0), 0)
 
   return (
@@ -83,6 +94,8 @@ export default function Seguros() {
                 <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{(seg.coste_anual ?? 0).toLocaleString('es-ES')} €</div>
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>/ año</div>
               </div>
+              <button onClick={() => addSeguroToCalendar(seg)} title="Añadir al calendario"
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', fontSize: '1rem' }}>📅</button>
               <button onClick={() => deleteSeg(seg.id)}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-faint)', fontSize: '1rem' }}>🗑</button>
             </div>
