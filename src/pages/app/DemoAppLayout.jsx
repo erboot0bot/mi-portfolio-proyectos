@@ -9,6 +9,7 @@ const APP_META = {
   hogar:    { name: 'Hogar',    icon: '🏠' },
   finanzas: { name: 'Finanzas', icon: '💰' },
   personal: { name: 'Personal', icon: '🗂️' },
+  ocio:     { name: 'Ocio',     icon: '🎭' },
 }
 
 const HOGAR_GROUPS = [
@@ -59,10 +60,21 @@ const PERSONAL_MODULES = [
   { path: 'formacion', label: 'Formación', icon: '📚' },
 ]
 
+const OCIO_MODULES = [
+  { path: 'restaurantes',    label: 'Restaurantes',    icon: '🍽️' },
+  { path: 'deportes',        label: 'Deportes',        icon: '⚽' },
+  { path: 'entretenimiento', label: 'Entretenimiento', icon: '🎬' },
+  { path: 'hobbies',         label: 'Hobbies',         icon: '🎯' },
+  { path: 'regalos',         label: 'Regalos',         icon: '🎁' },
+  { path: 'viajes',          label: 'Viajes',          icon: '✈️' },
+  { path: 'eventos',         label: 'Eventos',         icon: '🎟️' },
+]
+
 const MODULE_MAP = {
   hogar:    HOGAR_MODULES,
   finanzas: FINANZAS_MODULES,
   personal: PERSONAL_MODULES,
+  ocio:     OCIO_MODULES,
 }
 
 // Fix 2: removed 'calendar' from FULL_LAYOUT_MODULES

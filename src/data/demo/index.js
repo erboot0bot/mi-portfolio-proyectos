@@ -2,15 +2,17 @@
 import { mockFinanzas } from './finanzas.js'
 import { mockHogar }    from './hogar.js'
 import { mockPersonal } from './personal.js'
+import { mockOcio }     from './ocio.js'
 
 const MOCK_BY_APP = {
   finanzas: mockFinanzas,
   hogar:    mockHogar,
   personal: mockPersonal,
+  ocio:     mockOcio,
 }
 
 // Bump this to force-clear stale sessionStorage when demo data changes
-const DEMO_VERSION = '12'
+const DEMO_VERSION = '13'
 
 // Loads mock data into sessionStorage for a given appType.
 // Checks version on every call so HMR changes always clear stale data.

@@ -5,12 +5,13 @@ import { es } from 'date-fns/locale'
 import { initDemoData, demoRead } from '../data/demo/index.js'
 import { getDemoTodayItems, getActiveItem } from '../data/demo/getDemoTodayItems.js'
 
-;['hogar', 'personal', 'finanzas'].forEach(initDemoData)
+;['hogar', 'personal', 'finanzas', 'ocio'].forEach(initDemoData)
 
 const APP_CONFIG = [
   { type: 'hogar',    label: 'HOGAR',    icon: '🏠', color: '#f97316', version: 'v0.4.0' },
   { type: 'personal', label: 'PERSONAL', icon: '👤', color: '#38bdf8', version: 'v1.2.0' },
   { type: 'finanzas', label: 'FINANZAS', icon: '💰', color: '#22c55e', version: 'v0.3.0' },
+  { type: 'ocio',     label: 'OCIO',     icon: '🎭', color: '#a855f7', version: 'v0.1.0' },
 ]
 
 const DAY_LABELS = ['L', 'M', 'X', 'J', 'V', 'S', 'D']
@@ -42,6 +43,13 @@ function getAppStats(type, data) {
         .reduce((s, t) => s + t.amount, 0)
       const budgets = demoRead('finanzas', 'fin_budgets').length
       return [`${total.toFixed(0)}€ esta semana`, `${budgets} presupuestos`]
+    }
+    case 'ocio': {
+      const restaurantes = demoRead('ocio', 'restaurantes')
+      const viajes = demoRead('ocio', 'viajes')
+      const visitados = restaurantes.filter(r => r.visitas.length > 0).length
+      const planificados = viajes.filter(v => v.estado === 'planificado').length
+      return [`${visitados} restaurante${visitados !== 1 ? 's' : ''}`, `${planificados} viaje${planificados !== 1 ? 's' : ''} planificado${planificados !== 1 ? 's' : ''}`]
     }
     default: return ['—', '']
   }
@@ -120,6 +128,11 @@ const IconVehiculoSvg = () => (
     <path d="M3 11h16"/>
   </svg>
 )
+const IconOcioSvg = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+  </svg>
+)
 const IconFinanzasSvg = () => (
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/>
@@ -135,8 +148,9 @@ const IconSettingsSvg = () => (
 
 const APP_SIDEBAR_ITEMS = [
   { type: 'hogar',    label: 'Hogar',    color: '#f97316', Icon: IconHogarSvg },
-  { type: 'personal', label: 'Personal',  color: '#38bdf8', Icon: IconPersonalSvg },
-  { type: 'finanzas', label: 'Finanzas',  color: '#22c55e', Icon: IconFinanzasSvg },
+  { type: 'personal', label: 'Personal', color: '#38bdf8', Icon: IconPersonalSvg },
+  { type: 'finanzas', label: 'Finanzas', color: '#22c55e', Icon: IconFinanzasSvg },
+  { type: 'ocio',     label: 'Ocio',     color: '#a855f7', Icon: IconOcioSvg },
 ]
 
 // ── Desktop layout ────────────────────────────────────────────────
@@ -695,6 +709,7 @@ export default function DemoHome() {
   const personalNotes  = useMemo(() => demoRead('personal', 'personal_notes'), [])
   const recipes        = useMemo(() => demoRead('hogar', 'recipes'), [])
   const transactions   = useMemo(() => demoRead('finanzas', 'fin_transactions'), [])
+  const ocioEventos    = useMemo(() => demoRead('ocio', 'eventos'), [])
 
   const todayItems = useMemo(() => getDemoTodayItems(), [])
   const activeItem = useMemo(() => getActiveItem(todayItems), [todayItems])
@@ -709,13 +724,14 @@ export default function DemoHome() {
     personal: personalEvents.some(e => isSameDay(new Date(e.start_time), day))
               || personalTasks.some(t => t.due_date && isSameDay(new Date(t.due_date + 'T12:00:00'), day)),
     finanzas: transactions.some(t => isSameDay(new Date(t.date + 'T12:00:00'), day)),
-  })), [weekDays, hogarEvents, personalEvents, personalTasks, transactions])
+    ocio:     ocioEventos.some(e => isSameDay(new Date(e.fecha + 'T12:00:00'), day)),
+  })), [weekDays, hogarEvents, personalEvents, personalTasks, transactions, ocioEventos])
 
   const sharedData = {
     now, dayNum, dayLabel, monthLabel, year, weekLabel,
     weekActivity, todayItems, activeItem,
     hogarEvents, shoppingItems, personalNotes, personalEvents,
-    personalTasks, recipes, transactions,
+    personalTasks, recipes, transactions, ocioEventos,
   }
 
   return isMobile

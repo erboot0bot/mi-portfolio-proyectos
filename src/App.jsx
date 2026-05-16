@@ -52,6 +52,15 @@ const PersonalMascotas  = React.lazy(() => import('./pages/app/modules/personal/
 const PersonalRopa      = React.lazy(() => import('./pages/app/modules/personal/Ropa'))
 const PersonalFormacion = React.lazy(() => import('./pages/app/modules/personal/Formacion'))
 
+// Ocio
+const OcioRestaurantes    = React.lazy(() => import('./pages/app/modules/ocio/Restaurantes'))
+const OcioDeportes        = React.lazy(() => import('./pages/app/modules/ocio/Deportes'))
+const OcioEntretenimiento = React.lazy(() => import('./pages/app/modules/ocio/Entretenimiento'))
+const OcioHobbies         = React.lazy(() => import('./pages/app/modules/ocio/Hobbies'))
+const OcioRegalos         = React.lazy(() => import('./pages/app/modules/ocio/Regalos'))
+const OcioViajes          = React.lazy(() => import('./pages/app/modules/ocio/Viajes'))
+const OcioEventos         = React.lazy(() => import('./pages/app/modules/ocio/Eventos'))
+
 // Finanzas
 const FinanzasResumen       = React.lazy(() => import('./pages/app/modules/finanzas/Resumen'))
 const FinanzasTransacciones = React.lazy(() => import('./pages/app/modules/finanzas/Transacciones'))
@@ -97,6 +106,7 @@ class ErrorBoundary extends React.Component {
 function DemoAppIndex() {
   const { appType } = useParams()
   if (appType === 'hogar') return <HogarHome />
+  if (appType === 'ocio')  return <Navigate to="restaurantes" replace />
   return null
 }
 
@@ -220,6 +230,20 @@ export default function App() {
               <Route path="hipoteca"      element={<FinanzasHipoteca />} />
             </Route>
 
+            {/* Ocio */}
+            <Route path="/app/ocio" element={
+              <ProtectedRoute><AppLayout /></ProtectedRoute>
+            }>
+              <Route index element={<Navigate to="restaurantes" replace />} />
+              <Route path="restaurantes"    element={<OcioRestaurantes />} />
+              <Route path="deportes"        element={<OcioDeportes />} />
+              <Route path="entretenimiento" element={<OcioEntretenimiento />} />
+              <Route path="hobbies"         element={<OcioHobbies />} />
+              <Route path="regalos"         element={<OcioRegalos />} />
+              <Route path="viajes"          element={<OcioViajes />} />
+              <Route path="eventos"         element={<OcioEventos />} />
+            </Route>
+
             {/* Demo (público) */}
             <Route path="/demo/:appType" element={<DemoAppLayout />}>
               <Route index element={<DemoAppIndex />} />
@@ -255,6 +279,13 @@ export default function App() {
               <Route path="mascotas"  element={<PersonalMascotas />} />
               <Route path="ropa"      element={<PersonalRopa />} />
               <Route path="formacion" element={<PersonalFormacion />} />
+              <Route path="restaurantes"    element={<OcioRestaurantes />} />
+              <Route path="deportes"        element={<OcioDeportes />} />
+              <Route path="entretenimiento" element={<OcioEntretenimiento />} />
+              <Route path="hobbies"         element={<OcioHobbies />} />
+              <Route path="regalos"         element={<OcioRegalos />} />
+              <Route path="viajes"          element={<OcioViajes />} />
+              <Route path="eventos"         element={<OcioEventos />} />
             </Route>
 
             {/* 404 */}
