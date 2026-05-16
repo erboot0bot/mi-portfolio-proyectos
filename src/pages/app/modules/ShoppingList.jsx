@@ -8,6 +8,7 @@ import { itemFromDb, itemToDb } from '../../../utils/itemTransformers'
 import { computeConsumptionUpdate } from '../../../utils/consumptionUtils'
 import { useMode } from '../../../contexts/ModeContext'
 import { demoRead, demoWrite } from '../../../data/demo/index.js'
+import { addCalendarEvent } from '../../../utils/calendarUtils'
 
 const CATEGORIES = [
   { id: 'frutas',   label: 'Frutas & Verduras', icon: '🥦' },
@@ -318,6 +319,8 @@ export default function ShoppingList() {
   const [toast, setToast]     = useState(null)
   const [suggestions,   setSuggestions]   = useState([])
   const [editingFreqId, setEditingFreqId] = useState(null)
+  const [showPlanModal, setShowPlanModal] = useState(false)
+  const [planForm, setPlanForm] = useState({ fecha: new Date().toISOString().slice(0, 10), hora: '10:00' })
 
   useEffect(() => {
     const handler = () => setIsMobile(window.innerWidth < 640)
@@ -446,6 +449,20 @@ export default function ShoppingList() {
   }
 
   function showToast(msg) { setToast(msg); setTimeout(() => setToast(null), 2600) }
+
+  function planificarCompra() {
+    const start = new Date(`${planForm.fecha}T${planForm.hora}:00`)
+    const end   = new Date(start.getTime() + 60 * 60 * 1000)
+    addCalendarEvent(appType, {
+      event_type: 'shopping_trip',
+      title: `🛒 Compra ${activeStore}`,
+      start_time: start.toISOString(),
+      end_time:   end.toISOString(),
+      metadata: { store: activeStore },
+    })
+    setShowPlanModal(false)
+    showToast('Compra añadida al calendario ✓')
+  }
 
   async function toggleItem(id) {
     const item = items.find(i => i.id === id)
@@ -722,6 +739,11 @@ export default function ShoppingList() {
           <button type="submit" style={{ padding: '8px 16px', borderRadius: 9, background: 'var(--accent)', color: '#fff', fontSize: 13, fontWeight: 600, border: 'none', cursor: 'pointer' }}>
             + Añadir
           </button>
+          <button
+            type="button"
+            onClick={() => setShowPlanModal(true)}
+            style={{ padding: '8px 14px', borderRadius: 10, background: 'transparent', color: 'var(--text-muted)', border: '1px solid var(--border)', cursor: 'pointer', fontSize: 12, fontWeight: 500, whiteSpace: 'nowrap' }}
+          >🗓️ Planificar compra</button>
         </form>
       </div>
 
@@ -784,6 +806,33 @@ export default function ShoppingList() {
       </div>
     )}
     {showDefaultModal && <DefaultStoreModal current={activeStore} onSelect={handleDefaultStoreSelect} onClose={() => setShowDefaultModal(false)} />}
+    {showPlanModal && (
+      <div onClick={() => setShowPlanModal(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 200 }}>
+        <div onClick={e => e.stopPropagation()} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 16, padding: 24, width: 300, display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>🛒 Planificar compra</h3>
+          <p style={{ margin: 0, fontSize: 13, color: 'var(--text-muted)' }}>Supermercado: <strong>{activeStore}</strong></p>
+          <label style={{ fontSize: 13 }}>
+            Fecha
+            <input type="date" aria-label="Fecha" value={planForm.fecha}
+              onChange={e => setPlanForm(f => ({ ...f, fecha: e.target.value }))}
+              style={{ display: 'block', width: '100%', marginTop: 4, padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', fontSize: 13 }} />
+          </label>
+          <label style={{ fontSize: 13 }}>
+            Hora
+            <input type="time" aria-label="Hora" value={planForm.hora}
+              onChange={e => setPlanForm(f => ({ ...f, hora: e.target.value }))}
+              style={{ display: 'block', width: '100%', marginTop: 4, padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', fontSize: 13 }} />
+          </label>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={() => setShowPlanModal(false)} style={{ flex: 1, padding: '8px 0', borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 13 }}>Cancelar</button>
+            <button onClick={planificarCompra} disabled={!planForm.fecha || !planForm.hora}
+              style={{ flex: 2, padding: '8px 0', borderRadius: 8, background: 'var(--accent)', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 700 }}>
+              Añadir al calendario
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
     </ModuleShell>
   )
 }
