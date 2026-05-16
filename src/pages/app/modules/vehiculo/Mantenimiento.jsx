@@ -3,6 +3,7 @@ import { useOutletContext } from 'react-router-dom'
 import { supabase } from '../../../../lib/supabase'
 import { useMode } from '../../../../contexts/ModeContext'
 import { demoRead, demoWrite } from '../../../../data/demo/index.js'
+import { addCalendarEvent } from '../../../../utils/calendarUtils'
 
 const MAINT_TYPES = ['ITV', 'aceite', 'ruedas', 'frenos', 'bateria', 'filtro', 'correa', 'otro']
 const MAINT_ICONS = { ITV: '📋', aceite: '🛢️', ruedas: '🔄', frenos: '⚙️', bateria: '🔋', filtro: '🌀', correa: '⛓️', otro: '🔧' }
@@ -22,6 +23,7 @@ export default function Mantenimiento() {
   const [showAdd, setShowAdd] = useState(false)
   const [form, setForm]       = useState({ type: 'aceite', date: new Date().toISOString().slice(0, 10), km: '', description: '', cost: '', next_km: '', next_date: '' })
   const [addError, setAddError] = useState(null)
+  const [addToCalendar, setAddToCalendar] = useState(false)
 
   useEffect(() => {
     if (mode === 'demo') {
@@ -63,6 +65,16 @@ export default function Mantenimiento() {
       const all = demoRead(appType, 'maintenance_logs')
       demoWrite(appType, 'maintenance_logs', [newLog, ...all])
       setLogs(p => [newLog, ...p])
+      if (addToCalendar && form.next_date) {
+        addCalendarEvent(appType, {
+          event_type: 'vehicle_maintenance',
+          title: `${MAINT_ICONS[form.type] ?? '🔧'} ${form.type} — ${vehicle.marca} ${vehicle.modelo}`,
+          start_time: new Date(form.next_date + 'T09:00:00').toISOString(),
+          all_day: true,
+          metadata: { vehicle_id: vehicle.id, maint_type: form.type },
+        })
+        setAddToCalendar(false)
+      }
       setForm({ type: 'aceite', date: new Date().toISOString().slice(0, 10), km: '', description: '', cost: '', next_km: '', next_date: '' })
       setShowAdd(false)
       return
@@ -164,8 +176,19 @@ export default function Mantenimiento() {
               <input type="date" value={form.next_date} onChange={e => setForm(p => ({ ...p, next_date: e.target.value }))}
                 style={{ flex: 1, padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', fontSize: 13, outline: 'none' }} />
             </div>
+            {form.next_date && (
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text-muted)', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  aria-label="Añadir al calendario"
+                  checked={addToCalendar}
+                  onChange={e => setAddToCalendar(e.target.checked)}
+                />
+                📅 Añadir recordatorio al calendario
+              </label>
+            )}
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-              <button onClick={() => setShowAdd(false)}
+              <button onClick={() => { setShowAdd(false); setAddToCalendar(false) }}
                 style={{ padding: '7px 14px', borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer', fontSize: 12 }}>Cancelar</button>
               <button onClick={handleAdd}
                 style={{ padding: '7px 14px', borderRadius: 8, background: 'var(--accent)', color: '#fff', border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>Guardar</button>
