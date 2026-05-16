@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import { demoRead, demoWrite } from '../../../../data/demo'
+import { addCalendarEvent } from '../../../../utils/calendarUtils'
 
 const inp = { background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', color: 'var(--text)', fontSize: 13, outline: 'none', width: '100%', boxSizing: 'border-box' }
 const DEPORTE_ICON = { Fútbol: '⚽', Baloncesto: '🏀', Tenis: '🎾', 'Fórmula 1': '🏎️', MotoGP: '🏍️', Ciclismo: '🚴', Pádel: '🏓', Golf: '⛳', Rugby: '🏉', Otros: '🏅' }
@@ -18,6 +19,19 @@ export default function Deportes() {
 
   const save = next => { setItems(next); demoWrite(appType, 'deportes_seguimiento', next) }
   const selected = items.find(d => d.id === selectedId) ?? null
+
+  function addPartidoToCalendar(partido, equipo) {
+    const start = new Date(partido.fecha + 'T20:00:00')
+    const local     = partido.es_local ? equipo.equipo : partido.rival
+    const visitante = partido.es_local ? partido.rival : equipo.equipo
+    addCalendarEvent(appType, {
+      event_type: 'match',
+      title: `⚽ ${local} vs ${visitante}`,
+      start_time: start.toISOString(),
+      end_time:   new Date(start.getTime() + 2 * 60 * 60 * 1000).toISOString(),
+      metadata: { equipo_id: equipo.id, partido_id: partido.id, competicion: equipo.competicion },
+    })
+  }
 
   function addEquipo(e) {
     e.preventDefault()
@@ -62,7 +76,14 @@ export default function Deportes() {
                     <span style={{ fontSize: 14, fontWeight: 600 }}>{p.es_local ? selected.equipo : p.rival} vs {p.es_local ? p.rival : selected.equipo}</span>
                     <span style={{ fontSize: 11, color: 'var(--text-faint)', marginLeft: 8 }}>{p.es_local ? '(local)' : '(visitante)'}</span>
                   </div>
-                  <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{p.fecha}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>{p.fecha}</span>
+                    <button
+                      title="Añadir al calendario"
+                      onClick={() => addPartidoToCalendar(p, selected)}
+                      style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 6, padding: '3px 8px', cursor: 'pointer', fontSize: 13, color: 'var(--text-muted)' }}
+                    >📅</button>
+                  </div>
                 </div>
               </div>
             ))}

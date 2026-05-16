@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import { demoRead, demoWrite } from '../../../../data/demo'
+import { addCalendarEvent } from '../../../../utils/calendarUtils'
 
 const inp = { background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', color: 'var(--text)', fontSize: 13, outline: 'none', width: '100%', boxSizing: 'border-box' }
 const ESTADO_STYLE = {
@@ -19,6 +20,26 @@ export default function Viajes() {
   const [form, setForm] = useState(BLANK)
 
   const save = next => { setItems(next); demoWrite(appType, 'viajes', next) }
+
+  function addViajeToCalendar(viaje) {
+    if (!viaje.fecha_inicio) return
+    addCalendarEvent(appType, {
+      event_type: 'travel_checkin',
+      title: `✈️ Salida — ${viaje.destino}`,
+      start_time: new Date(viaje.fecha_inicio + 'T00:00:00').toISOString(),
+      all_day: true,
+      metadata: { viaje_id: viaje.id, destino: viaje.destino },
+    })
+    if (viaje.fecha_fin && viaje.fecha_fin !== viaje.fecha_inicio) {
+      addCalendarEvent(appType, {
+        event_type: 'travel_checkout',
+        title: `🏠 Vuelta — ${viaje.destino}`,
+        start_time: new Date(viaje.fecha_fin + 'T00:00:00').toISOString(),
+        all_day: true,
+        metadata: { viaje_id: viaje.id, destino: viaje.destino },
+      })
+    }
+  }
 
   function addViaje(e) {
     e.preventDefault()
@@ -48,6 +69,12 @@ export default function Viajes() {
             </div>
             <span style={{ fontSize: 12, background: est.bg, color: est.color, borderRadius: 20, padding: '4px 12px', fontWeight: 600 }}>{est.label}</span>
           </div>
+          {(selected.fecha_inicio || selected.fecha_fin) && (
+            <button
+              onClick={() => addViajeToCalendar(selected)}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'none', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 14px', cursor: 'pointer', fontSize: 13, color: 'var(--text-muted)', marginBottom: 8 }}
+            >📅 Fechas al calendario</button>
+          )}
 
           {/* Alojamiento */}
           <div style={{ marginBottom: 16 }}>

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useOutletContext } from 'react-router-dom'
 import { demoRead, demoWrite } from '../../../../data/demo'
+import { addCalendarEvent } from '../../../../utils/calendarUtils'
 
 const inp = { background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', color: 'var(--text)', fontSize: 13, outline: 'none', width: '100%', boxSizing: 'border-box' }
 const TIPO_ICON = { concierto: '🎵', teatro: '🎭', festival: '🎪', exposicion: '🖼️', otro: '🎟️' }
@@ -19,6 +20,17 @@ export default function Eventos() {
 
   const save = next => { setItems(next); demoWrite(appType, 'eventos', next) }
   const today = new Date().toISOString().slice(0, 10)
+
+  function addEventoToCalendar(ev) {
+    const start = new Date(ev.fecha + 'T20:00:00')
+    addCalendarEvent(appType, {
+      event_type: 'ocio_event',
+      title: `${TIPO_ICON[ev.tipo] ?? '🎟️'} ${ev.titulo}`,
+      start_time: start.toISOString(),
+      end_time:   new Date(start.getTime() + 3 * 60 * 60 * 1000).toISOString(),
+      metadata: { tipo: ev.tipo, artista: ev.artista, recinto: ev.recinto, precio: ev.precio },
+    })
+  }
 
   const filtered = items.filter(e =>
     filtro === 'proximos' ? e.fecha >= today
@@ -91,6 +103,11 @@ export default function Eventos() {
               <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>{ev.fecha}</div>
               {ev.precio > 0 && <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>{ev.precio}€</div>}
               {ev.valoracion > 0 && <div style={{ fontSize: 12, color: '#f59e0b' }}>{'★'.repeat(ev.valoracion)}</div>}
+              <button
+                title="Añadir al calendario"
+                onClick={e => { e.stopPropagation(); addEventoToCalendar(ev) }}
+                style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 6, padding: '3px 8px', cursor: 'pointer', fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}
+              >📅</button>
             </div>
           </div>
           {ev.notas && <p style={{ margin: '8px 0 0', fontSize: 12, color: 'var(--text-muted)' }}>{ev.notas}</p>}
