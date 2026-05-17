@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, NavLink } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import { format } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { initDemoData, demoRead } from '../data/demo/index.js'
@@ -162,91 +162,7 @@ function DesktopLayout({ data }) {
         @media (prefers-reduced-motion: reduce) {
           * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
         }
-        .dh-nav-link {
-          font-size: 14px;
-          color: var(--text-muted);
-          text-decoration: none;
-          padding: 4px 2px;
-          transition: color 0.15s;
-          white-space: nowrap;
-        }
-        .dh-nav-link:hover { color: var(--text); }
-        .dh-nav-link.active {
-          color: var(--accent);
-          border-bottom: 2px solid var(--accent);
-          font-weight: 600;
-        }
       `}</style>
-
-      {/* ── Top Nav (64px sticky) ── */}
-      <nav style={{
-        height: 64, flexShrink: 0,
-        backdropFilter: 'blur(12px)',
-        background: 'var(--nav-bg, rgba(255,252,249,0.88))',
-        borderBottom: '1px solid var(--border)',
-        display: 'flex', alignItems: 'center',
-        padding: '0 clamp(1.5rem, 4vw, 4rem)',
-        gap: 32, position: 'sticky', top: 0, zIndex: 50,
-      }}>
-        {/* Brand */}
-        <Link to="/" style={{ textDecoration: 'none', flexShrink: 0 }}>
-          <img src="/logo-horizontal.png" height={34} alt="H3nky" style={{ display: 'block' }} />
-        </Link>
-
-        {/* Center nav links */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 24, flex: 1, justifyContent: 'center' }}>
-          {[
-            { to: '/',          label: 'Inicio' },
-            { to: '/documentacion', label: 'Documentación' },
-            { to: '/apps',          label: 'Apps' },
-            { to: '/demo',          label: 'Demo' },
-            { to: '/store',         label: 'Tienda' },
-            { to: '/contact',       label: 'Contacto' },
-          ].map(({ to, label }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={to === '/demo' || to === '/'}
-              className={({ isActive }) => `dh-nav-link${isActive ? ' active' : ''}`}
-            >
-              {label}
-            </NavLink>
-          ))}
-        </div>
-
-        {/* Right side */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexShrink: 0 }}>
-          {/* GitHub */}
-          <a href="https://github.com/H3nky" target="_blank" rel="noreferrer"
-            style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)', textDecoration: 'none', fontSize: 14, transition: 'color 0.15s' }}
-            onMouseEnter={e => e.currentTarget.style.color = 'var(--text)'}
-            onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
-            </svg>
-            GitHub
-          </a>
-
-          {/* Language */}
-          <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>
-            <span style={{ color: 'var(--accent)', fontWeight: 700 }}>ES</span>
-            {' | '}
-            <span>EN</span>
-          </div>
-
-          {/* Avatar */}
-          <div style={{
-            width: 36, height: 36, borderRadius: '50%',
-            background: 'linear-gradient(135deg, #334155, #1e293b)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: 'white', fontSize: 14, fontWeight: 700, flexShrink: 0,
-            cursor: 'pointer',
-          }}>
-            E
-          </div>
-        </div>
-      </nav>
 
       {/* ── Body ── */}
       <div style={{ flex: 1, overflowY: 'auto' }}>
@@ -419,7 +335,7 @@ function DesktopLayout({ data }) {
 
           {/* ── Right rail ── */}
           <aside style={{
-            position: 'sticky', top: 88,
+            position: 'sticky', top: 16,
             maxHeight: 'calc(100dvh - 120px)', overflowY: 'auto',
             display: 'flex', flexDirection: 'column', gap: 16,
           }}>
